@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class PwmQuartzJobFactory implements JobFactory {
+public class QuartzWorkflowJobFactory implements JobFactory {
 
     private final SimpleWorkflowStepStrategy strategy;
     private final WorkflowRepository workflowRepository;
@@ -34,6 +34,6 @@ public class PwmQuartzJobFactory implements JobFactory {
             return delegate.newJob(bundle, scheduler);
         }
         
-        return new PmwQuartzJob(strategy, w.get(), scheduler);
+        return new QuartzWorkflowJob(strategy, w.get(), scheduler);
     }
 }

@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.sterl.pmw.model.AbstractWorkflowContext;
-import org.sterl.pmw.model.Step;
+import org.sterl.pmw.model.WorkflowStep;
 import org.sterl.pmw.model.Workflow;
 
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class InMemoryWorkflowService {
 
         @Override
         public Void call() throws Exception {
-            Step<T> nextStep = w.getNextStep(c);
+            WorkflowStep<T> nextStep = w.getNextStep(c);
             if (nextStep != null) {
                 try {
                     nextStep.apply(c);

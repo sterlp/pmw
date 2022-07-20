@@ -13,7 +13,7 @@ public class Workflow<T extends AbstractWorkflowContext> {
     private final String name;
     @Getter
     private int retryCount = 3;
-    private final List<Step<T>> steps = new ArrayList<>();
+    private final List<WorkflowStep<T>> workflowSteps = new ArrayList<>();
     
     public Workflow(String name) {
         super();
@@ -23,8 +23,8 @@ public class Workflow<T extends AbstractWorkflowContext> {
     public Workflow<T> next(Consumer<T> fn) {
         return step(new SequentialStep<>(fn));
     }
-    public Workflow<T> step(Step<T> s) {
-        steps.add(s);
+    public Workflow<T> step(WorkflowStep<T> s) {
+        workflowSteps.add(s);
         return this;
     }
     
@@ -37,17 +37,17 @@ public class Workflow<T extends AbstractWorkflowContext> {
         return ifStep;
     }
     
-    public Step<T> getNextStep(T c) {
-        if (c.getNextStep() + 1 > steps.size()) return null;
-        return steps.get(c.getNextStep());
+    public WorkflowStep<T> getNextStep(T c) {
+        if (c.getNextStep() + 1 > workflowSteps.size()) return null;
+        return workflowSteps.get(c.getNextStep());
     }
 
-    public boolean success(Step<T> nextStep, T c) {
+    public boolean success(WorkflowStep<T> nextStep, T c) {
         c.setNextStep(c.getNextStep() + 1);
         return getNextStep(c) != null;
     }
 
-    public boolean fail(Step<T> nextStep, T c, Exception e) {
+    public boolean fail(WorkflowStep<T> nextStep, T c, Exception e) {
         c.retry(e);
         c.setLastFailedStep(c.getNextStep());
         return retryCount > c.getRetryCount();
@@ -60,7 +60,7 @@ public class Workflow<T extends AbstractWorkflowContext> {
 
     @Override
     public String toString() {
-        return "Workflow [name=" + name + ", retryCount=" + retryCount + ", steps=" + steps.size() + "]";
+        return "Workflow [name=" + name + ", retryCount=" + retryCount + ", workflowSteps=" + workflowSteps.size() + "]";
     }
     
     

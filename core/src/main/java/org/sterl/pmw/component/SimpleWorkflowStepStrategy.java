@@ -1,7 +1,7 @@
 package org.sterl.pmw.component;
 
 import org.sterl.pmw.model.AbstractWorkflowContext;
-import org.sterl.pmw.model.Step;
+import org.sterl.pmw.model.WorkflowStep;
 import org.sterl.pmw.model.Workflow;
 
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +14,7 @@ public class SimpleWorkflowStepStrategy {
      * @return <code>true</code> if a retry or next step should run, otherwise <code>false</code>
      */
     public <T extends AbstractWorkflowContext> boolean call(Workflow<T> w, T c) {
-        Step<T> nextStep = w.getNextStep(c);
+        WorkflowStep<T> nextStep = w.getNextStep(c);
         if (nextStep != null) {
             try {
                 nextStep.apply(c);

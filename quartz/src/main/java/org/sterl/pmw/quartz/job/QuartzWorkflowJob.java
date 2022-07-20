@@ -17,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @RequiredArgsConstructor
 @Slf4j
-public class PmwQuartzJob implements Job {
+public class QuartzWorkflowJob implements Job {
 
     private final SimpleWorkflowStepStrategy callStrategy;
     private final Workflow<?> w;

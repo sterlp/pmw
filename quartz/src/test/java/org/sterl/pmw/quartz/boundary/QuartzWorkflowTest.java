@@ -12,7 +12,7 @@ import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.SimpleWorkflowContext;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.quartz.job.PwmQuartzJobFactory;
+import org.sterl.pmw.quartz.job.QuartzWorkflowJobFactory;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,7 +29,7 @@ class QuartzWorkflowTest {
         scheduler = DirectSchedulerFactory.getInstance().getScheduler();
         workflowRepository = new WorkflowRepository();
         subject = new QuartzWorkflowService(scheduler, workflowRepository);
-        scheduler.setJobFactory(new PwmQuartzJobFactory(
+        scheduler.setJobFactory(new QuartzWorkflowJobFactory(
                 new SimpleWorkflowStepStrategy(), workflowRepository, null));
         
         scheduler.start();

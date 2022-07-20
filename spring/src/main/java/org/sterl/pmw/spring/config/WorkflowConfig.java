@@ -9,10 +9,10 @@ import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.quartz.boundary.QuartzWorkflowService;
-import org.sterl.pmw.quartz.job.PwmQuartzJobFactory;
+import org.sterl.pmw.quartz.job.QuartzWorkflowJobFactory;
 
 @Configuration
-public class PmwConfig {
+public class WorkflowConfig {
 
     @Bean
     WorkflowRepository workflowRepository() {
@@ -30,7 +30,7 @@ public class PmwConfig {
         jobFactory.setApplicationContext(applicationContext);
 
         return (sf) -> {
-            sf.setJobFactory(new PwmQuartzJobFactory(
+            sf.setJobFactory(new QuartzWorkflowJobFactory(
                     new SimpleWorkflowStepStrategy(), workflowRepository(), jobFactory));
         };
     }

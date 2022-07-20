@@ -13,7 +13,7 @@ import org.sterl.pmw.boundary.AbstractWorkflowService;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.quartz.job.PmwQuartzJob;
+import org.sterl.pmw.quartz.job.QuartzWorkflowJob;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +45,7 @@ public class QuartzWorkflowService extends AbstractWorkflowService {
     }
 
     public <T extends AbstractWorkflowContext> JobDetail register(Workflow<T> w) {
-        JobDetail job = JobBuilder.newJob(PmwQuartzJob.class)
+        JobDetail job = JobBuilder.newJob(QuartzWorkflowJob.class)
                 .withIdentity(w.getName(), "pmw")
                 .storeDurably()
                 .build();

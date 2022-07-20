@@ -7,12 +7,11 @@ import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Getter
-public class SequentialStep<T extends AbstractWorkflowContext> implements Step<T> {
+public class SequentialStep<T extends AbstractWorkflowContext> implements WorkflowStep<T> {
     private final Consumer<T> fn;
 
     @Override
     public void apply(T c) {
         fn.accept(c);
     }
-
 }
