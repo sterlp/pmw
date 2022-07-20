@@ -1,0 +1,89 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.sterl.pmw</groupId>
+    <artifactId>pmw-root</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <inceptionYear>2022</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/sterlp/pmw/blob/main/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>paul_sterl</id>
+            <name>Paul Sterl</name>
+            <email>paul@sterl.org</email>
+        </developer>
+    </developers>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>9</version>
+        <relativePath />
+    </parent>
+
+    <properties>
+        <pmw.version>0.1.0-SNAPSHOT</pmw.version>
+        <java.version>11</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <spring.version>2.7.1</spring.version>
+        <lombok.version>1.18.24</lombok.version>
+        <h2.version>2.1.214</h2.version>
+    </properties>
+
+    <modules>
+        <module>core</module>
+        <module>quartz</module>
+        <module>spring</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.sterl.pmw</groupId>
+                <artifactId>pmw-core</artifactId>
+                <version>${pmw.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.sterl.pmw</groupId>
+                <artifactId>pmw-quartz</artifactId>
+                <version>${pmw.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.sterl.pmw</groupId>
+                <artifactId>pmw-spring</artifactId>
+                <version>${pmw.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.quartz-scheduler</groupId>
+                <artifactId>quartz</artifactId>
+                <version>2.3.2</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
