@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import lombok.Getter;
 
@@ -12,29 +13,19 @@ public class Workflow<T extends AbstractWorkflowContext> {
     @Getter
     private final String name;
     @Getter
+    private final Supplier<T> newContextCreator;
+    @Getter
     private int retryCount = 3;
     private final List<WorkflowStep<T>> workflowSteps = new ArrayList<>();
     
-    public Workflow(String name) {
+    public Workflow(String name, Supplier<T> newContextCreator) {
         super();
         this.name = name;
+        this.newContextCreator = newContextCreator;
     }
     
-    public Workflow<T> next(Consumer<T> fn) {
-        return step(new SequentialStep<>(fn));
-    }
-    public Workflow<T> step(WorkflowStep<T> s) {
-        workflowSteps.add(s);
-        return this;
-    }
-    
-    public IfStep<T> choose(Function<T, String> choose) {
-        return choose(new IfStep<>(choose, this));
-    }
-
-    public IfStep<T> choose(IfStep<T> ifStep) {
-        step(ifStep);
-        return ifStep;
+    public int getStepCount() {
+        return workflowSteps.size();
     }
     
     public WorkflowStep<T> getNextStep(T c) {
@@ -62,6 +53,4 @@ public class Workflow<T extends AbstractWorkflowContext> {
     public String toString() {
         return "Workflow [name=" + name + ", retryCount=" + retryCount + ", workflowSteps=" + workflowSteps.size() + "]";
     }
-    
-    
 }

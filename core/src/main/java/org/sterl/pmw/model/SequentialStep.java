@@ -1,14 +1,19 @@
 package org.sterl.pmw.model;
 
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 @Getter
-public class SequentialStep<T extends AbstractWorkflowContext> implements WorkflowStep<T> {
+public class SequentialStep<T extends AbstractWorkflowContext> extends AbstractStep<T> {
     private final Consumer<T> fn;
+
+    SequentialStep(String name, Consumer<T> fn) {
+        super(name);
+        Objects.requireNonNull(fn, "Function cannot be null.");
+        this.fn = fn;
+    }
 
     @Override
     public void apply(T c) {

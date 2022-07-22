@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.sterl.pmw.boundary.InMemoryWorkflowService;
 import org.sterl.pmw.model.SimpleWorkflowContext;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowFactory;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,7 +28,7 @@ class ExampleWorkflowTest {
     
     @Test
     void testWorkflow() {
-        Workflow<SimpleWorkflowContext> w = new Workflow<SimpleWorkflowContext>("test-workflow")
+        Workflow<SimpleWorkflowContext> w = new WorkflowFactory(null)<SimpleWorkflowContext>("test-workflow")
             .next(c -> {
                 log.info("do-first");
             })
