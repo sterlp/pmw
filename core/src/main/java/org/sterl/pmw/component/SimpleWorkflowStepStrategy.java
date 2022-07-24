@@ -18,7 +18,7 @@ public class SimpleWorkflowStepStrategy {
         WorkflowStep<C> nextStep = w.nextStep(context);
         logWorkflowStart(w, context);
         while (nextStep != null) {
-            log.debug("Selecting {} on index {}", nextStep.getName(), 
+            log.debug("Selecting step={} on index={}", nextStep.getName(), 
                     context.getInternalWorkflowContext().getCurrentStepIndex());
             try {
                 nextStep.apply(context);
@@ -26,7 +26,7 @@ public class SimpleWorkflowStepStrategy {
                     nextStep = w.nextStep(context);
                 } else {
                     nextStep = null;
-                    logWorkflowEnd(context);
+                    logWorkflowEnd(w, context);
                 }
             } catch (Exception e) {
                 boolean willRetry = w.fail(nextStep, context, e);
@@ -48,16 +48,17 @@ public class SimpleWorkflowStepStrategy {
         }
     }
 
-    private <C extends AbstractWorkflowContext> void logWorkflowEnd(C c) {
+    private <C extends AbstractWorkflowContext> void logWorkflowEnd(Workflow<C> w, C c) {
         InternalWorkflowContext state = c.getInternalWorkflowContext();
-        log.warn("Workflow {} successfully finished in {} at {}.",
-                state.workflowRunDuration(), state.getWorkflowEnd());
+        log.info("workflow={} success durationMs={} at={}.",
+                w.getName(),
+                state.workflowRunDuration().toMillis(), state.getWorkflowEnd());
     }
 
     private <C extends AbstractWorkflowContext> void logWorkflowStart(Workflow<C> w, C c) {
         InternalWorkflowContext state = c.getInternalWorkflowContext();
         if (state.isFirstWorkflowStep()) {
-            log.info("Starting workflow {} at {}", w.getName(), state.getWorkflowStart());
+            log.info("Starting workflow={} at={}", w.getName(), state.getWorkflowStart());
         }
     }
 }

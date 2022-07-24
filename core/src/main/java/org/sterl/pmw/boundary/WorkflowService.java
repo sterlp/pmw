@@ -7,5 +7,5 @@ public interface WorkflowService<RegistryType> {
     <T extends AbstractWorkflowContext> String execute(Workflow<T> w);
     <T extends AbstractWorkflowContext> String execute(Workflow<T> w, T c);
     void clearAllWorkflows();
-    public <T extends AbstractWorkflowContext> RegistryType register(Workflow<T> w);
+    <T extends AbstractWorkflowContext> RegistryType register(Workflow<T> w);
 }

@@ -13,7 +13,6 @@ import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.NonNull;
@@ -44,7 +43,7 @@ public class QuartzWorkflowJob implements Job {
             try {
                 queueNextStepFor(context.getTrigger(), c);
             } catch (SchedulerException e) {
-                throw new JobExecutionException(e);
+                throw new JobExecutionException(e, true);
             }
         }
     }
