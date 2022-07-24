@@ -11,6 +11,9 @@ import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,8 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class QuartzWorkflowJobFactory implements JobFactory {
 
+    @NonNull
     private final SimpleWorkflowStepStrategy strategy;
+    @NonNull
     private final WorkflowRepository workflowRepository;
+    @NonNull
+    private final ObjectMapper mapper;
     private final JobFactory delegate;
 
     @Override
@@ -34,6 +41,6 @@ public class QuartzWorkflowJobFactory implements JobFactory {
             return delegate.newJob(bundle, scheduler);
         }
         
-        return new QuartzWorkflowJob(strategy, w.get(), scheduler);
+        return new QuartzWorkflowJob(strategy, w.get(), scheduler, mapper);
     }
 }

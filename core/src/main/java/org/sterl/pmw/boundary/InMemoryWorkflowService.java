@@ -1,53 +1,51 @@
 package org.sterl.pmw.boundary;
 
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.model.AbstractWorkflowContext;
-import org.sterl.pmw.model.WorkflowStep;
 import org.sterl.pmw.model.Workflow;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
-public class InMemoryWorkflowService {
+public class InMemoryWorkflowService implements WorkflowService<String> {
     private ExecutorService stepExecutor;
+    
+    private Map<UUID, Workflow<?>> runningWorkflows = new ConcurrentHashMap<>();
     
     public InMemoryWorkflowService() {
         stepExecutor = Executors.newWorkStealingPool();
-                // Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 4);
     }
 
-    public <T extends AbstractWorkflowContext>  void execute(Workflow<T> w, T c) {
-        stepExecutor.submit(new StepCallable<T>(w, c));
+    public <T extends AbstractWorkflowContext>  String execute(Workflow<T> w) {
+        return execute(w, w.newEmtyContext());
+    }
+    public <T extends AbstractWorkflowContext>  String execute(Workflow<T> w, T c) {
+        var workflowId = UUID.randomUUID();
+        runningWorkflows.put(workflowId, w);
+        stepExecutor.submit(new StepCallable<T>(w, c, workflowId));
+        return workflowId.toString();
     }
 
     @RequiredArgsConstructor
-    private class StepCallable<T extends AbstractWorkflowContext> implements Callable<Void> {
+    private class StepCallable<T extends AbstractWorkflowContext>
+        extends SimpleWorkflowStepStrategy
+        implements Callable<Void> {
         private final Workflow<T> w;
         private final T c;
+        private final UUID workflowId;
 
         @Override
         public Void call() throws Exception {
-            WorkflowStep<T> nextStep = w.getNextStep(c);
-            if (nextStep != null) {
-                try {
-                    nextStep.apply(c);
-                    
-                    if (w.success(nextStep, c)) {
-                        stepExecutor.submit(new StepCallable<T>(w, c));
-                    }
-                } catch (Exception e) {
-                    boolean willRetry = w.fail(nextStep, c, e);
-                    if (willRetry && !stepExecutor.isShutdown()) {
-                        log.warn("Workflow {} failed. Retry={}", w.getName(), willRetry, e);
-                        stepExecutor.submit(new StepCallable<T>(w, c));
-                    } else {
-                        log.error("Workflow {} failed. Retry={}", w.getName(), willRetry, e);
-                    }
-                }
+            if (this.call(w, c)) {
+                stepExecutor.submit(new StepCallable<T>(w, c, workflowId));
+            } else {
+                runningWorkflows.remove(workflowId);
             }
             return null;
         } 
@@ -55,5 +53,17 @@ public class InMemoryWorkflowService {
     
     public void stop() {
         stepExecutor.shutdown();
+    }
+
+    @Override
+    public void clearAllWorkflows() {
+        stepExecutor.shutdownNow();
+        runningWorkflows.clear();
+        stepExecutor = Executors.newWorkStealingPool();
+    }
+
+    @Override
+    public <T extends AbstractWorkflowContext> String register(Workflow<T> w) {
+        return w.getName();
     }
 }

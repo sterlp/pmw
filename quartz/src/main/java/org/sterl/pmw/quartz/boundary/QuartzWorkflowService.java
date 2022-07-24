@@ -9,7 +9,7 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
-import org.sterl.pmw.boundary.AbstractWorkflowService;
+import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
@@ -19,7 +19,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class QuartzWorkflowService extends AbstractWorkflowService {
+public class QuartzWorkflowService implements WorkflowService<JobDetail> {
 
     @NonNull
     private final Scheduler scheduler;
@@ -27,7 +27,7 @@ public class QuartzWorkflowService extends AbstractWorkflowService {
     private final WorkflowRepository workflowRepository;
     private final Map<String, JobDetail> workflowJobs = new HashMap<>();
 
-    public <T extends AbstractWorkflowContext> void execute(Workflow<T> w, T c) {
+    public <T extends AbstractWorkflowContext> String execute(Workflow<T> w, T c) {
         JobDetail job = workflowJobs.get(w.getName());
         if (job == null) throw new IllegalStateException(
                 w.getName() + " not registered, register the workflowJobs first.");
@@ -39,11 +39,18 @@ public class QuartzWorkflowService extends AbstractWorkflowService {
                     .build();
             
             scheduler.scheduleJob(t);
+            return t.getKey().getName();
         } catch (SchedulerException e) {
             throw new RuntimeException(e);
         }
     }
+    
+    @Override
+    public <T extends AbstractWorkflowContext> String execute(Workflow<T> w) {
+        return execute(w, w.newEmtyContext());
+    }
 
+    @Override
     public <T extends AbstractWorkflowContext> JobDetail register(Workflow<T> w) {
         JobDetail job = JobBuilder.newJob(QuartzWorkflowJob.class)
                 .withIdentity(w.getName(), "pmw")
@@ -59,5 +66,21 @@ public class QuartzWorkflowService extends AbstractWorkflowService {
             throw new RuntimeException(e);
         }
     }
+
     
+
+    @Override
+    public void clearAllWorkflows() {
+        for (JobDetail d : workflowJobs.values()) {
+            try {
+                var triggerKeys = scheduler.getTriggersOfJob(d.getKey())
+                        .stream().map(t -> t.getKey())
+                        .toList();
+                scheduler.unscheduleJobs(triggerKeys);
+            } catch (SchedulerException e) {
+                throw new RuntimeException("Failed to clear jobs", e);
+            }
+            
+        }
+    }
 }

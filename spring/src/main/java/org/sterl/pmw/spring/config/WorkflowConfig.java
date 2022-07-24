@@ -11,6 +11,8 @@ import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.quartz.boundary.QuartzWorkflowService;
 import org.sterl.pmw.quartz.job.QuartzWorkflowJobFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 @Configuration
 public class WorkflowConfig {
 
@@ -24,14 +26,14 @@ public class WorkflowConfig {
     }
     @Bean
     SchedulerFactoryBeanCustomizer registerPwm(
-            ApplicationContext applicationContext) {
+            ApplicationContext applicationContext, ObjectMapper mapper) {
         
         SpringBeanJobFactory jobFactory = new SpringBeanJobFactory();
         jobFactory.setApplicationContext(applicationContext);
 
         return (sf) -> {
             sf.setJobFactory(new QuartzWorkflowJobFactory(
-                    new SimpleWorkflowStepStrategy(), workflowRepository(), jobFactory));
+                    new SimpleWorkflowStepStrategy(), workflowRepository(), mapper, jobFactory));
         };
     }
 }

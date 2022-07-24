@@ -1,102 +1,47 @@
 package org.sterl.pmw.quartz.boundary;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.quartz.Scheduler;
-import org.quartz.SchedulerException;
 import org.quartz.impl.DirectSchedulerFactory;
+import org.sterl.pmw.boundary.CoreWorkflowExecutionTest;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
-import org.sterl.pmw.model.SimpleWorkflowContext;
-import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.quartz.job.QuartzWorkflowJobFactory;
 
-import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-@Slf4j
-class QuartzWorkflowTest {
+class QuartzWorkflowTest extends CoreWorkflowExecutionTest {
     
     WorkflowRepository workflowRepository;
-    QuartzWorkflowService subject;
     Scheduler scheduler;
+    private ObjectMapper mapper = JsonMapper.builder()
+            .addModule(new JavaTimeModule())
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
     
     @BeforeEach
-    void setUp() throws Exception {
+    protected void setUp() throws Exception {
+        super.setUp();
         DirectSchedulerFactory.getInstance().createVolatileScheduler(10);
         scheduler = DirectSchedulerFactory.getInstance().getScheduler();
         workflowRepository = new WorkflowRepository();
         subject = new QuartzWorkflowService(scheduler, workflowRepository);
         scheduler.setJobFactory(new QuartzWorkflowJobFactory(
-                new SimpleWorkflowStepStrategy(), workflowRepository, null));
+                new SimpleWorkflowStepStrategy(), workflowRepository, mapper, null));
         
         scheduler.start();
 
     }
 
     @AfterEach
-    void tearDown() throws SchedulerException {
+    protected void tearDown() throws Exception {
+        super.tearDown();
         scheduler.shutdown();
     }
     
-    @Test
-    void testWorkflow() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final CountDownLatch left = new CountDownLatch(1);
-        
-        Workflow<SimpleWorkflowContext> w = new Workflow<SimpleWorkflowContext>("test-workflow")
-            .next(c -> {
-                log.info("do-first");
-            })
-            .next(c -> {
-                log.info("do-second");
-            })
-            .choose(c -> {
-                log.info("choose");
-                return "left";
-            }).ifSelected("left", c -> {
-                log.info("  going left");
-            }).ifSelected("right", c -> {
-                log.info("  going right");
-            })
-            .end()
-            .next(c -> {
-                log.info("finally");
-                latch.countDown();
-            });
-        
-        subject.register(w);
-        subject.execute(w, SimpleWorkflowContext.newContextFor(w));
-        
-        left.await();
-        latch.await();
-    }
-    
-    @Test
-    void testRightFirst() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-        Workflow<SimpleWorkflowContext> w = new Workflow<SimpleWorkflowContext>("test-workflow")
-            .choose(c -> {
-                log.info("choose");
-                return "right";
-            }).ifSelected("left", c -> {
-                log.info("  going left");
-            }).ifSelected("right", c -> {
-                log.info("  going right");
-            })
-            .end()
-            .next(c -> {
-                latch.countDown();
-                log.info("finally");
-            });
-        
-        subject.register(w);
-        
-        subject.execute(w, SimpleWorkflowContext.newContextFor(w));
-        
-        latch.await();
-    }
 
 }

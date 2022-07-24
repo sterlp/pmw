@@ -19,9 +19,8 @@ public class IfFactory<T extends AbstractWorkflowContext> extends AbstractWorkfl
         step(new SequentialStep<>(value, fn));
         return this;
     }
-    
-    public WorkflowFactory<T> endChoose() {
-        if (name == null) name = defaultStepName();
+    public WorkflowFactory<T> build() {
+        if (name == null) name = workflowFactory.defaultStepName();
         workflowFactory.step(new IfStep<T>(name, chooseFn, workflowSteps));
         return workflowFactory;
     }

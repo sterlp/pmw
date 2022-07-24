@@ -14,6 +14,6 @@ public abstract class AbstractWorkflowFactory<F extends AbstractWorkflowFactory<
     }
     
     protected String defaultStepName() {
-        return "Step " + workflowSteps.size() + 1;
+        return "Step " + workflowSteps.size();
     }
 }

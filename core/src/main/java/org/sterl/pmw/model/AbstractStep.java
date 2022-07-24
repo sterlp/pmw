@@ -12,4 +12,6 @@ import lombok.ToString;
 public abstract class AbstractStep <T extends AbstractWorkflowContext> implements WorkflowStep<T> {
     @NonNull
     protected final String name;
+    @Getter
+    private int maxRetryCount = 3;
 }

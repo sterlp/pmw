@@ -1,21 +1,22 @@
 package org.sterl.pmw.model;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import lombok.Getter;
 
 public class Workflow<T extends AbstractWorkflowContext> {
+    
+    public static <T extends AbstractWorkflowContext> WorkflowFactory<T> builder(
+            String name, Supplier<T> newContextCreator) {
+        return new WorkflowFactory<T>(name, newContextCreator);
+    }
 
     @Getter
     private final String name;
-    @Getter
     private final Supplier<T> newContextCreator;
-    @Getter
-    private int retryCount = 3;
     private final List<WorkflowStep<T>> workflowSteps = new ArrayList<>();
     
     public Workflow(String name, Supplier<T> newContextCreator) {
@@ -28,29 +29,45 @@ public class Workflow<T extends AbstractWorkflowContext> {
         return workflowSteps.size();
     }
     
-    public WorkflowStep<T> getNextStep(T c) {
-        if (c.getNextStep() + 1 > workflowSteps.size()) return null;
-        return workflowSteps.get(c.getNextStep());
+    public WorkflowStep<T> nextStep(T c) {
+        var state = c.getInternalWorkflowContext();
+        var currentStepIndex = state.getCurrentStepIndex();
+        if (currentStepIndex == 0) {
+            state.workflowStarted();
+        } else if (currentStepIndex + 1 > workflowSteps.size()) {
+            state.workflowEnded();
+            return null;
+        }
+        return workflowSteps.get(currentStepIndex);
     }
 
-    public boolean success(WorkflowStep<T> nextStep, T c) {
-        c.setNextStep(c.getNextStep() + 1);
-        return getNextStep(c) != null;
+    public boolean success(WorkflowStep<T> currentStep, T c) {
+        c.getInternalWorkflowContext().stepSuccessfullyFinished(currentStep);
+        return nextStep(c) != null;
     }
 
     public boolean fail(WorkflowStep<T> nextStep, T c, Exception e) {
-        c.retry(e);
-        c.setLastFailedStep(c.getNextStep());
-        return retryCount > c.getRetryCount();
+        int retryCount = c.getInternalWorkflowContext().stepFailed(nextStep, e);
+        return retryCount < nextStep.getMaxRetryCount();
     }
     
-    public Workflow<T> retryCount(int count) {
-        this.retryCount = count;
-        return this;
+    void setWorkflowSteps(Collection<WorkflowStep<T>> workflowSteps) {
+        this.workflowSteps.clear();
+        this.workflowSteps.addAll(workflowSteps);
+    }
+    
+    public T newEmtyContext() {
+        return this.newContextCreator.get();
     }
 
     @Override
     public String toString() {
-        return "Workflow [name=" + name + ", retryCount=" + retryCount + ", workflowSteps=" + workflowSteps.size() + "]";
+        return "Workflow [name=" + name + ", workflowSteps=" + workflowSteps.size() + "]";
+    }
+
+    public WorkflowStep<T> getStepByPosition(int pos) {
+        if (pos > workflowSteps.size()) return null;
+        else return workflowSteps.get(pos);
+        
     }
 }
