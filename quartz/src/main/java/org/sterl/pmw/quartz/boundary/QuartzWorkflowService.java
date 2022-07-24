@@ -2,6 +2,7 @@ package org.sterl.pmw.quartz.boundary;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
@@ -75,7 +76,7 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
             try {
                 var triggerKeys = scheduler.getTriggersOfJob(d.getKey())
                         .stream().map(t -> t.getKey())
-                        .toList();
+                        .collect(Collectors.toList());
                 scheduler.unscheduleJobs(triggerKeys);
             } catch (SchedulerException e) {
                 throw new RuntimeException("Failed to clear jobs", e);
