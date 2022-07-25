@@ -4,6 +4,7 @@ package org.sterl.pmw.component;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import org.sterl.pmw.model.Workflow;
 
@@ -33,5 +34,12 @@ public class WorkflowRepository {
                     + name + " found. Registered " + workflows.keySet());
         }
         return w;
+    }
+    public Set<String> getWorkflowNames() {
+        return workflows.keySet();
+    }
+
+    public boolean hasWorkflows() {
+        return !workflows.isEmpty();
     }
 }

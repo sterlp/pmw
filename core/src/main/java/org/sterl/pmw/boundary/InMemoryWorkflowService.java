@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
+import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
 
@@ -15,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 
 public class InMemoryWorkflowService implements WorkflowService<String> {
     private ExecutorService stepExecutor;
-    
+    private WorkflowRepository workflowRepository = new WorkflowRepository();
     private Map<UUID, Workflow<?>> runningWorkflows = new ConcurrentHashMap<>();
     
     public InMemoryWorkflowService() {
@@ -64,6 +65,17 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
 
     @Override
     public <T extends AbstractWorkflowContext> String register(Workflow<T> w) {
+        workflowRepository.register(w);
         return w.getName();
+    }
+
+    @Override
+    public <T extends AbstractWorkflowContext> String execute(String workflowName) {
+        return execute(workflowRepository.getWorkflow(workflowName));
+    }
+
+    @Override
+    public <T extends AbstractWorkflowContext> String execute(String workflowName, T c) {
+        return execute((Workflow<T>)workflowRepository.getWorkflow(workflowName), c);
     }
 }

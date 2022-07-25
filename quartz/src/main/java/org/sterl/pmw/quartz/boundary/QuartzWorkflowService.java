@@ -16,17 +16,28 @@ import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.quartz.job.QuartzWorkflowJob;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-@RequiredArgsConstructor
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class QuartzWorkflowService implements WorkflowService<JobDetail> {
 
-    @NonNull
     private final Scheduler scheduler;
-    @NonNull
     private final WorkflowRepository workflowRepository;
+    private final ObjectMapper mapper;
     private final Map<String, JobDetail> workflowJobs = new HashMap<>();
+    
+    public QuartzWorkflowService(@NonNull Scheduler scheduler, @NonNull WorkflowRepository workflowRepository,
+            ObjectMapper mapper) {
+        super();
+        this.scheduler = scheduler;
+        this.workflowRepository = workflowRepository;
+        this.mapper = mapper;
+        
+        log.info("Workflows initialized, {} workflows deployed.", workflowRepository.getWorkflowNames().size());
+    }
 
     public <T extends AbstractWorkflowContext> String execute(Workflow<T> w, T c) {
         JobDetail job = workflowJobs.get(w.getName());
@@ -36,12 +47,13 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
         try {
             Trigger t = TriggerBuilder.newTrigger()
                     .forJob(job)
+                    .usingJobData("_workflowState", mapper.writeValueAsString(c))
                     .startNow()
                     .build();
             
             scheduler.scheduleJob(t);
             return t.getKey().getName();
-        } catch (SchedulerException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -83,5 +95,17 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
             }
             
         }
+    }
+
+    @Override
+    public <T extends AbstractWorkflowContext> String execute(String workflowName) {
+        Workflow<T> w = (Workflow<T>)workflowRepository.getWorkflow(workflowName);
+        return execute(workflowName, w.newEmtyContext());
+    }
+
+    @Override
+    public <T extends AbstractWorkflowContext> String execute(String workflowName, T c) {
+        Workflow<T> w = (Workflow<T>)workflowRepository.getWorkflow(workflowName);
+        return execute(w, c);
     }
 }

@@ -29,7 +29,7 @@ class QuartzWorkflowTest extends CoreWorkflowExecutionTest {
         DirectSchedulerFactory.getInstance().createVolatileScheduler(10);
         scheduler = DirectSchedulerFactory.getInstance().getScheduler();
         workflowRepository = new WorkflowRepository();
-        subject = new QuartzWorkflowService(scheduler, workflowRepository);
+        subject = new QuartzWorkflowService(scheduler, workflowRepository, mapper);
         scheduler.setJobFactory(new QuartzWorkflowJobFactory(
                 new SimpleWorkflowStepStrategy(), workflowRepository, mapper, null));
         

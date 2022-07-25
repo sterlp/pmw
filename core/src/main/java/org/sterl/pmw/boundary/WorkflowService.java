@@ -4,6 +4,8 @@ import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
 
 public interface WorkflowService<RegistryType> {
+    <T extends AbstractWorkflowContext> String execute(String workflowName);
+    <T extends AbstractWorkflowContext> String execute(String workflowName, T c);
     <T extends AbstractWorkflowContext> String execute(Workflow<T> w);
     <T extends AbstractWorkflowContext> String execute(Workflow<T> w, T c);
     void clearAllWorkflows();
