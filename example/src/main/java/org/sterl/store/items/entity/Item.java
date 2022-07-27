@@ -7,10 +7,13 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.validation.constraints.NotNull;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Data
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class Item {
 
     @Id
@@ -23,5 +26,6 @@ public class Item {
     @NotNull
     private BigDecimal price;
 
+    @Builder.Default
     private int inStock = 0;
 }
