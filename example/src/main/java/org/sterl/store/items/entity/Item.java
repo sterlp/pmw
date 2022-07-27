@@ -1,4 +1,4 @@
-package org.sterl.store.items;
+package org.sterl.store.items.entity;
 
 import java.math.BigDecimal;
 

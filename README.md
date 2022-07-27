@@ -11,3 +11,16 @@ Build a very basic workflow `engine` which does only really basic stuff and is u
 - reuse of a schedular framework
 - be compatible to other frameworks
 - Spring integration
+
+## Spring setup
+
+### Ensure quartz uses the spring transaction manager
+
+By default this will be configured by spring using the `jdbc` store:
+
+```yml
+spring:
+  quartz:
+    job-store-type: jdbc
+    overwrite-existing-jobs: true
+```

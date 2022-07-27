@@ -7,7 +7,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.validation.constraints.NotNull;
 
-import org.sterl.store.items.Item;
+import org.sterl.store.items.entity.Item;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

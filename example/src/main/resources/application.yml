@@ -1,0 +1,31 @@
+springdoc:
+  show:
+    actuator: true
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  quartz:
+    job-store-type: jdbc
+    wait-for-jobs-to-complete-on-shutdown: false
+    overwrite-existing-jobs: true
+    jdbc:
+      initialize-schema: always
+    properties:
+      org.quartz.jobStore.isClustered: true
+      org.quartz.scheduler.instanceId: AUTO
+      org.quartz.scheduler.skipUpdateCheck: true
+
+  datasource:
+    url: jdbc:h2:file:./pmw-example
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true
+      path: /h2
+management:
+  endpoint:
+    health:
+      show-details: always
