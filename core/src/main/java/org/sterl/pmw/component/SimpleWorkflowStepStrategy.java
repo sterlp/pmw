@@ -17,9 +17,9 @@ public class SimpleWorkflowStepStrategy {
     public <C extends AbstractWorkflowContext> boolean call(Workflow<C> w, C context) {
         WorkflowStep<C> nextStep = w.nextStep(context);
         logWorkflowStart(w, context);
-        while (nextStep != null) {
-            log.debug("Selecting step={} on index={}", nextStep.getName(), 
-                    context.getInternalWorkflowContext().getCurrentStepIndex());
+        if (nextStep != null) {
+            log.debug("Selecting step={} on workflow={}", nextStep.getName(), 
+                    w.getName());
             try {
                 nextStep.apply(context);
                 if (w.success(nextStep, context)) {
@@ -34,7 +34,7 @@ public class SimpleWorkflowStepStrategy {
                 return willRetry;
             }
         }
-        return false;
+        return w.nextStep(context) != null;
     }
 
     private <C extends AbstractWorkflowContext> void logWorkflowStepFailed(Workflow<C> w, WorkflowStep<C> nextStep, Exception e, boolean willRetry) {

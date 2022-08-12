@@ -8,6 +8,7 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
@@ -30,6 +31,8 @@ public class QuartzWorkflowJob implements Job {
     private final Scheduler scheduler;
     @NonNull
     private final ObjectMapper mapper;
+    @NonNull
+    private final TransactionTemplate trx;
     
 
     @Override
@@ -73,7 +76,7 @@ public class QuartzWorkflowJob implements Job {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        log.debug("Tiggering step={} workflow={} - oldKey={} newKey={}", 
+        log.info("Tiggering step={} workflow={} - oldKey={} newKey={}", 
                 w.getName(), c.getInternalWorkflowContext().getCurrentStepIndex(), trigger.getKey(), newTrigger.getKey());
         scheduler.rescheduleJob(trigger.getKey(), newTrigger);
     }

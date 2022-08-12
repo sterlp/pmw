@@ -15,6 +15,8 @@ public class UpdateInStockCountComponent {
     
     @Transactional
     public void updateInStockCount(long itemId, int stockCount) {
+        if (stockCount < 0) throw new IllegalArgumentException("Item " + itemId 
+                + " cannot have a smaller stock than 0 but got: " + stockCount);
         itemRepository.getReferenceById(itemId).setInStock(stockCount);
     }
 }

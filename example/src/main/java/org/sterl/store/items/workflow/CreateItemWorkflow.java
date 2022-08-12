@@ -29,11 +29,16 @@ public class CreateItemWorkflow {
 
     @PostConstruct
     void createWorkflow() {
-         w = Workflow.builder("create-item", () -> CreateItemWorkflowContext.builder().build())
+        w = Workflow.builder("create-item", () -> CreateItemWorkflowContext.builder().build())
                 .next(c -> {
                     c.setInStockCount(createStock.execute(c.getItemId()));
                 })
-                .next(c -> updateStock.updateInStockCount(c.getItemId(), c.getInStockCount()))
+                .next(c -> {
+                    updateStock.updateInStockCount(c.getItemId(), c.getInStockCount());
+                    log.info("");
+                    c.setRetry(c.getRetry() + 1);
+                    if (c.getRetry() < 10) throw new IllegalStateException("No " + c.getRetry());
+                })
                 .choose(c -> {
                     if (c.getInStockCount() > 50) return "large";
                     else return "small";

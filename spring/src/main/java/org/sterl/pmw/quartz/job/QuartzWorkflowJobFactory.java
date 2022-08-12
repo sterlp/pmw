@@ -7,6 +7,7 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.spi.JobFactory;
 import org.quartz.spi.TriggerFiredBundle;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
@@ -27,6 +28,9 @@ public class QuartzWorkflowJobFactory implements JobFactory {
     private final WorkflowRepository workflowRepository;
     @NonNull
     private final ObjectMapper mapper;
+    @NonNull
+    private final TransactionTemplate trx;
+
     private final JobFactory delegate;
 
     @Override
@@ -41,6 +45,6 @@ public class QuartzWorkflowJobFactory implements JobFactory {
             return delegate.newJob(bundle, scheduler);
         }
         
-        return new QuartzWorkflowJob(strategy, w.get(), scheduler, mapper);
+        return new QuartzWorkflowJob(strategy, w.get(), scheduler, mapper, trx);
     }
 }

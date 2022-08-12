@@ -5,16 +5,20 @@ import java.time.Instant;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class AbstractWorkflowContext {
     
     @Setter(AccessLevel.PACKAGE) @Getter
     private InternalWorkflowContext internalWorkflowContext = new InternalWorkflowContext();
 
     @Getter @Setter(AccessLevel.PACKAGE)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class InternalWorkflowContext {
         private int currentStepIndex = 0;
         private String lastError;
@@ -26,8 +30,7 @@ public abstract class AbstractWorkflowContext {
 
         private int lastFailedStepRetryCount = 0;
         private int workflowRetryCount = 0;
-        
-        
+
         private Instant workflowStart;
         private Instant workflowEnd;
         

@@ -11,5 +11,5 @@ public class CreateItemWorkflowContext extends AbstractWorkflowContext {
     
     private long itemId;  
     private Integer inStockCount;
-
+    private int retry = 0;
 }

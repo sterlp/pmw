@@ -24,3 +24,7 @@ spring:
     job-store-type: jdbc
     overwrite-existing-jobs: true
 ```
+
+### IDE
+
+- eclipse plugin https://marketplace.eclipse.org/content/plantuml-plugin
