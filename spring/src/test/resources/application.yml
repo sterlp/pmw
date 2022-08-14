@@ -1,4 +1,7 @@
 spring:
+  pmw:
+    spring-bean-job-factory:
+      enabled: false
   jpa:
     hibernate:
       ddl-auto: update

@@ -10,8 +10,10 @@ import java.util.concurrent.Executors;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.exception.WorkflowException;
-import org.sterl.pmw.model.AbstractWorkflowContext;
+import org.sterl.pmw.model.InternalWorkflowState;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowContext;
+import org.sterl.pmw.model.WorkflowState;
 
 import lombok.RequiredArgsConstructor;
 
@@ -24,34 +26,33 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
         stepExecutor = Executors.newWorkStealingPool();
     }
 
-    public <T extends AbstractWorkflowContext>  String execute(Workflow<T> w) {
+    public <T extends WorkflowContext>  String execute(Workflow<T> w) {
         return execute(w, w.newEmtyContext());
     }
-    public <T extends AbstractWorkflowContext>  String execute(Workflow<T> w, T c) {
+    public <T extends WorkflowContext>  String execute(Workflow<T> w, T c) {
         var workflowId = UUID.randomUUID();
         runningWorkflows.put(workflowId, w);
-        stepExecutor.submit(new StepCallable<T>(w, c, workflowId));
+        WorkflowState state = new WorkflowState(w, c, new InternalWorkflowState());
+        stepExecutor.submit(new StepCallable(state, workflowId));
         return workflowId.toString();
     }
 
     @RequiredArgsConstructor
-    private class StepCallable<T extends AbstractWorkflowContext>
-        extends SimpleWorkflowStepStrategy
+    private class StepCallable extends SimpleWorkflowStepStrategy
         implements Callable<Void> {
-        private final Workflow<T> w;
-        private final T c;
+        private final WorkflowState workflowState;
         private final UUID workflowId;
 
         @Override
         public Void call() throws Exception {
             try {
-                if (this.call(w, c)) {
-                    stepExecutor.submit(new StepCallable<T>(w, c, workflowId));
+                if (this.call(workflowState)) {
+                    stepExecutor.submit(new StepCallable(workflowState, workflowId));
                 } else {
                     runningWorkflows.remove(workflowId);
                 }
             } catch (WorkflowException.WorkflowFailedDoRetryException e) {
-                stepExecutor.submit(new StepCallable<T>(w, c, workflowId));
+                stepExecutor.submit(new StepCallable(workflowState, workflowId));
             }
             return null;
         } 
@@ -69,19 +70,28 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     }
 
     @Override
-    public <T extends AbstractWorkflowContext> String register(Workflow<T> w) {
+    public <T extends WorkflowContext> String register(Workflow<T> w) {
         workflowRepository.register(w);
         return w.getName();
     }
 
     @Override
-    public <T extends AbstractWorkflowContext> String execute(String workflowName) {
+    public String execute(String workflowName) {
         return execute(workflowRepository.getWorkflow(workflowName));
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
-    public <T extends AbstractWorkflowContext> String execute(String workflowName, T c) {
-        return execute((Workflow<T>)workflowRepository.getWorkflow(workflowName), c);
+    public String execute(String workflowName, WorkflowContext c) {
+        Workflow w = (Workflow)workflowRepository.getWorkflow(workflowName);
+        final Class<? extends WorkflowContext> newContextClass = w.newEmtyContext().getClass();
+        if (c != null && newContextClass.isAssignableFrom(c.getClass())) {
+            return execute((Workflow)workflowRepository.getWorkflow(workflowName), c);
+        } else {
+            throw new IllegalArgumentException("Context of type " 
+                    + c == null ? "null" : c.getClass().getName()
+                    + " is not compatible to " + newContextClass.getName());
+        }
     }
 
     @Override

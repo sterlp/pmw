@@ -9,7 +9,7 @@ import lombok.ToString;
 @ToString(of = "name")
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public abstract class AbstractStep <T extends AbstractWorkflowContext> implements WorkflowStep<T> {
+public abstract class AbstractStep <T extends WorkflowContext> implements WorkflowStep<T> {
     @NonNull
     protected final String name;
     @Getter

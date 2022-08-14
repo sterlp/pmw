@@ -6,7 +6,7 @@ import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class IfFactory<T extends AbstractWorkflowContext> extends AbstractWorkflowFactory<WorkflowFactory<T>, T> {
+public class IfFactory<T extends WorkflowContext> extends AbstractWorkflowFactory<WorkflowFactory<T>, T> {
     private final WorkflowFactory<T> workflowFactory;
     private final Function<T, String> chooseFn;
     private String name;

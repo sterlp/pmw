@@ -2,10 +2,11 @@ package org.sterl.pmw.model;
 
 import java.util.LinkedHashMap;
 
-public abstract class AbstractWorkflowFactory<F extends AbstractWorkflowFactory<F, T>, T extends AbstractWorkflowContext> {
+public abstract class AbstractWorkflowFactory<F extends AbstractWorkflowFactory<F, T>, T extends WorkflowContext> {
 
     protected final LinkedHashMap<String, WorkflowStep<T>> workflowSteps = new LinkedHashMap<>();
     
+    @SuppressWarnings("unchecked")
     public F step(WorkflowStep<T> s) {
         var old = workflowSteps.put(s.getName(), s);
         if (old != null) throw new IllegalArgumentException("WorkflowStep with name " 

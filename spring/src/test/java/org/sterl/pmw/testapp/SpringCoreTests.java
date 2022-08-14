@@ -14,7 +14,8 @@ class SpringCoreTests extends CoreWorkflowExecutionTest {
     
     @BeforeEach
     protected void setUp() throws Exception {
+        quartzWorkflowService.clearAllWorkflows();
+        asserts.clear();
         subject = quartzWorkflowService;
-        super.setUp();
     }
 }

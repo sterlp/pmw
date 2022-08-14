@@ -4,22 +4,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sterl.pmw.AsyncAsserts;
+import org.sterl.pmw.boundary.WorkflowService.WorkflowStatus;
 import org.sterl.pmw.model.SimpleWorkflowContext;
 import org.sterl.pmw.model.Workflow;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 public abstract class CoreWorkflowExecutionTest {
 
     protected final AsyncAsserts asserts = new AsyncAsserts();
 
-    @Getter @Setter
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
     protected static class TestWorkflowCtx extends SimpleWorkflowContext {
+        private static final long serialVersionUID = 1L;
         private int tryCount = 0;
     }
     
@@ -37,12 +42,32 @@ public abstract class CoreWorkflowExecutionTest {
     }
 
     @Test
-    void testWorkflowServiceCreateds() {
+    public void testWorkflowServiceCreateds() {
         assertThat(subject).isNotNull();
     }
     
     @Test
-    void testWorkflow() {
+    public void testWorkflowContext() {
+        // GIVEN
+        final AtomicInteger state = new AtomicInteger(0);
+        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", 
+                () ->  new TestWorkflowCtx())
+            .next(c -> {
+                state.set(c.getTryCount());
+            })
+            .build();
+        
+        subject.register(w);
+        
+        // WHEN
+        final String id = subject.execute(w, new TestWorkflowCtx(10));
+        Awaitility.await().until(() -> subject.status(id) == WorkflowStatus.COMPLETE);
+        
+        // THEN
+        assertThat(state.get()).isEqualTo(10);
+    }
+    @Test
+    public void testWorkflow() {
         // GIVEN
         Workflow<SimpleWorkflowContext> w = Workflow.builder("test-workflow", 
                 () ->  new SimpleWorkflowContext())
@@ -76,7 +101,7 @@ public abstract class CoreWorkflowExecutionTest {
     }
     
     @Test
-    void testRightFirst() {
+    public void testRightFirst() {
         // GIVEN
         Workflow<SimpleWorkflowContext> w = Workflow.builder("test-workflow", 
                 () ->  new SimpleWorkflowContext())
@@ -103,7 +128,7 @@ public abstract class CoreWorkflowExecutionTest {
     }
     
     @Test
-    void testRetry() {
+    public void testRetry() {
         // GIVEN
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", 
                 () ->  new TestWorkflowCtx())
@@ -125,7 +150,7 @@ public abstract class CoreWorkflowExecutionTest {
     }
     
     @Test
-    void testFailForever() {
+    public void testFailForever() {
         final AtomicInteger failCount = new AtomicInteger(0);
         // GIVEN
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", 

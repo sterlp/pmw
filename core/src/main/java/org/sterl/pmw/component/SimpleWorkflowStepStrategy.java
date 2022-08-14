@@ -1,9 +1,8 @@
 package org.sterl.pmw.component;
 
 import org.sterl.pmw.exception.WorkflowException;
-import org.sterl.pmw.model.AbstractWorkflowContext;
-import org.sterl.pmw.model.AbstractWorkflowContext.InternalWorkflowContext;
-import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowContext;
+import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStep;
 
 import lombok.extern.slf4j.Slf4j;
@@ -15,52 +14,48 @@ public class SimpleWorkflowStepStrategy {
      * Runs the next step in the workflow
      * @return <code>true</code> if a retry or next step should run, otherwise <code>false</code>
      */
-    public <C extends AbstractWorkflowContext> boolean call(Workflow<C> w, C context) {
-        WorkflowStep<C> nextStep = w.nextStep(context);
-        logWorkflowStart(w, context);
+    public boolean call(WorkflowState workflowState) {
+        WorkflowStep nextStep = workflowState.nextStep();
+        logWorkflowStart(workflowState);
         if (nextStep != null) {
             log.debug("Selecting step={} on workflow={}", nextStep.getName(), 
-                    w.getName());
+                    workflowState.workflow().getName());
             try {
-                nextStep.apply(context);
-                if (w.success(nextStep, context)) {
-                    nextStep = w.nextStep(context);
-                } else {
-                    nextStep = null;
-                    logWorkflowEnd(w, context);
-                }
+                nextStep.apply(workflowState.userContext());
+                nextStep = workflowState.successStep(nextStep);
+
+                if (nextStep == null) logWorkflowEnd(workflowState);
             } catch (Exception e) {
-                throw logWorkflowStepFailed(w, nextStep, context, e);
+                throw logWorkflowStepFailed(workflowState, nextStep, e);
             }
         }
-        return w.nextStep(context) != null;
+        return nextStep != null;
     }
 
-    private <C extends AbstractWorkflowContext> WorkflowException logWorkflowStepFailed(Workflow<C> w, WorkflowStep<C> nextStep, C context, Exception e) {
-        boolean willRetry = w.fail(nextStep, context, e);
+    private <C extends WorkflowContext> WorkflowException logWorkflowStepFailed(WorkflowState workflowState, WorkflowStep<?> step, Exception e) {
+        boolean willRetry = workflowState.failStep(step, e);
         WorkflowException result;
-        int retryCount = context.getInternalWorkflowContext().getLastFailedStepRetryCount();
+        int retryCount = workflowState.internalState().getLastFailedStepRetryCount();
         if (willRetry) {
-            result = new WorkflowException.WorkflowFailedDoRetryException(w, nextStep, e, retryCount);
+            result = new WorkflowException.WorkflowFailedDoRetryException(workflowState.workflow(), step, e, retryCount);
             log.warn("{} retryCount={}", e.getMessage(), retryCount, e);
         } else {
-            result = new WorkflowException.WorkflowFailedNoRetryException(w, nextStep, e, retryCount);
+            result = new WorkflowException.WorkflowFailedNoRetryException(workflowState.workflow(), step, e, retryCount);
             log.error("{} retryCount={}", e.getMessage(), retryCount, e);
         }
         return result;
     }
 
-    private <C extends AbstractWorkflowContext> void logWorkflowEnd(Workflow<C> w, C c) {
-        InternalWorkflowContext state = c.getInternalWorkflowContext();
+    private <C extends WorkflowContext> void logWorkflowEnd(WorkflowState workflowState) {
         log.info("workflow={} success durationMs={} at={}.",
-                w.getName(),
-                state.workflowRunDuration().toMillis(), state.getWorkflowEnd());
+                workflowState.workflow().getName(),
+                workflowState.internalState().workflowRunDuration().toMillis(), 
+                workflowState.internalState().getWorkflowEnd());
     }
 
-    private <C extends AbstractWorkflowContext> void logWorkflowStart(Workflow<C> w, C c) {
-        InternalWorkflowContext state = c.getInternalWorkflowContext();
-        if (state.isFirstWorkflowStep()) {
-            log.info("Starting workflow={} at={}", w.getName(), state.getWorkflowStart());
+    private <C extends WorkflowContext> void logWorkflowStart(WorkflowState workflowState) {
+        if (workflowState.internalState().isFirstWorkflowStep()) {
+            log.info("Starting workflow={} at={}", workflowState.workflow().getName(), workflowState.internalState().getWorkflowStart());
         }
     }
 }

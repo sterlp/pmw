@@ -7,9 +7,9 @@ import java.util.function.Supplier;
 
 import lombok.Getter;
 
-public class Workflow<T extends AbstractWorkflowContext> {
+public class Workflow<T extends WorkflowContext> {
     
-    public static <T extends AbstractWorkflowContext> WorkflowFactory<T> builder(
+    public static <T extends WorkflowContext> WorkflowFactory<T> builder(
             String name, Supplier<T> newContextCreator) {
         return new WorkflowFactory<T>(name, newContextCreator);
     }
@@ -29,8 +29,7 @@ public class Workflow<T extends AbstractWorkflowContext> {
         return workflowSteps.size();
     }
     
-    public WorkflowStep<T> nextStep(T c) {
-        var state = c.getInternalWorkflowContext();
+    public WorkflowStep<T> nextStep(InternalWorkflowState state) {
         var currentStepIndex = state.getCurrentStepIndex();
         if (currentStepIndex == 0) {
             state.workflowStarted();
@@ -41,13 +40,13 @@ public class Workflow<T extends AbstractWorkflowContext> {
         return workflowSteps.get(currentStepIndex);
     }
 
-    public boolean success(WorkflowStep<T> currentStep, T c) {
-        c.getInternalWorkflowContext().stepSuccessfullyFinished(currentStep);
-        return nextStep(c) != null;
+    public WorkflowStep<T> success(WorkflowStep<T> currentStep, InternalWorkflowState state) {
+        state.stepSuccessfullyFinished(currentStep);
+        return nextStep(state);
     }
 
-    public boolean fail(WorkflowStep<T> nextStep, T c, Exception e) {
-        int retryCount = c.getInternalWorkflowContext().stepFailed(nextStep, e);
+    public boolean fail(WorkflowStep<T> nextStep, InternalWorkflowState state, Exception e) {
+        int retryCount = state.stepFailed(nextStep, e);
         return retryCount < nextStep.getMaxRetryCount();
     }
     

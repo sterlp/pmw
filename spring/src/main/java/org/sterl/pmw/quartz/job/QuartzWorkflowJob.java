@@ -6,26 +6,27 @@ import org.quartz.JobExecutionException;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.exception.WorkflowException;
-import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowState;
+import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@RequiredArgsConstructor
 @Slf4j
 public class QuartzWorkflowJob implements Job {
+    
     @NonNull
     private final SimpleWorkflowStepStrategy callStrategy;
     @NonNull
-    private final Workflow<? extends AbstractWorkflowContext> w;
+    private final Workflow<?> w;
     @NonNull
     private final Scheduler scheduler;
     @NonNull
@@ -33,23 +34,36 @@ public class QuartzWorkflowJob implements Job {
     @NonNull
     private final TransactionTemplate trx;
     
+    private final WorkflowStateParserComponent workflowStateParser;
+    
+    public QuartzWorkflowJob(@NonNull SimpleWorkflowStepStrategy callStrategy, @NonNull Workflow<?> w,
+            @NonNull Scheduler scheduler, @NonNull ObjectMapper mapper, @NonNull TransactionTemplate trx) {
+        super();
+        this.callStrategy = callStrategy;
+        this.w = w;
+        this.scheduler = scheduler;
+        this.mapper = mapper;
+        this.trx = trx;
+        this.workflowStateParser = new WorkflowStateParserComponent(mapper);
+    }
+
     private static class InternalRetryableJobExeption extends RuntimeException {
+        private static final long serialVersionUID = 1L;
         private InternalRetryableJobExeption(Exception e) {
             super(e);
         }
     }
     
-    @SuppressWarnings("unchecked")
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        final AbstractWorkflowContext c = readWorkflowState(context);
+        final WorkflowState workflowState = workflowStateParser.readWorkflowState(w, context);
 
         try {
             trx.executeWithoutResult(t -> {
-                boolean hasNext = callStrategy.call((Workflow<AbstractWorkflowContext>)w , c);
+                boolean hasNext = callStrategy.call(workflowState);
                 if (hasNext) {
                     try {
-                        queueNextStepFor(context.getTrigger(), c);
+                        queueNextStepFor(context.getTrigger(), workflowState);
                     } catch (SchedulerException e) {
                         t.setRollbackOnly();
                         throw new InternalRetryableJobExeption(e);
@@ -63,43 +77,29 @@ public class QuartzWorkflowJob implements Job {
             else throw new JobExecutionException(cause, true);
 
         } catch (WorkflowException.WorkflowFailedDoRetryException retryE) {
-            queueNextStepFor(context.getTrigger(), c);
+            queueNextStepFor(context.getTrigger(), workflowState);
         } catch (Exception e) {
             log.error("workflow={} failed, no retry possible. {}", 
                     context.getTrigger().getKey(), e.getMessage(), e);
         }
     }
 
-    private AbstractWorkflowContext readWorkflowState(JobExecutionContext context) throws JobExecutionException {
-        AbstractWorkflowContext c = w.newEmtyContext();
-        String state = context.getMergedJobDataMap().getString("_workflowState");
-        if (state != null && state.length() > 1) {
-            try {
-                c = mapper.readValue(state, w.newEmtyContext().getClass());
-            } catch (Exception e) {
-                throw new RuntimeException(context.getTrigger().getKey() + " failed to parse state: " + state, e);
-            }
-        }
-        return c;
-    }
-    
-    void queueNextStepFor(Trigger trigger, AbstractWorkflowContext c) throws JobExecutionException {
+    void queueNextStepFor(Trigger trigger, WorkflowState c) throws JobExecutionException {
         if (trigger == null || c == null) throw new JobExecutionException(true);
         
-        Trigger newTrigger;
+        TriggerBuilder<? extends Trigger>  newTrigger;
         try {
             newTrigger = trigger.getTriggerBuilder()
                     .forJob(trigger.getJobKey())
                     .usingJobData(trigger.getJobDataMap())
-                    .usingJobData("_workflowState", mapper.writeValueAsString(c))
-                    .startNow()
-                    .build();
+                    .startNow();
+            workflowStateParser.setState(newTrigger, c);
         } catch (JsonProcessingException e) {
             throw new JobExecutionException(e, true);
         }
 
         try {
-            scheduler.rescheduleJob(trigger.getKey(), newTrigger);
+            scheduler.rescheduleJob(trigger.getKey(), newTrigger.build());
         } catch (SchedulerException e) {
             throw new JobExecutionException(e, true);
         }

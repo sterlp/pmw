@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 import lombok.Getter;
 
 @Getter
-public class SequentialStep<T extends AbstractWorkflowContext> extends AbstractStep<T> {
+public class SequentialStep<T extends WorkflowContext> extends AbstractStep<T> {
     private final Consumer<T> fn;
 
     SequentialStep(String name, Consumer<T> fn) {

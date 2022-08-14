@@ -4,7 +4,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class WorkflowFactory<T extends AbstractWorkflowContext> extends AbstractWorkflowFactory<WorkflowFactory<T>, T> {
+public class WorkflowFactory<T extends WorkflowContext> extends AbstractWorkflowFactory<WorkflowFactory<T>, T> {
 
     private final Workflow<T> workflow;
     

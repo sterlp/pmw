@@ -16,7 +16,7 @@ public class ItemService {
     
     public Item newItem(String name) {
         var r = itemRepository.save(Item.builder().name(name).build());
-        if (r.getName().length() <= 2) throw new IllegalArgumentException("Name '" + name + "' to short, transaction rollback!");
+        if (r.getName() == null || r.getName().length() <= 2) throw new IllegalArgumentException("Name '" + name + "' to short, transaction rollback!");
         return r;
     }
     

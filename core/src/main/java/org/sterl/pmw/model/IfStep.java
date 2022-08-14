@@ -6,7 +6,7 @@ import java.util.function.Function;
 import lombok.Getter;
 
 @Getter
-public class IfStep<T extends AbstractWorkflowContext> extends AbstractStep<T> {
+public class IfStep<T extends WorkflowContext> extends AbstractStep<T> {
 
     private final Function<T, String> chooseFn;
     private final Map<String, WorkflowStep<T>> subSteps;

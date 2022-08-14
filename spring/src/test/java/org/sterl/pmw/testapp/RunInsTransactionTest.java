@@ -1,8 +1,6 @@
 package org.sterl.pmw.testapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.log;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,11 +12,10 @@ import org.quartz.JobDetail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.sterl.pmw.AsyncAsserts;
-import org.sterl.pmw.boundary.CoreWorkflowExecutionTest;
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.boundary.WorkflowService.WorkflowStatus;
-import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowContext;
 import org.sterl.pmw.testapp.item.boundary.ItemService;
 import org.sterl.pmw.testapp.item.repository.ItemRepository;
 
@@ -39,7 +36,8 @@ class RunInsTransactionTest {
     protected final AsyncAsserts asserts = new AsyncAsserts();
     
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
-    static class TestWorkflowContext extends AbstractWorkflowContext {
+    static class TestWorkflowContext implements WorkflowContext {
+        private static final long serialVersionUID = 1L;
         private String itemName;
         private Long itemId;
         private int stock;
@@ -89,7 +87,7 @@ class RunInsTransactionTest {
                     assertThat(c.getItemId()).isNotNull();
                     itemService.updateStock(c.getItemId(), c.getStock());
                     retries.incrementAndGet();
-                    throw new RuntimeException("Nope! " + c.getInternalWorkflowContext().getWorkflowRetryCount());
+                    throw new RuntimeException("Nope! " + asserts.info("NOPE"));
                 })
                 .build();
         workflowService.register(w);
@@ -106,6 +104,7 @@ class RunInsTransactionTest {
     
     @Test
     void testRollbackOutsideRetry() {
+        
         // GIVEN
         Workflow<TestWorkflowContext> w = Workflow.builder("create-item", () -> new TestWorkflowContext())
                 .next(c -> {
@@ -114,9 +113,8 @@ class RunInsTransactionTest {
                 })
                 .next(c -> {
                     itemService.updateStock(c.getItemId(), c.getStock());
-                    if (c.getInternalWorkflowContext().getWorkflowRetryCount() < 2) {
-                        asserts.info("error");
-                        throw new RuntimeException("Nope! " + c.getInternalWorkflowContext().getWorkflowRetryCount());
+                    if (asserts.info("error") < 2) {
+                        throw new RuntimeException("Nope! " + asserts.getCount("error"));
                     }
                 })
                 .build();
@@ -129,7 +127,7 @@ class RunInsTransactionTest {
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
         Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);
         assertThat(itemRepository.findByName("MyName").getInStock()).isEqualTo(99);
-        assertThat(asserts.count("error")).isEqualTo(2);
+        assertThat(asserts.getCount("error")).isEqualTo(2);
     }
     
     /**
@@ -144,8 +142,7 @@ class RunInsTransactionTest {
                     c.setItemId(itemId);
                 })
                 .next(c -> {
-                    if (c.getInternalWorkflowContext().getWorkflowRetryCount() < 2) {
-                        asserts.info("error");
+                    if (asserts.info("error") < 2) {
                         itemService.updateStock(c.getItemId(), -1);
                     } else {
                         itemService.updateStock(c.getItemId(), c.getStock());
@@ -161,6 +158,6 @@ class RunInsTransactionTest {
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
         Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);
         assertThat(itemRepository.findByName("MyName").getInStock()).isEqualTo(99);
-        assertThat(asserts.count("error")).isEqualTo(2);
+        assertThat(asserts.getCount("error")).isEqualTo(2);
     }
 }

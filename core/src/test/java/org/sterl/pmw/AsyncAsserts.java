@@ -18,20 +18,22 @@ public class AsyncAsserts {
     public void clear() {
         values.clear();
         counts.clear();
-        System.err.println("-------------");
     }
-    public void add(String value) {
+    public int add(String value) {
         values.add(value);
-        counts.put(value, count(value) + 1);
+        final int count = getCount(value) + 1;
+        counts.put(value, count);
         if (values.size() > 100) {
             throw new IllegalStateException("Workflow has already more than 100 steps, assuming error!");
         }
+        return count;
     }
-    public void info(String value) {
-        this.add(value);
-        System.err.println(values.size() + ". " + value + "=" + this.counts.get(value));
+    public int info(String value) {
+        int count = this.add(value);
+        System.err.println(values.size() + ". " + value + "=" + count);
+        return count;
     }
-    public int count(String value) {
+    public int getCount(String value) {
         return counts.getOrDefault(value, 0);
     }
     public void awaitValue(String value) {
