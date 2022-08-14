@@ -10,6 +10,7 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
+import org.quartz.TriggerKey;
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.AbstractWorkflowContext;
@@ -84,6 +85,7 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
 
     @Override
     public void clearAllWorkflows() {
+        this.workflowRepository.clear();
         for (JobDetail d : workflowJobs.values()) {
             try {
                 var triggerKeys = scheduler.getTriggersOfJob(d.getKey())
@@ -107,5 +109,22 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
     public <T extends AbstractWorkflowContext> String execute(String workflowName, T c) {
         Workflow<T> w = (Workflow<T>)workflowRepository.getWorkflow(workflowName);
         return execute(w, c);
+    }
+
+    @Override
+    public WorkflowStatus status(String workflowId) {
+        try {
+            Trigger workflowTrigger = scheduler.getTrigger(TriggerKey.triggerKey(workflowId));
+            WorkflowStatus result;
+            if (workflowTrigger == null || workflowTrigger.getEndTime() != null) {
+                result = WorkflowStatus.COMPLETE;
+            } else {
+                if (workflowTrigger.getStartTime() == null) result = WorkflowStatus.RUNNING;
+                result = WorkflowStatus.PENDING;
+            }
+            return result;
+        } catch (SchedulerException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

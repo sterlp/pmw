@@ -1,16 +1,20 @@
 
 package org.sterl.pmw.component;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.sterl.pmw.model.Workflow;
 
 public class WorkflowRepository {
 
-    private final Map<String, Workflow<?>> workflows = new HashMap<>();
+    private final Map<String, Workflow<?>> workflows = new ConcurrentHashMap<>();
+    
+    public void clear() {
+        workflows.clear();
+    }
     
     public Workflow<?> register(Workflow<?> w) {
         return workflows.put(w.getName(), w);

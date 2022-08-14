@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
+import org.sterl.pmw.exception.WorkflowException;
 import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.Workflow;
 
@@ -43,10 +44,14 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
 
         @Override
         public Void call() throws Exception {
-            if (this.call(w, c)) {
+            try {
+                if (this.call(w, c)) {
+                    stepExecutor.submit(new StepCallable<T>(w, c, workflowId));
+                } else {
+                    runningWorkflows.remove(workflowId);
+                }
+            } catch (WorkflowException.WorkflowFailedDoRetryException e) {
                 stepExecutor.submit(new StepCallable<T>(w, c, workflowId));
-            } else {
-                runningWorkflows.remove(workflowId);
             }
             return null;
         } 
@@ -77,5 +82,10 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     @Override
     public <T extends AbstractWorkflowContext> String execute(String workflowName, T c) {
         return execute((Workflow<T>)workflowRepository.getWorkflow(workflowName), c);
+    }
+
+    @Override
+    public WorkflowStatus status(String workflowId) {
+        return this.runningWorkflows.containsKey(UUID.fromString(workflowId)) ? WorkflowStatus.RUNNING : WorkflowStatus.COMPLETE;
     }
 }

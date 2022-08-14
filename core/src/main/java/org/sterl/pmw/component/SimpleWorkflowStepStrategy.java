@@ -1,5 +1,6 @@
 package org.sterl.pmw.component;
 
+import org.sterl.pmw.exception.WorkflowException;
 import org.sterl.pmw.model.AbstractWorkflowContext;
 import org.sterl.pmw.model.AbstractWorkflowContext.InternalWorkflowContext;
 import org.sterl.pmw.model.Workflow;
@@ -29,23 +30,24 @@ public class SimpleWorkflowStepStrategy {
                     logWorkflowEnd(w, context);
                 }
             } catch (Exception e) {
-                boolean willRetry = w.fail(nextStep, context, e);
-                logWorkflowStepFailed(w, nextStep, e, willRetry);
-                return willRetry;
+                throw logWorkflowStepFailed(w, nextStep, context, e);
             }
         }
         return w.nextStep(context) != null;
     }
 
-    private <C extends AbstractWorkflowContext> void logWorkflowStepFailed(Workflow<C> w, WorkflowStep<C> nextStep, Exception e, boolean willRetry) {
-        final String msg = "Workflow={} failed in step={} retry={}";
+    private <C extends AbstractWorkflowContext> WorkflowException logWorkflowStepFailed(Workflow<C> w, WorkflowStep<C> nextStep, C context, Exception e) {
+        boolean willRetry = w.fail(nextStep, context, e);
+        WorkflowException result;
+        int retryCount = context.getInternalWorkflowContext().getLastFailedStepRetryCount();
         if (willRetry) {
-            log.warn(msg, 
-                    w.getName(), nextStep.getName(), willRetry, e);
+            result = new WorkflowException.WorkflowFailedDoRetryException(w, nextStep, e, retryCount);
+            log.warn("{} retryCount={}", e.getMessage(), retryCount, e);
         } else {
-            log.error(msg, 
-                    w.getName(), nextStep.getName(), willRetry, e);
+            result = new WorkflowException.WorkflowFailedNoRetryException(w, nextStep, e, retryCount);
+            log.error("{} retryCount={}", e.getMessage(), retryCount, e);
         }
+        return result;
     }
 
     private <C extends AbstractWorkflowContext> void logWorkflowEnd(Workflow<C> w, C c) {
