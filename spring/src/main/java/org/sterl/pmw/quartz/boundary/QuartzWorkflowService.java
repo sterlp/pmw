@@ -14,7 +14,7 @@ import org.quartz.TriggerKey;
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.model.WorkflowContext;
+import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 import org.sterl.pmw.quartz.job.QuartzWorkflowJob;
 
@@ -41,7 +41,7 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
         log.info("Workflows initialized, {} workflows deployed.", workflowRepository.getWorkflowNames().size());
     }
 
-    public <T extends WorkflowContext> String execute(Workflow<T> w, T c) {
+    public <T extends WorkflowState> String execute(Workflow<T> w, T c) {
         JobDetail job = workflowJobs.get(w.getName());
         if (job == null) throw new IllegalStateException(
                 w.getName() + " not registered, register the workflowJobs first.");
@@ -62,12 +62,12 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
     }
     
     @Override
-    public <T extends WorkflowContext> String execute(Workflow<T> w) {
+    public <T extends WorkflowState> String execute(Workflow<T> w) {
         return execute(w, w.newEmtyContext());
     }
 
     @Override
-    public <T extends WorkflowContext> JobDetail register(Workflow<T> w) {
+    public <T extends WorkflowState> JobDetail register(Workflow<T> w) {
         JobDetail job = JobBuilder.newJob(QuartzWorkflowJob.class)
                 .withIdentity(w.getName(), "pmw")
                 .storeDurably()
@@ -110,10 +110,10 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
-    public String execute(String workflowName, WorkflowContext c) {
+    public String execute(String workflowName, WorkflowState c) {
         Workflow w = workflowRepository.getWorkflow(workflowName);
         
-        final Class<? extends WorkflowContext> newContextClass = w.newEmtyContext().getClass();
+        final Class<? extends WorkflowState> newContextClass = w.newEmtyContext().getClass();
         if (c != null && newContextClass.isAssignableFrom(c.getClass())) {
             return execute((Workflow)workflowRepository.getWorkflow(workflowName), c);
         } else {

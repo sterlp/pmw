@@ -6,8 +6,8 @@ import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.sterl.pmw.model.InternalWorkflowState;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.model.WorkflowContext;
 import org.sterl.pmw.model.WorkflowState;
+import org.sterl.pmw.model.RunningWorkflowState;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,26 +22,26 @@ public class WorkflowStateParserComponent {
     
     private final ObjectMapper mapper;
     
-    public void setState(TriggerBuilder<?> builder, WorkflowState state) throws JsonProcessingException {
+    public void setState(TriggerBuilder<?> builder, RunningWorkflowState state) throws JsonProcessingException {
         setInternal(builder, state.internalState());
         setUserState(builder, state.userContext());
     }
     public void setInternal(TriggerBuilder<?> builder, InternalWorkflowState internalState) throws JsonProcessingException {
         builder.usingJobData(INTERNAL_WORKFLOW_STATE, mapper.writeValueAsString(internalState));
     }
-    public void setUserState(TriggerBuilder<?> builder, WorkflowContext userState) throws JsonProcessingException {
+    public void setUserState(TriggerBuilder<?> builder, WorkflowState userState) throws JsonProcessingException {
         if (userState != null) {
             builder.usingJobData(USER_WORKFLOW_STATE, mapper.writeValueAsString(userState));
         }
     }
     
-    public WorkflowState readWorkflowState(Workflow<?> w, JobExecutionContext context) {
+    public RunningWorkflowState readWorkflowState(Workflow<?> w, JobExecutionContext context) {
         final JobDataMap jobData = context.getMergedJobDataMap();
         final TriggerKey key = context.getTrigger().getKey();
-        WorkflowContext userState = parse(w.newEmtyContext(), jobData, USER_WORKFLOW_STATE, key);
+        WorkflowState userState = parse(w.newEmtyContext(), jobData, USER_WORKFLOW_STATE, key);
         InternalWorkflowState internalState = parse(new InternalWorkflowState(), jobData, INTERNAL_WORKFLOW_STATE, key);
 
-        return new WorkflowState(w, userState, internalState);
+        return new RunningWorkflowState(w, userState, internalState);
     }
     
     private <T extends Object> T parse(T initial, JobDataMap data, String name, TriggerKey key) {

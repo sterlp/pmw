@@ -1,33 +1,33 @@
 package org.sterl.pmw.model;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class WorkflowFactory<T extends WorkflowContext> extends AbstractWorkflowFactory<WorkflowFactory<T>, T> {
+public class WorkflowFactory<StateType extends WorkflowState> extends AbstractWorkflowFactory<WorkflowFactory<StateType>, StateType> {
 
-    private final Workflow<T> workflow;
+    private final Workflow<StateType> workflow;
     
-    public WorkflowFactory(String name, Supplier<T> newContextCreator) {
+    public WorkflowFactory(String name, Supplier<StateType> newContextCreator) {
         this.workflow = new Workflow<>(name, newContextCreator);
     }
     
-    public WorkflowFactory<T> next(Consumer<T> fn) {
+    public WorkflowFactory<StateType> next(WorkflowFunction<StateType> fn) {
         return step(new SequentialStep<>(defaultStepName(), fn));
     }
-    
-    
-    public IfFactory<T> choose(Function<T, String> chooseFn) {
-        return new IfFactory<>(this, chooseFn);
+    public WorkflowFactory<StateType> next(Consumer<StateType> fn) {
+        return step(new SequentialStep<>(defaultStepName(), WorkflowFunction.of(fn)));
     }
     
-    public Workflow<T> build() {
+    public IfFactory<StateType> choose(WorkflowChooseFunction<StateType> chooseFn) {
+        return new IfFactory<StateType>(this, chooseFn);
+    }
+    
+    public Workflow<StateType> build() {
         workflow.setWorkflowSteps(this.workflowSteps.values());
         return workflow;
     }
 
-    public WorkflowFactory<T> next(String name, Consumer<T> fn) {
+    public WorkflowFactory<StateType> next(String name, WorkflowFunction<StateType> fn) {
         return step(new SequentialStep<>(name, fn));
     }
-
 }

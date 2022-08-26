@@ -2,6 +2,7 @@ package org.sterl.pmw.model;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -13,7 +14,7 @@ import lombok.Setter;
 
 @Getter @Setter(AccessLevel.PACKAGE)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class InternalWorkflowState {
+public class InternalWorkflowState implements WorkflowContext {
     private int currentStepIndex = 0;
     private String lastError;
 
@@ -24,9 +25,15 @@ public class InternalWorkflowState {
 
     private int lastFailedStepRetryCount = 0;
     private int workflowRetryCount = 0;
+    
+    private Duration nextStepDelay;
 
-    private Instant workflowStart;
-    private Instant workflowEnd;
+    @Getter
+    private WorkflowStatus workflowStatus = WorkflowStatus.PENDING;
+    @Getter
+    private Instant workflowStartTime;
+    @Getter
+    private Instant workflowEndTime;
 
     int stepFailed(WorkflowStep<?> s, Exception e) {
         ++workflowRetryCount;
@@ -48,20 +55,41 @@ public class InternalWorkflowState {
     }
 
     Instant workflowStarted() {
-        if (workflowStart == null) workflowStart = Instant.now();
-        return workflowStart;
+        if (workflowStartTime == null) workflowStartTime = Instant.now();
+        return workflowStartTime;
         
     }
     Instant workflowEnded() {
-        if (workflowEnd == null) {
-            workflowEnd = Instant.now();
+        if (workflowEndTime == null) {
+            workflowEndTime = Instant.now();
         }
-        return workflowEnd;
+        return workflowEndTime;
     }
     public boolean isFirstWorkflowStep() {
         return currentStepIndex == 0 && workflowRetryCount == 0;
     }
     public Duration workflowRunDuration() {
-        return Duration.between(workflowStart, workflowEnd == null ? Instant.now() : workflowEnd);
+        return Duration.between(workflowStartTime, workflowEndTime == null ? Instant.now() : workflowEndTime);
+    }
+
+    @Override
+    public int getStepRetryCount() {
+        return lastFailedStepRetryCount;
+    }
+    @Override
+    public WorkflowContext delayNextStepBy(Duration duration) {
+        nextStepDelay = duration;
+        return this;
+    }
+    @Override
+    public WorkflowContext cancelWorkflow() {
+        workflowStatus = WorkflowStatus.CANCELED;
+        return this;
+    }
+    @Override
+    public Optional<Duration> clearDelay() {
+        var result = Optional.ofNullable(this.nextStepDelay);
+        this.nextStepDelay = null;
+        return result;
     }
 }

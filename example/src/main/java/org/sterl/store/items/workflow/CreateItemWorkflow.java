@@ -24,12 +24,12 @@ public class CreateItemWorkflow {
     private final UpdateInStockCountComponent updateStock;
     private final WorkflowService<JobDetail> workflowService;
 
-    private Workflow<CreateItemWorkflowContext> w;
+    private Workflow<CreateItemWorkflowState> w;
     
 
     @PostConstruct
     void createWorkflow() {
-        w = Workflow.builder("create-item", () -> CreateItemWorkflowContext.builder().build())
+        w = Workflow.builder("create-item", () -> CreateItemWorkflowState.builder().build())
                 .next(c -> {
                     c.setInStockCount(createStock.execute(c.getItemId()));
                 })
@@ -54,7 +54,7 @@ public class CreateItemWorkflow {
     
     @Transactional(propagation = Propagation.MANDATORY)
     public String execute(Item item) {
-        return workflowService.execute(w, CreateItemWorkflowContext.builder()
+        return workflowService.execute(w, CreateItemWorkflowState.builder()
                 .itemId(item.getId()).build());
     }
 }

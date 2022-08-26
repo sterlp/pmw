@@ -1,7 +1,7 @@
 package org.sterl.pmw.model;
 
-public interface WorkflowStep<T extends WorkflowContext> {
+public interface WorkflowStep<StateType extends WorkflowState> {
     String getName();
-    void apply(T c);
+    void apply(StateType state, WorkflowContext context);
     int getMaxRetryCount();
 }

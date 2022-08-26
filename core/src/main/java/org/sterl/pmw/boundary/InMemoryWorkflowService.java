@@ -1,6 +1,11 @@
 package org.sterl.pmw.boundary;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,28 +16,49 @@ import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.exception.WorkflowException;
 import org.sterl.pmw.model.InternalWorkflowState;
+import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.model.WorkflowContext;
 import org.sterl.pmw.model.WorkflowState;
+import org.sterl.pmw.model.WorkflowStatus;
 
 import lombok.RequiredArgsConstructor;
 
 public class InMemoryWorkflowService implements WorkflowService<String> {
     private ExecutorService stepExecutor;
     private WorkflowRepository workflowRepository = new WorkflowRepository();
-    private Map<UUID, Workflow<?>> runningWorkflows = new ConcurrentHashMap<>();
+
+    private Map<String, Workflow<?>> runningWorkflows = new ConcurrentHashMap<>();
+    private Map<String, WaitingWorkflow> waitingWorkflows = new ConcurrentHashMap<>();
     
+    record WaitingWorkflow(Instant until, RunningWorkflowState runningWorkflowState) {};
+
     public InMemoryWorkflowService() {
         stepExecutor = Executors.newWorkStealingPool();
+        stepExecutor.submit(() -> {
+            while(true) {
+                final Instant now = Instant.now();
+                for (Entry<String, WaitingWorkflow> w : new HashSet<>(waitingWorkflows.entrySet())) {
+                    if (now.isAfter(w.getValue().until)) {
+                        stepExecutor.submit(new StepCallable(w.getValue().runningWorkflowState(), w.getKey()));
+                        waitingWorkflows.remove(w.getKey());
+                    }
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    if (Thread.interrupted()) break;
+                }
+            }
+        });
     }
 
-    public <T extends WorkflowContext>  String execute(Workflow<T> w) {
+    public <T extends WorkflowState>  String execute(Workflow<T> w) {
         return execute(w, w.newEmtyContext());
     }
-    public <T extends WorkflowContext>  String execute(Workflow<T> w, T c) {
-        var workflowId = UUID.randomUUID();
+    public <T extends WorkflowState>  String execute(Workflow<T> w, T c) {
+        var workflowId = UUID.randomUUID().toString();
         runningWorkflows.put(workflowId, w);
-        WorkflowState state = new WorkflowState(w, c, new InternalWorkflowState());
+        RunningWorkflowState state = new RunningWorkflowState(w, c, new InternalWorkflowState());
         stepExecutor.submit(new StepCallable(state, workflowId));
         return workflowId.toString();
     }
@@ -40,19 +66,25 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     @RequiredArgsConstructor
     private class StepCallable extends SimpleWorkflowStepStrategy
         implements Callable<Void> {
-        private final WorkflowState workflowState;
-        private final UUID workflowId;
+        private final RunningWorkflowState runningWorkflowState;
+        private final String workflowId;
 
         @Override
         public Void call() throws Exception {
             try {
-                if (this.call(workflowState)) {
-                    stepExecutor.submit(new StepCallable(workflowState, workflowId));
+                if (this.call(runningWorkflowState)) {
+                    final Optional<Duration> delay = runningWorkflowState.internalState().clearDelay();
+                    if (delay.isEmpty()) {
+                        stepExecutor.submit(new StepCallable(runningWorkflowState, workflowId));
+                    } else {
+                        waitingWorkflows.put(workflowId, 
+                                new WaitingWorkflow(Instant.now().plus(delay.get()), runningWorkflowState));
+                    }
                 } else {
                     runningWorkflows.remove(workflowId);
                 }
             } catch (WorkflowException.WorkflowFailedDoRetryException e) {
-                stepExecutor.submit(new StepCallable(workflowState, workflowId));
+                stepExecutor.submit(new StepCallable(runningWorkflowState, workflowId));
             }
             return null;
         } 
@@ -66,11 +98,12 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     public void clearAllWorkflows() {
         stepExecutor.shutdownNow();
         runningWorkflows.clear();
+        waitingWorkflows.clear();
         stepExecutor = Executors.newWorkStealingPool();
     }
 
     @Override
-    public <T extends WorkflowContext> String register(Workflow<T> w) {
+    public <T extends WorkflowState> String register(Workflow<T> w) {
         workflowRepository.register(w);
         return w.getName();
     }
@@ -82,9 +115,9 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
-    public String execute(String workflowName, WorkflowContext c) {
+    public String execute(String workflowName, WorkflowState c) {
         Workflow w = (Workflow)workflowRepository.getWorkflow(workflowName);
-        final Class<? extends WorkflowContext> newContextClass = w.newEmtyContext().getClass();
+        final Class<? extends WorkflowState> newContextClass = w.newEmtyContext().getClass();
         if (c != null && newContextClass.isAssignableFrom(c.getClass())) {
             return execute((Workflow)workflowRepository.getWorkflow(workflowName), c);
         } else {
@@ -96,6 +129,14 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
 
     @Override
     public WorkflowStatus status(String workflowId) {
-        return this.runningWorkflows.containsKey(UUID.fromString(workflowId)) ? WorkflowStatus.RUNNING : WorkflowStatus.COMPLETE;
+        WorkflowStatus result;
+        if (this.waitingWorkflows.containsKey(workflowId)) {
+            result = WorkflowStatus.SLEEPING;
+        } else if (this.runningWorkflows.containsKey(workflowId)) {
+            result = WorkflowStatus.RUNNING;
+        } else {
+            result = WorkflowStatus.CANCELED;
+        }
+        return result;
     }
 }

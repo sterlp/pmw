@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.sterl.pmw.model.IfStep;
-import org.sterl.pmw.model.SimpleWorkflowContext;
+import org.sterl.pmw.model.SimpleWorkflowState;
 import org.sterl.pmw.model.Workflow;
 
 public class WorkflowFactoryTest {
@@ -12,14 +12,14 @@ public class WorkflowFactoryTest {
     @Test
     void testDefaultName() {
         // GIVEN
-        Workflow<SimpleWorkflowContext> w = Workflow.builder("test-workflow", 
-                () ->  new SimpleWorkflowContext())
-            .choose(c -> "right")
-            .ifSelected("left", c -> {})
-            .ifSelected("right", c -> {})
-            .build()
-            .next(c -> {})
-            .next("foo", c -> {})
+        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", 
+                () ->  new SimpleWorkflowState())
+            .choose((s, c) -> "right")
+                .ifSelected("left", (s, c) -> {})
+                .ifSelected("right", (s, c) -> {})
+                .build()
+            .next((s, c) -> {})
+            .next("foo", (s, c) -> {})
             .build();
         
         // THEN

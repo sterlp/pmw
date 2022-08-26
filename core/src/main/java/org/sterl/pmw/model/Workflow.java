@@ -7,9 +7,9 @@ import java.util.function.Supplier;
 
 import lombok.Getter;
 
-public class Workflow<T extends WorkflowContext> {
+public class Workflow<T extends WorkflowState> {
     
-    public static <T extends WorkflowContext> WorkflowFactory<T> builder(
+    public static <T extends WorkflowState> WorkflowFactory<T> builder(
             String name, Supplier<T> newContextCreator) {
         return new WorkflowFactory<T>(name, newContextCreator);
     }

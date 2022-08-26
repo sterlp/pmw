@@ -11,7 +11,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.exception.WorkflowException;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.model.WorkflowState;
+import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -56,14 +56,14 @@ public class QuartzWorkflowJob implements Job {
     
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        final WorkflowState workflowState = workflowStateParser.readWorkflowState(w, context);
+        final RunningWorkflowState runningWorkflowState = workflowStateParser.readWorkflowState(w, context);
 
         try {
             trx.executeWithoutResult(t -> {
-                boolean hasNext = callStrategy.call(workflowState);
+                boolean hasNext = callStrategy.call(runningWorkflowState);
                 if (hasNext) {
                     try {
-                        queueNextStepFor(context.getTrigger(), workflowState);
+                        queueNextStepFor(context.getTrigger(), runningWorkflowState);
                     } catch (SchedulerException e) {
                         t.setRollbackOnly();
                         throw new InternalRetryableJobExeption(e);
@@ -77,14 +77,14 @@ public class QuartzWorkflowJob implements Job {
             else throw new JobExecutionException(cause, true);
 
         } catch (WorkflowException.WorkflowFailedDoRetryException retryE) {
-            queueNextStepFor(context.getTrigger(), workflowState);
+            queueNextStepFor(context.getTrigger(), runningWorkflowState);
         } catch (Exception e) {
             log.error("workflow={} failed, no retry possible. {}", 
                     context.getTrigger().getKey(), e.getMessage(), e);
         }
     }
 
-    void queueNextStepFor(Trigger trigger, WorkflowState c) throws JobExecutionException {
+    void queueNextStepFor(Trigger trigger, RunningWorkflowState c) throws JobExecutionException {
         if (trigger == null || c == null) throw new JobExecutionException(true);
         
         TriggerBuilder<? extends Trigger>  newTrigger;

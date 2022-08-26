@@ -15,7 +15,7 @@ import org.sterl.pmw.AsyncAsserts;
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.boundary.WorkflowService.WorkflowStatus;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.model.WorkflowContext;
+import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.testapp.item.boundary.ItemService;
 import org.sterl.pmw.testapp.item.repository.ItemRepository;
 
@@ -36,7 +36,7 @@ class RunInsTransactionTest {
     protected final AsyncAsserts asserts = new AsyncAsserts();
     
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
-    static class TestWorkflowContext implements WorkflowContext {
+    static class TestWorkflowState implements WorkflowState {
         private static final long serialVersionUID = 1L;
         private String itemName;
         private Long itemId;
@@ -55,7 +55,7 @@ class RunInsTransactionTest {
     @Test
     void testHappy() {
         // GIVEN
-        Workflow<TestWorkflowContext> w = Workflow.builder("create-item", () -> new TestWorkflowContext())
+        Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
                 .next(c -> {
                     Long itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
@@ -67,7 +67,7 @@ class RunInsTransactionTest {
         workflowService.register(w);
         
         // WHEN
-        workflowService.execute(w, TestWorkflowContext.builder().itemName("MyName").stock(5).build());
+        workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(5).build());
         
         // THEN
         Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);
@@ -78,7 +78,7 @@ class RunInsTransactionTest {
     void testRollbackTransaction() {
         // GIVEN
         final AtomicInteger retries = new AtomicInteger(0);
-        Workflow<TestWorkflowContext> w = Workflow.builder("create-item", () -> new TestWorkflowContext())
+        Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
                 .next(c -> {
                     Long itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
@@ -93,7 +93,7 @@ class RunInsTransactionTest {
         workflowService.register(w);
         
         // WHEN
-        String wid = workflowService.execute(w, TestWorkflowContext.builder().itemName("MyName").stock(99).build());
+        String wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
         
         // THEN
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
@@ -106,7 +106,7 @@ class RunInsTransactionTest {
     void testRollbackOutsideRetry() {
         
         // GIVEN
-        Workflow<TestWorkflowContext> w = Workflow.builder("create-item", () -> new TestWorkflowContext())
+        Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
                 .next(c -> {
                     Long itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
@@ -121,7 +121,7 @@ class RunInsTransactionTest {
         workflowService.register(w);
         
         // WHEN
-        String wid = workflowService.execute(w, TestWorkflowContext.builder().itemName("MyName").stock(99).build());
+        String wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
         
         // THEN
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
@@ -136,7 +136,7 @@ class RunInsTransactionTest {
     @Test
     void testRollbackInsideRetry() {
         // GIVEN
-        Workflow<TestWorkflowContext> w = Workflow.builder("create-item", () -> new TestWorkflowContext())
+        Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
                 .next(c -> {
                     Long itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
@@ -152,7 +152,7 @@ class RunInsTransactionTest {
         workflowService.register(w);
         
         // WHEN
-        String wid = workflowService.execute(w, TestWorkflowContext.builder().itemName("MyName").stock(99).build());
+        String wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
         
         // THEN
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
