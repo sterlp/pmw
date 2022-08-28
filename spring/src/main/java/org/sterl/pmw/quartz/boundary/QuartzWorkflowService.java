@@ -15,6 +15,7 @@ import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
+import org.sterl.pmw.model.WorkflowStatus;
 import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 import org.sterl.pmw.quartz.job.QuartzWorkflowJob;
 
@@ -52,6 +53,7 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
                     .startNow();
             
             workflowStateParser.setUserState(t, c);
+            workflowStateParser.setWorkflowStatus(t, WorkflowStatus.PENDING);
             
             final Trigger trigger = t.build();
             scheduler.scheduleJob(trigger);
@@ -82,8 +84,6 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
             throw new RuntimeException(e);
         }
     }
-
-    
 
     @Override
     public void clearAllWorkflows() {
@@ -126,13 +126,18 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
     @Override
     public WorkflowStatus status(String workflowId) {
         try {
-            Trigger workflowTrigger = scheduler.getTrigger(TriggerKey.triggerKey(workflowId));
+            final Trigger workflowTrigger = scheduler.getTrigger(TriggerKey.triggerKey(workflowId));
             WorkflowStatus result;
             if (workflowTrigger == null || workflowTrigger.getEndTime() != null) {
                 result = WorkflowStatus.COMPLETE;
             } else {
-                if (workflowTrigger.getStartTime() == null) result = WorkflowStatus.RUNNING;
-                result = WorkflowStatus.PENDING;
+                if (workflowTrigger.getStartTime() == null) {
+                    result = WorkflowStatus.PENDING;
+                } else {
+                    final WorkflowStatus ws = workflowStateParser.getWorkflowStatus(workflowTrigger.getJobDataMap());
+                    if (ws == WorkflowStatus.SLEEPING) result = ws;
+                    else result = WorkflowStatus.RUNNING;
+                }
             }
             return result;
         } catch (SchedulerException e) {

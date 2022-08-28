@@ -39,7 +39,7 @@ public class CreateItemWorkflow {
                     c.setRetry(c.getRetry() + 1);
                     if (c.getRetry() < 10) throw new IllegalStateException("No " + c.getRetry());
                 })
-                .choose(c -> {
+                .choose((c, w) -> {
                     if (c.getInStockCount() > 50) return "large";
                     else return "small";
                 }).ifSelected("large", c -> {

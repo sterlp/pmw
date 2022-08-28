@@ -7,6 +7,7 @@ import org.quartz.TriggerKey;
 import org.sterl.pmw.model.InternalWorkflowState;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
+import org.sterl.pmw.model.WorkflowStatus;
 import org.sterl.pmw.model.RunningWorkflowState;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -19,8 +20,17 @@ public class WorkflowStateParserComponent {
 
     private static final String INTERNAL_WORKFLOW_STATE = "_internalWorkflowState";
     private static final String USER_WORKFLOW_STATE = "_userWorkflowState";
+    private static final String WORKFLOW_STATUS = "_workflowStatus";
     
     private final ObjectMapper mapper;
+    
+    public WorkflowStatus getWorkflowStatus(JobDataMap jobData) {
+        String status = (String)jobData.getOrDefault(WORKFLOW_STATUS, WorkflowStatus.PENDING.name());
+        return WorkflowStatus.valueOf(status);
+    }
+    public void setWorkflowStatus(TriggerBuilder<?> builder, WorkflowStatus status) {
+        builder.usingJobData(WORKFLOW_STATUS, status.name());
+    }
     
     public void setState(TriggerBuilder<?> builder, RunningWorkflowState state) throws JsonProcessingException {
         setInternal(builder, state.internalState());

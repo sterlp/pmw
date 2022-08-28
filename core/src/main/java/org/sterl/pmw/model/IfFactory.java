@@ -1,5 +1,7 @@
 package org.sterl.pmw.model;
 
+import java.util.function.Consumer;
+
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -14,6 +16,10 @@ public class IfFactory<StateType extends WorkflowState> extends AbstractWorkflow
     }
     public IfFactory<StateType> ifSelected(String value, WorkflowFunction<StateType> fn) {
         step(new SequentialStep<>(value, fn));
+        return this;
+    }
+    public IfFactory<StateType> ifSelected(String value, Consumer<StateType> fn) {
+        step(new SequentialStep<>(value, WorkflowFunction.of(fn)));
         return this;
     }
     public WorkflowFactory<StateType> build() {

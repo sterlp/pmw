@@ -13,9 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.sterl.pmw.AsyncAsserts;
 import org.sterl.pmw.boundary.WorkflowService;
-import org.sterl.pmw.boundary.WorkflowService.WorkflowStatus;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
+import org.sterl.pmw.model.WorkflowStatus;
 import org.sterl.pmw.testapp.item.boundary.ItemService;
 import org.sterl.pmw.testapp.item.repository.ItemRepository;
 
