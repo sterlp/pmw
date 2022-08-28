@@ -15,9 +15,9 @@ import org.quartz.TriggerBuilder;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.exception.WorkflowException;
+import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowStatus;
-import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
