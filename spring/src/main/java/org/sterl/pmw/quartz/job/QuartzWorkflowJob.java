@@ -36,8 +36,6 @@ public class QuartzWorkflowJob implements Job {
     @NonNull
     private final Scheduler scheduler;
     @NonNull
-    private final ObjectMapper mapper;
-    @NonNull
     private final TransactionTemplate trx;
     
     private final WorkflowStateParserComponent workflowStateParser;
@@ -48,7 +46,6 @@ public class QuartzWorkflowJob implements Job {
         this.callStrategy = callStrategy;
         this.w = w;
         this.scheduler = scheduler;
-        this.mapper = mapper;
         this.trx = trx;
         this.workflowStateParser = new WorkflowStateParserComponent(mapper);
     }
