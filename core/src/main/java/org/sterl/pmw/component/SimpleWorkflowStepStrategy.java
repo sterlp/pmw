@@ -15,7 +15,7 @@ public class SimpleWorkflowStepStrategy {
      * @return <code>true</code> if a retry or next step should run, otherwise <code>false</code>
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public boolean call(RunningWorkflowState runningWorkflowState) {
+    public boolean call(RunningWorkflowState<?> runningWorkflowState) {
         WorkflowStep nextStep = runningWorkflowState.nextStep();
         logWorkflowStart(runningWorkflowState);
         if (nextStep != null) {
@@ -33,7 +33,7 @@ public class SimpleWorkflowStepStrategy {
         return nextStep != null;
     }
 
-    private <C extends WorkflowState> WorkflowException logWorkflowStepFailed(RunningWorkflowState runningWorkflowState, WorkflowStep<?> step, Exception e) {
+    private <C extends WorkflowState> WorkflowException logWorkflowStepFailed(RunningWorkflowState<C> runningWorkflowState, WorkflowStep<C> step, Exception e) {
         boolean willRetry = runningWorkflowState.failStep(step, e);
         WorkflowException result;
         int retryCount = runningWorkflowState.internalState().getLastFailedStepRetryCount();
@@ -47,14 +47,14 @@ public class SimpleWorkflowStepStrategy {
         return result;
     }
 
-    private <C extends WorkflowState> void logWorkflowEnd(RunningWorkflowState runningWorkflowState) {
+    private <C extends WorkflowState> void logWorkflowEnd(RunningWorkflowState<C> runningWorkflowState) {
         log.info("workflow={} success durationMs={} at={}.",
                 runningWorkflowState.workflow().getName(),
                 runningWorkflowState.internalState().workflowRunDuration().toMillis(), 
                 runningWorkflowState.internalState().getWorkflowEndTime());
     }
 
-    private <C extends WorkflowState> void logWorkflowStart(RunningWorkflowState runningWorkflowState) {
+    private <C extends WorkflowState> void logWorkflowStart(RunningWorkflowState<C> runningWorkflowState) {
         if (runningWorkflowState.internalState().isFirstWorkflowStep()) {
             log.info("Starting workflow={} at={}", 
                     runningWorkflowState.workflow().getName(), 

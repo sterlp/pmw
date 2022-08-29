@@ -31,3 +31,5 @@ build/
 
 ### VS Code ###
 .vscode/
+/pmw-example.mv.db
+/pmw-example.trace.db

@@ -28,18 +28,18 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     private WorkflowRepository workflowRepository = new WorkflowRepository();
 
     private Map<String, Workflow<?>> runningWorkflows = new ConcurrentHashMap<>();
-    private Map<String, WaitingWorkflow> waitingWorkflows = new ConcurrentHashMap<>();
+    private Map<String, WaitingWorkflow<?>> waitingWorkflows = new ConcurrentHashMap<>();
     
-    record WaitingWorkflow(Instant until, RunningWorkflowState runningWorkflowState) {};
+    record WaitingWorkflow<T extends WorkflowState>(Instant until, RunningWorkflowState<T> runningWorkflowState) {};
 
     public InMemoryWorkflowService() {
         stepExecutor = Executors.newWorkStealingPool();
         stepExecutor.submit(() -> {
             while(true) {
                 final Instant now = Instant.now();
-                for (Entry<String, WaitingWorkflow> w : new HashSet<>(waitingWorkflows.entrySet())) {
+                for (Entry<String, WaitingWorkflow<?>> w : new HashSet<>(waitingWorkflows.entrySet())) {
                     if (now.isAfter(w.getValue().until)) {
-                        stepExecutor.submit(new StepCallable(w.getValue().runningWorkflowState(), w.getKey()));
+                        stepExecutor.submit(new StepCallable<>(w.getValue().runningWorkflowState(), w.getKey()));
                         waitingWorkflows.remove(w.getKey());
                     }
                 }
@@ -58,15 +58,15 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     public <T extends WorkflowState>  String execute(Workflow<T> w, T c) {
         var workflowId = UUID.randomUUID().toString();
         runningWorkflows.put(workflowId, w);
-        RunningWorkflowState state = new RunningWorkflowState(w, c, new InternalWorkflowState());
-        stepExecutor.submit(new StepCallable(state, workflowId));
+        RunningWorkflowState<T> state = new RunningWorkflowState<>(w, c, new InternalWorkflowState());
+        stepExecutor.submit(new StepCallable<>(state, workflowId));
         return workflowId.toString();
     }
 
     @RequiredArgsConstructor
-    private class StepCallable extends SimpleWorkflowStepStrategy
+    private class StepCallable<T extends WorkflowState> extends SimpleWorkflowStepStrategy
         implements Callable<Void> {
-        private final RunningWorkflowState runningWorkflowState;
+        private final RunningWorkflowState<T> runningWorkflowState;
         private final String workflowId;
 
         @Override
@@ -75,16 +75,16 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
                 if (this.call(runningWorkflowState)) {
                     final Optional<Duration> delay = runningWorkflowState.internalState().clearDelay();
                     if (delay.isEmpty()) {
-                        stepExecutor.submit(new StepCallable(runningWorkflowState, workflowId));
+                        stepExecutor.submit(new StepCallable<>(runningWorkflowState, workflowId));
                     } else {
                         waitingWorkflows.put(workflowId, 
-                                new WaitingWorkflow(Instant.now().plus(delay.get()), runningWorkflowState));
+                                new WaitingWorkflow<>(Instant.now().plus(delay.get()), runningWorkflowState));
                     }
                 } else {
                     runningWorkflows.remove(workflowId);
                 }
             } catch (WorkflowException.WorkflowFailedDoRetryException e) {
-                stepExecutor.submit(new StepCallable(runningWorkflowState, workflowId));
+                stepExecutor.submit(new StepCallable<>(runningWorkflowState, workflowId));
             }
             return null;
         } 

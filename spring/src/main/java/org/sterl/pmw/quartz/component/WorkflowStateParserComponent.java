@@ -5,10 +5,10 @@ import org.quartz.JobExecutionContext;
 import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.sterl.pmw.model.InternalWorkflowState;
+import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
-import org.sterl.pmw.model.RunningWorkflowState;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +32,7 @@ public class WorkflowStateParserComponent {
         builder.usingJobData(WORKFLOW_STATUS, status.name());
     }
     
-    public void setState(TriggerBuilder<?> builder, RunningWorkflowState state) throws JsonProcessingException {
+    public void setState(TriggerBuilder<?> builder, RunningWorkflowState<?> state) throws JsonProcessingException {
         setInternal(builder, state.internalState());
         setUserState(builder, state.userContext());
     }
@@ -45,15 +45,16 @@ public class WorkflowStateParserComponent {
         }
     }
     
-    public RunningWorkflowState readWorkflowState(Workflow<?> w, JobExecutionContext context) {
+    public <T extends WorkflowState> RunningWorkflowState<T> readWorkflowState(Workflow<T> w, JobExecutionContext context) {
         final JobDataMap jobData = context.getMergedJobDataMap();
         final TriggerKey key = context.getTrigger().getKey();
-        WorkflowState userState = parse(w.newEmtyContext(), jobData, USER_WORKFLOW_STATE, key);
-        InternalWorkflowState internalState = parse(new InternalWorkflowState(), jobData, INTERNAL_WORKFLOW_STATE, key);
+        final WorkflowState userState = parse(w.newEmtyContext(), jobData, USER_WORKFLOW_STATE, key);
+        final InternalWorkflowState internalState = parse(new InternalWorkflowState(), jobData, INTERNAL_WORKFLOW_STATE, key);
 
-        return new RunningWorkflowState(w, userState, internalState);
+        return new RunningWorkflowState<>(w, userState, internalState);
     }
     
+    @SuppressWarnings("unchecked")
     private <T extends Object> T parse(T initial, JobDataMap data, String name, TriggerKey key) {
         T result = initial;
         final String state = data.getString(name);

@@ -59,7 +59,7 @@ public class QuartzWorkflowJob implements Job {
     
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
-        final RunningWorkflowState runningWorkflowState = workflowStateParser.readWorkflowState(w, context);
+        final RunningWorkflowState<?> runningWorkflowState = workflowStateParser.readWorkflowState(w, context);
 
         try {
             trx.executeWithoutResult(t -> {
@@ -87,7 +87,7 @@ public class QuartzWorkflowJob implements Job {
         }
     }
 
-    void queueNextStepFor(Trigger trigger, RunningWorkflowState c) throws JobExecutionException {
+    void queueNextStepFor(Trigger trigger, RunningWorkflowState<?> c) throws JobExecutionException {
         if (trigger == null || c == null) throw new JobExecutionException(true);
         
         TriggerBuilder<? extends Trigger>  newTrigger;
@@ -111,7 +111,7 @@ public class QuartzWorkflowJob implements Job {
         }
     }
 
-    private void applyWorkflowDelay(RunningWorkflowState c, TriggerBuilder<? extends Trigger> newTrigger) {
+    private void applyWorkflowDelay(RunningWorkflowState<?> c, TriggerBuilder<? extends Trigger> newTrigger) {
         final Optional<Duration> delay = c.internalState().clearDelay();
 
         if (delay.isPresent() && delay.get().toMillis() > 0L) {
