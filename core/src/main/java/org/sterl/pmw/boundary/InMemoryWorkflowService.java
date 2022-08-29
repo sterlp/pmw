@@ -135,7 +135,7 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
         } else if (this.runningWorkflows.containsKey(workflowId)) {
             result = WorkflowStatus.RUNNING;
         } else {
-            result = WorkflowStatus.CANCELED;
+            result = WorkflowStatus.COMPLETE;
         }
         return result;
     }

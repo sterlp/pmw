@@ -67,6 +67,7 @@ public abstract class CoreWorkflowExecutionTest {
         // THEN
         assertThat(state.get()).isEqualTo(10);
     }
+
     @Test
     public void testWorkflow() {
         // GIVEN
