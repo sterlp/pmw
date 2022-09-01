@@ -5,8 +5,10 @@ import java.time.Duration;
 /**
  * Context of the given workflow, which allows e.g.
  *
- * <li> select execution time of the next step
- * <li> cancel the workflow
+ * <ul>
+ * <li> select execution time of the next step</li>
+ * <li> cancel the workflow</li>
+ * </ul>
  */
 public interface WorkflowContext {
 

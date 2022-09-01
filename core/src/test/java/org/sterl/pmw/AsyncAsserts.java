@@ -2,13 +2,12 @@ package org.sterl.pmw;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.awaitility.Awaitility;
 
 public class AsyncAsserts {
 
@@ -37,8 +36,16 @@ public class AsyncAsserts {
         return counts.getOrDefault(value, 0);
     }
     public void awaitValue(String value) {
-        Awaitility.await()
-            .until(() -> values.contains(value));
+        Instant now = Instant.now();
+        while (!values.contains(value) 
+                && (System.currentTimeMillis() - now.toEpochMilli() <= 30_000)) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                if (Thread.interrupted()) break;
+            }
+        }
+        assertThat(values).contains(value);
     }
     public void awaitValue(String value, String... values) {
         awaitValue(value);
