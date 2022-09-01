@@ -46,4 +46,8 @@ public class WorkflowRepository {
     public boolean hasWorkflows() {
         return !workflows.isEmpty();
     }
+
+    public int workflowCount() {
+        return workflows.size();
+    }
 }

@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Objects;
 
+import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
 
 public class SerializationUtil {
@@ -26,6 +27,20 @@ public class SerializationUtil {
     public static WorkflowState deserializeWorkflowState(final byte[] userState) throws IOException, ClassNotFoundException {
         try(var bais = new ObjectInputStream(new ByteArrayInputStream(userState))) {
             return (WorkflowState)bais.readObject();
+        }
+    }
+    
+    /**
+     * Checks that the given state is assignable to the given workflow
+     */
+    public static void verifyStateType(Workflow<?> w, WorkflowState state) {
+        if (state != null) {
+            final Class<?> newContextClass = w.newEmtyContext().getClass();
+            if (!newContextClass.isAssignableFrom(state.getClass())) {
+                throw new IllegalArgumentException("Context of type "
+                        + state.getClass().getName()
+                        + " is not compatible to " + newContextClass.getName());
+            }
         }
     }
 }

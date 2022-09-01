@@ -1,6 +1,7 @@
 package org.sterl.pmw.boundary;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.sterl.pmw.AsyncAsserts;
 import org.sterl.pmw.model.SimpleWorkflowState;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
 
 import lombok.AllArgsConstructor;
@@ -25,7 +27,7 @@ public abstract class CoreWorkflowExecutionTest {
     protected final AsyncAsserts asserts = new AsyncAsserts();
 
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor
-    protected static class TestWorkflowCtx extends SimpleWorkflowState {
+    protected static class TestWorkflowCtx implements WorkflowState {
         private static final long serialVersionUID = 1L;
         private int anyValue = 0;
     }
@@ -47,9 +49,26 @@ public abstract class CoreWorkflowExecutionTest {
     public void testWorkflowServiceIsCreated() {
         assertThat(subject).isNotNull();
     }
+    
+    @Test
+    public void testRegisterWorkflow() {
+        // GIVEN
+        Workflow<TestWorkflowCtx> w = Workflow.builder("any-workflow", () ->  new TestWorkflowCtx())
+                .build();
+        assertThat(subject.workflowCount()).isZero();
+
+        // WHEN
+        subject.register(w);
+        
+        // THEN
+        assertThat(subject.workflowCount()).isOne();
+        
+        // AND
+        assertThrows(IllegalArgumentException.class, () -> subject.register(w));
+    }
 
     @Test
-    public void testWorkflowState() {
+    public void testWorkflowStateValue() {
         // GIVEN
         final AtomicInteger state = new AtomicInteger(0);
 
@@ -64,6 +83,29 @@ public abstract class CoreWorkflowExecutionTest {
 
         // THEN
         assertThat(state.get()).isEqualTo(10);
+    }
+    
+    @Test
+    public void testWorkflowStatus() {
+        // GIVEN
+        Workflow<SimpleWorkflowState> w = Workflow.builder("any-workflow", () -> new SimpleWorkflowState())
+                .next(s -> {
+                    try {
+                        Thread.sleep(75);
+                    } catch (InterruptedException e) {}
+                })
+                .build();
+        subject.register(w);
+        
+        // WHEN
+        final String id = subject.execute(w, new SimpleWorkflowState(), Duration.ofMillis(250));
+        
+        // THEN
+        assertThat(subject.status(id)).isEqualTo(WorkflowStatus.SLEEPING);
+        // AND
+        Awaitility.await().pollDelay(Duration.ofMillis(50)) .until(() -> subject.status(id) == WorkflowStatus.RUNNING);
+        // AND
+        Awaitility.await().until(() -> subject.status(id) == WorkflowStatus.COMPLETE);
     }
 
     @Test
@@ -110,7 +152,7 @@ public abstract class CoreWorkflowExecutionTest {
         assertThat(state.get()).isEqualTo(77);
 
     }
-
+    
     @Test
     public void testWorkflow() {
         // GIVEN

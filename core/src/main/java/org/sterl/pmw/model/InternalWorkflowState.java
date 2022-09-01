@@ -9,10 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter @Setter(AccessLevel.PACKAGE)
 @JsonIgnoreProperties(ignoreUnknown = true)
+@NoArgsConstructor
 public class InternalWorkflowState implements WorkflowContext {
     private int currentStepIndex = 0;
     private String lastError;
@@ -33,6 +35,10 @@ public class InternalWorkflowState implements WorkflowContext {
     private Instant workflowStartTime;
     @Getter
     private Instant workflowEndTime;
+    
+    public InternalWorkflowState(Duration nextStepDelay) {
+        this.nextStepDelay = nextStepDelay;
+    }
 
     int stepFailed(WorkflowStep<?> s, Exception e) {
         ++workflowRetryCount;

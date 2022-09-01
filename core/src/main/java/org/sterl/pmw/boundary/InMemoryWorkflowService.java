@@ -32,39 +32,6 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
 
     private record WaitingWorkflow<T extends WorkflowState>(Instant until, RunningWorkflowState<T> runningWorkflowState) {}
 
-    public InMemoryWorkflowService() {
-        stepExecutor = Executors.newWorkStealingPool();
-        stepExecutor.submit(() -> {
-            while(true) {
-                final Instant now = Instant.now();
-                for (Entry<String, WaitingWorkflow<?>> w : new HashSet<>(waitingWorkflows.entrySet())) {
-                    if (now.isAfter(w.getValue().until)) {
-                        stepExecutor.submit(new StepCallable<>(w.getValue().runningWorkflowState(), w.getKey()));
-                        waitingWorkflows.remove(w.getKey());
-                    }
-                }
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    if (Thread.interrupted()) break;
-                }
-            }
-        });
-    }
-
-    @Override
-    public <T extends WorkflowState>  String execute(Workflow<T> w) {
-        return execute(w, w.newEmtyContext());
-    }
-    @Override
-    public <T extends WorkflowState>  String execute(Workflow<T> w, T c) {
-        var workflowId = UUID.randomUUID().toString();
-        runningWorkflows.put(workflowId, w);
-        RunningWorkflowState<T> state = new RunningWorkflowState<>(w, c, new InternalWorkflowState());
-        stepExecutor.submit(new StepCallable<>(state, workflowId));
-        return workflowId.toString();
-    }
-
     @RequiredArgsConstructor
     private class StepCallable<T extends WorkflowState> extends SimpleWorkflowStepStrategy
         implements Callable<Void> {
@@ -94,6 +61,55 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
         }
     }
 
+    public InMemoryWorkflowService() {
+        stepExecutor = Executors.newWorkStealingPool();
+        stepExecutor.submit(() -> {
+            while(true) {
+                final Instant now = Instant.now();
+                for (Entry<String, WaitingWorkflow<?>> w : new HashSet<>(waitingWorkflows.entrySet())) {
+                    if (now.isAfter(w.getValue().until)) {
+                        stepExecutor.submit(new StepCallable<>(w.getValue().runningWorkflowState(), w.getKey()));
+                        waitingWorkflows.remove(w.getKey());
+                    }
+                }
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    if (Thread.interrupted()) break;
+                }
+            }
+        });
+    }
+
+    @Override
+    public <T extends WorkflowState>  String execute(Workflow<T> w) {
+        return execute(w, w.newEmtyContext());
+    }
+
+    @Override
+    public <T extends WorkflowState>  String execute(Workflow<T> w, T c) {
+        return execute(w, c, Duration.ZERO);
+    }
+    
+    @Override
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public String execute(String workflowName, WorkflowState state, Duration delay) {
+        final Workflow w = workflowRepository.getWorkflow(workflowName);
+        SerializationUtil.verifyStateType(w, state);
+        return execute(w, state, delay);
+    }
+
+    @Override
+    public <T extends WorkflowState> String execute(Workflow<T> w, T state, Duration delay) {
+        var workflowId = UUID.randomUUID().toString();
+        runningWorkflows.put(workflowId, w);
+        RunningWorkflowState<T> runningState = new RunningWorkflowState<>(w, state, new InternalWorkflowState(delay));
+        
+        queueNextStepExecution(workflowId, runningState);
+        
+        return workflowId;
+    }
+
     private void queueNextStepExecution(String workflowId, RunningWorkflowState<?> runningWorkflowState) {
         final Duration delay = runningWorkflowState.internalState().consumeDelay();
         if (delay.toMillis() <= 0) {
@@ -118,7 +134,7 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
 
     @Override
     public <T extends WorkflowState> String register(Workflow<T> w) {
-        workflowRepository.register(w);
+        workflowRepository.registerUnique(w);
         return w.getName();
     }
 
@@ -130,15 +146,9 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public String execute(String workflowName, WorkflowState c) {
-        Workflow w = workflowRepository.getWorkflow(workflowName);
-        final Class<? extends WorkflowState> newContextClass = w.newEmtyContext().getClass();
-        if (c != null && newContextClass.isAssignableFrom(c.getClass())) {
-            return execute((Workflow)workflowRepository.getWorkflow(workflowName), c);
-        } else {
-            throw new IllegalArgumentException("Context of type "
-                    + c == null ? "null" : c.getClass().getName()
-                    + " is not compatible to " + newContextClass.getName());
-        }
+        final Workflow w = workflowRepository.getWorkflow(workflowName);
+        SerializationUtil.verifyStateType(w, c);
+        return execute(w, c);
     }
 
     @Override
@@ -152,5 +162,10 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
             result = WorkflowStatus.COMPLETE;
         }
         return result;
+    }
+
+    @Override
+    public int workflowCount() {
+        return this.workflowRepository.workflowCount();
     }
 }
