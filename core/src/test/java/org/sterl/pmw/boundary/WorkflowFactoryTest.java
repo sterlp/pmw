@@ -14,7 +14,7 @@ public class WorkflowFactoryTest {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow",
                 () ->  new SimpleWorkflowState())
-            .choose((s, c) -> "right")
+            .choose(s -> "right")
                 .ifSelected("left", (s, c) -> {})
                 .ifSelected("right", (s, c) -> {})
                 .build()

@@ -25,50 +25,74 @@ spring:
     overwrite-existing-jobs: true
 ```
 
+### Maven
+
+```xml
+<dependency>
+    <groupId>org.sterl.pmw</groupId>
+    <artifactId>pmw-spring</artifactId>
+    <version>1.0.0</version>
+</dependency>
+
+```
+
 ### Define a workflow
 
 ```java
-@Slf4j
 @Service
 @RequiredArgsConstructor
-public class CreateItemWorkflow {
+public class NewItemArrivedWorkflow {
     
-    private final CreateStockComponent createStock;
+    private final WarehouseService warehouseService;
+    private final DiscountComponent discountComponent;
+    private final WarehouseStockComponent createStock;
     private final UpdateInStockCountComponent updateStock;
     private final WorkflowService<JobDetail> workflowService;
 
-    private Workflow<CreateItemWorkflowContext> w;
+    private Workflow<NewItemArrivedWorkflowState> w;
+    private Workflow<NewItemArrivedWorkflowState> restorePriceWorkflow;
     
 
     @PostConstruct
     void createWorkflow() {
-        w = Workflow.builder("create-item", () -> CreateItemWorkflowContext.builder().build())
-                .next(c -> {
-                    c.setInStockCount(createStock.execute(c.getItemId()));
+        w = Workflow.builder("check-warehouse", () -> NewItemArrivedWorkflowState.builder().build())
+                .next(s -> createStock.checkWarehouseForNewStock(s.getItemId()))
+                .next((s, c) -> {
+                    final long stockCount = warehouseService.countStock(s.getItemId());
+                    updateStock.updateInStockCount(s.getItemId(), stockCount);
+                    
+                    s.setWarehouseStockCount(stockCount);
+                    
+                    // check after a while if we have still so many items in stock
+                    if (stockCount > 40) c.delayNextStepBy(Duration.ofMinutes(2));
                 })
-                .next(c -> {
-                    updateStock.updateInStockCount(c.getItemId(), c.getInStockCount());
-                    log.info("");
-                    c.setRetry(c.getRetry() + 1);
-                    if (c.getRetry() < 10) throw new IllegalStateException("No " + c.getRetry());
-                })
-                .choose(c -> {
-                    if (c.getInStockCount() > 50) return "large";
-                    else return "small";
-                }).ifSelected("large", c -> {
-                    log.info("Created item {} with a large stock {}", c.getItemId(), c.getInStockCount());
-                }).ifSelected("small", c -> {
-                    log.info("Created item {} with a small stock", c.getItemId(), c.getInStockCount());
-                }).build()
+                .choose(s -> {
+                        if (s.getWarehouseStockCount() > 40) return "discount-price";
+                        else return "check-warehouse";
+                    })
+                    .ifSelected("discount-price", s -> {
+                        var originalPrice = discountComponent.applyDiscount(s.getItemId(), s.getWarehouseStockCount());
+                        s.setOriginalPrice(originalPrice);
+                        
+                        workflowService.execute(restorePriceWorkflow, s, Duration.ofMinutes(2));
+                    })
+                    .ifSelected("check-warehouse", s -> this.execute(s.getItemId()))
+                    .build()
                 .build();
 
         workflowService.register(w);
+        
+        restorePriceWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
+                .next(s -> discountComponent.setPrize(s.getItemId(), s.getOriginalPrice()))
+                .build();
+        
+        workflowService.register(restorePriceWorkflow);
     }
     
     @Transactional(propagation = Propagation.MANDATORY)
-    public String execute(Item item) {
-        return workflowService.execute(w, CreateItemWorkflowContext.builder()
-                .itemId(item.getId()).build());
+    public String execute(long itemId) {
+        return workflowService.execute(w, NewItemArrivedWorkflowState.builder()
+                .itemId(itemId).build());
     }
 }
 ```
