@@ -31,17 +31,18 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
     private final WorkflowRepository workflowRepository;
     private final Map<String, JobDetail> workflowJobs = new HashMap<>();
     private final WorkflowStateParserComponent workflowStateParser;
-    
+
     public QuartzWorkflowService(@NonNull Scheduler scheduler, @NonNull WorkflowRepository workflowRepository,
             ObjectMapper mapper) {
         super();
         this.scheduler = scheduler;
         this.workflowRepository = workflowRepository;
         this.workflowStateParser = new WorkflowStateParserComponent(mapper);
-        
+
         log.info("Workflows initialized, {} workflows deployed.", workflowRepository.getWorkflowNames().size());
     }
 
+    @Override
     public <T extends WorkflowState> String execute(Workflow<T> w, T c) {
         JobDetail job = workflowJobs.get(w.getName());
         if (job == null) throw new IllegalStateException(
@@ -51,10 +52,10 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
             final TriggerBuilder<Trigger> t = TriggerBuilder.newTrigger()
                     .forJob(job)
                     .startNow();
-            
+
             workflowStateParser.setUserState(t, c);
             workflowStateParser.setWorkflowStatus(t, WorkflowStatus.PENDING);
-            
+
             final Trigger trigger = t.build();
             scheduler.scheduleJob(trigger);
             return trigger.getKey().getName();
@@ -62,7 +63,7 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
             throw new RuntimeException(e);
         }
     }
-    
+
     @Override
     public <T extends WorkflowState> String execute(Workflow<T> w) {
         return execute(w, w.newEmtyContext());
@@ -97,7 +98,7 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
             } catch (SchedulerException e) {
                 throw new RuntimeException("Failed to clear jobs", e);
             }
-            
+
         }
     }
 
@@ -112,12 +113,12 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
     @Override
     public String execute(String workflowName, WorkflowState c) {
         Workflow w = workflowRepository.getWorkflow(workflowName);
-        
+
         final Class<? extends WorkflowState> newContextClass = w.newEmtyContext().getClass();
         if (c != null && newContextClass.isAssignableFrom(c.getClass())) {
             return execute((Workflow)workflowRepository.getWorkflow(workflowName), c);
         } else {
-            throw new IllegalArgumentException("Context of type " 
+            throw new IllegalArgumentException("Context of type "
                     + c == null ? "null" : c.getClass().getName()
                     + " is not compatible to " + newContextClass.getName());
         }

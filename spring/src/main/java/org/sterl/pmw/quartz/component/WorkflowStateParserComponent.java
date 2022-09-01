@@ -21,9 +21,9 @@ public class WorkflowStateParserComponent {
     private static final String INTERNAL_WORKFLOW_STATE = "_internalWorkflowState";
     private static final String USER_WORKFLOW_STATE = "_userWorkflowState";
     private static final String WORKFLOW_STATUS = "_workflowStatus";
-    
+
     private final ObjectMapper mapper;
-    
+
     public WorkflowStatus getWorkflowStatus(JobDataMap jobData) {
         String status = (String)jobData.getOrDefault(WORKFLOW_STATUS, WorkflowStatus.PENDING.name());
         return WorkflowStatus.valueOf(status);
@@ -31,12 +31,8 @@ public class WorkflowStateParserComponent {
     public void setWorkflowStatus(TriggerBuilder<?> builder, WorkflowStatus status) {
         builder.usingJobData(WORKFLOW_STATUS, status.name());
     }
-    
-    public void setState(TriggerBuilder<?> builder, RunningWorkflowState<?> state) throws JsonProcessingException {
-        setInternal(builder, state.internalState());
-        setUserState(builder, state.userContext());
-    }
-    public void setInternal(TriggerBuilder<?> builder, InternalWorkflowState internalState) throws JsonProcessingException {
+
+    public void setInternalState(TriggerBuilder<?> builder, InternalWorkflowState internalState) throws JsonProcessingException {
         builder.usingJobData(INTERNAL_WORKFLOW_STATE, mapper.writeValueAsString(internalState));
     }
     public void setUserState(TriggerBuilder<?> builder, WorkflowState userState) throws JsonProcessingException {
@@ -44,7 +40,7 @@ public class WorkflowStateParserComponent {
             builder.usingJobData(USER_WORKFLOW_STATE, mapper.writeValueAsString(userState));
         }
     }
-    
+
     public <T extends WorkflowState> RunningWorkflowState<T> readWorkflowState(Workflow<T> w, JobExecutionContext context) {
         final JobDataMap jobData = context.getMergedJobDataMap();
         final TriggerKey key = context.getTrigger().getKey();
@@ -53,7 +49,7 @@ public class WorkflowStateParserComponent {
 
         return new RunningWorkflowState<>(w, userState, internalState);
     }
-    
+
     @SuppressWarnings("unchecked")
     private <T extends Object> T parse(T initial, JobDataMap data, String name, TriggerKey key) {
         T result = initial;

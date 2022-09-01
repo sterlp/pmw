@@ -19,16 +19,17 @@ public class SimpleWorkflowStepStrategy {
         WorkflowStep nextStep = runningWorkflowState.nextStep();
         logWorkflowStart(runningWorkflowState);
         if (nextStep != null) {
-            log.debug("Selecting step={} on workflow={}", nextStep.getName(), 
+            log.debug("Selecting step={} on workflow={}", nextStep.getName(),
                     runningWorkflowState.workflow().getName());
             try {
-                nextStep.apply(runningWorkflowState.userContext(), runningWorkflowState.internalState());
+                nextStep.apply(runningWorkflowState.userState(), runningWorkflowState.internalState());
                 nextStep = runningWorkflowState.successStep(nextStep);
 
                 if (nextStep == null) logWorkflowEnd(runningWorkflowState);
             } catch (Exception e) {
                 throw logWorkflowStepFailed(runningWorkflowState, nextStep, e);
             }
+
         }
         return nextStep != null;
     }
@@ -50,14 +51,14 @@ public class SimpleWorkflowStepStrategy {
     private <C extends WorkflowState> void logWorkflowEnd(RunningWorkflowState<C> runningWorkflowState) {
         log.info("workflow={} success durationMs={} at={}.",
                 runningWorkflowState.workflow().getName(),
-                runningWorkflowState.internalState().workflowRunDuration().toMillis(), 
+                runningWorkflowState.internalState().workflowRunDuration().toMillis(),
                 runningWorkflowState.internalState().getWorkflowEndTime());
     }
 
     private <C extends WorkflowState> void logWorkflowStart(RunningWorkflowState<C> runningWorkflowState) {
         if (runningWorkflowState.internalState().isFirstWorkflowStep()) {
-            log.info("Starting workflow={} at={}", 
-                    runningWorkflowState.workflow().getName(), 
+            log.info("Starting workflow={} at={}",
+                    runningWorkflowState.workflow().getName(),
                     runningWorkflowState.internalState().getWorkflowStartTime());
         }
     }

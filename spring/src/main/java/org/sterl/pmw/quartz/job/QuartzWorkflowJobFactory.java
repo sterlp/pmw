@@ -37,14 +37,14 @@ public class QuartzWorkflowJobFactory implements JobFactory {
     public Job newJob(TriggerFiredBundle bundle, Scheduler scheduler) throws SchedulerException {
         String name = bundle.getJobDetail().getKey().getName();
         Optional<Workflow<?>> w = workflowRepository.findWorkflow(name);
-        
+
         log.debug("{} results in {}", name, w);
         if (w.isEmpty() && delegate == null) {
             throw new IllegalStateException("No workflow with the name " + name);
         } else if (w.isEmpty() && delegate != null) {
             return delegate.newJob(bundle, scheduler);
         }
-        
+
         return new QuartzWorkflowJob(strategy, w.get(), scheduler, mapper, trx);
     }
 }

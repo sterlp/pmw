@@ -6,22 +6,22 @@ import java.util.function.Supplier;
 public class WorkflowFactory<StateType extends WorkflowState> extends AbstractWorkflowFactory<WorkflowFactory<StateType>, StateType> {
 
     private final Workflow<StateType> workflow;
-    
+
     public WorkflowFactory(String name, Supplier<StateType> newContextCreator) {
         this.workflow = new Workflow<>(name, newContextCreator);
     }
-    
+
     public WorkflowFactory<StateType> next(WorkflowFunction<StateType> fn) {
         return step(new SequentialStep<>(defaultStepName(), fn));
     }
     public WorkflowFactory<StateType> next(Consumer<StateType> fn) {
         return step(new SequentialStep<>(defaultStepName(), WorkflowFunction.of(fn)));
     }
-    
+
     public IfFactory<StateType> choose(WorkflowChooseFunction<StateType> chooseFn) {
-        return new IfFactory<StateType>(this, chooseFn);
+        return new IfFactory<>(this, chooseFn);
     }
-    
+
     public Workflow<StateType> build() {
         workflow.setWorkflowSteps(this.workflowSteps.values());
         return workflow;

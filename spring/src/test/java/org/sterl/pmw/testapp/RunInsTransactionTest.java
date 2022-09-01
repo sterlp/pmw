@@ -32,9 +32,9 @@ class RunInsTransactionTest {
     private ItemRepository itemRepository;
     @Autowired
     private WorkflowService<JobDetail> workflowService;
-    
+
     protected final AsyncAsserts asserts = new AsyncAsserts();
-    
+
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
     static class TestWorkflowState implements WorkflowState {
         private static final long serialVersionUID = 1L;
@@ -48,7 +48,7 @@ class RunInsTransactionTest {
         Awaitility.setDefaultTimeout(Duration.ofSeconds(30));
         workflowService.clearAllWorkflows();
         itemRepository.deleteAllInBatch();
-        
+
         asserts.clear();
     }
 
@@ -65,15 +65,15 @@ class RunInsTransactionTest {
                 })
                 .build();
         workflowService.register(w);
-        
+
         // WHEN
         workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(5).build());
-        
+
         // THEN
         Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);
         Awaitility.await().until(() -> itemRepository.findByName("MyName").getInStock() == 5);
     }
-    
+
     @Test
     void testRollbackTransaction() {
         // GIVEN
@@ -91,20 +91,20 @@ class RunInsTransactionTest {
                 })
                 .build();
         workflowService.register(w);
-        
+
         // WHEN
         String wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
-        
+
         // THEN
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
         Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);
         assertThat(itemRepository.findByName("MyName").getInStock()).isZero();
         assertThat(retries.get()).isGreaterThan(1);
     }
-    
+
     @Test
     void testRollbackOutsideRetry() {
-        
+
         // GIVEN
         Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
                 .next(c -> {
@@ -119,17 +119,17 @@ class RunInsTransactionTest {
                 })
                 .build();
         workflowService.register(w);
-        
+
         // WHEN
         String wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
-        
+
         // THEN
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
         Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);
         assertThat(itemRepository.findByName("MyName").getInStock()).isEqualTo(99);
         assertThat(asserts.getCount("error")).isEqualTo(2);
     }
-    
+
     /**
      * Same as outside, but with the transaction set to rollback only
      */
@@ -150,10 +150,10 @@ class RunInsTransactionTest {
                 })
                 .build();
         workflowService.register(w);
-        
+
         // WHEN
         String wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
-        
+
         // THEN
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
         Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);

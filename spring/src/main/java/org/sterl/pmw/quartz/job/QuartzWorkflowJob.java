@@ -1,7 +1,6 @@
 package org.sterl.pmw.quartz.job;
 
 import java.time.Duration;
-import java.util.Optional;
 
 import org.quartz.DateBuilder;
 import org.quartz.DateBuilder.IntervalUnit;
@@ -15,8 +14,10 @@ import org.quartz.TriggerBuilder;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.exception.WorkflowException;
+import org.sterl.pmw.model.InternalWorkflowState;
 import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
 import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 
@@ -28,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class QuartzWorkflowJob implements Job {
-    
+
     @NonNull
     private final SimpleWorkflowStepStrategy callStrategy;
     @NonNull
@@ -37,9 +38,9 @@ public class QuartzWorkflowJob implements Job {
     private final Scheduler scheduler;
     @NonNull
     private final TransactionTemplate trx;
-    
+
     private final WorkflowStateParserComponent workflowStateParser;
-    
+
     public QuartzWorkflowJob(@NonNull SimpleWorkflowStepStrategy callStrategy, @NonNull Workflow<?> w,
             @NonNull Scheduler scheduler, @NonNull ObjectMapper mapper, @NonNull TransactionTemplate trx) {
         super();
@@ -56,7 +57,7 @@ public class QuartzWorkflowJob implements Job {
             super(e);
         }
     }
-    
+
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         final RunningWorkflowState<?> runningWorkflowState = workflowStateParser.readWorkflowState(w, context);
@@ -66,7 +67,11 @@ public class QuartzWorkflowJob implements Job {
                 boolean hasNext = callStrategy.call(runningWorkflowState);
                 if (hasNext) {
                     try {
-                        queueNextStepFor(context.getTrigger(), runningWorkflowState);
+                        queueNextStepFor(context.getTrigger(),
+                                runningWorkflowState.internalState().consumeDelay(),
+                                runningWorkflowState.internalState(),
+                                runningWorkflowState.userState());
+
                     } catch (SchedulerException e) {
                         t.setRollbackOnly();
                         throw new InternalRetryableJobExeption(e);
@@ -80,25 +85,33 @@ public class QuartzWorkflowJob implements Job {
             else throw new JobExecutionException(cause, true);
 
         } catch (WorkflowException.WorkflowFailedDoRetryException retryE) {
-            queueNextStepFor(context.getTrigger(), runningWorkflowState);
+
+            queueNextStepFor(context.getTrigger(),
+                    runningWorkflowState.internalState().consumeDelay(),
+                    runningWorkflowState.internalState(),
+                    null);
+
         } catch (Exception e) {
-            log.error("workflow={} failed, no retry possible. {}", 
+            log.error("workflow={} failed, no retry possible. {}",
                     context.getTrigger().getKey(), e.getMessage(), e);
         }
     }
 
-    void queueNextStepFor(Trigger trigger, RunningWorkflowState<?> c) throws JobExecutionException {
-        if (trigger == null || c == null) throw new JobExecutionException(true);
-        
+    private void queueNextStepFor(Trigger trigger, Duration delay,
+            InternalWorkflowState internalState,
+            WorkflowState userState) throws JobExecutionException {
+        if (trigger == null || internalState == null) throw new JobExecutionException(true);
+
         TriggerBuilder<? extends Trigger>  newTrigger;
         try {
             newTrigger = trigger.getTriggerBuilder()
                     .forJob(trigger.getJobKey())
                     .usingJobData(trigger.getJobDataMap());
-            
-            applyWorkflowDelay(c, newTrigger);
-            // TODO only set internal state in case of error
-            workflowStateParser.setState(newTrigger, c);
+
+            setWorkflowDelayAndStatus(delay, newTrigger);
+            workflowStateParser.setInternalState(newTrigger, internalState);
+            workflowStateParser.setUserState(newTrigger, userState);
+
         } catch (JsonProcessingException e) {
             throw new JobExecutionException(e, true);
         }
@@ -111,11 +124,9 @@ public class QuartzWorkflowJob implements Job {
         }
     }
 
-    private void applyWorkflowDelay(RunningWorkflowState<?> c, TriggerBuilder<? extends Trigger> newTrigger) {
-        final Optional<Duration> delay = c.internalState().clearDelay();
-
-        if (delay.isPresent() && delay.get().toMillis() > 0L) {
-            newTrigger.startAt(DateBuilder.futureDate((int)delay.get().toMillis(), IntervalUnit.MILLISECOND));
+    private void setWorkflowDelayAndStatus(Duration delay, TriggerBuilder<? extends Trigger> newTrigger) {
+        if (delay.toMillis() > 0L) {
+            newTrigger.startAt(DateBuilder.futureDate((int)delay.toMillis(), IntervalUnit.MILLISECOND));
             workflowStateParser.setWorkflowStatus(newTrigger, WorkflowStatus.SLEEPING);
         } else {
             newTrigger.startNow();

@@ -2,7 +2,6 @@ package org.sterl.pmw.model;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -25,7 +24,7 @@ public class InternalWorkflowState implements WorkflowContext {
 
     private int lastFailedStepRetryCount = 0;
     private int workflowRetryCount = 0;
-    
+
     private Duration nextStepDelay;
 
     @Getter
@@ -57,7 +56,7 @@ public class InternalWorkflowState implements WorkflowContext {
     Instant workflowStarted() {
         if (workflowStartTime == null) workflowStartTime = Instant.now();
         return workflowStartTime;
-        
+
     }
     Instant workflowEnded() {
         if (workflowEndTime == null) {
@@ -87,8 +86,13 @@ public class InternalWorkflowState implements WorkflowContext {
         return this;
     }
     @Override
-    public Optional<Duration> clearDelay() {
-        var result = Optional.ofNullable(this.nextStepDelay);
+    public Duration consumeDelay() {
+        Duration result;
+        if (this.nextStepDelay == null) {
+            result = Duration.ZERO;
+        } else {
+            result = this.nextStepDelay;
+        }
         this.nextStepDelay = null;
         return result;
     }

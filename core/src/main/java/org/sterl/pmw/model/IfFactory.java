@@ -9,7 +9,7 @@ public class IfFactory<StateType extends WorkflowState> extends AbstractWorkflow
     private final WorkflowFactory<StateType> workflowFactory;
     private final WorkflowChooseFunction<StateType> chooseFn;
     private String name;
-    
+
     public IfFactory<StateType> name(String name) {
         this.name = name;
         return this;
@@ -24,7 +24,7 @@ public class IfFactory<StateType extends WorkflowState> extends AbstractWorkflow
     }
     public WorkflowFactory<StateType> build() {
         if (name == null) name = workflowFactory.defaultStepName();
-        workflowFactory.step(new IfStep<StateType>(name, chooseFn, workflowSteps));
+        workflowFactory.step(new IfStep<>(name, chooseFn, workflowSteps));
         return workflowFactory;
     }
 }

@@ -8,27 +8,27 @@ import java.util.function.Supplier;
 import lombok.Getter;
 
 public class Workflow<T extends WorkflowState> {
-    
+
     public static <T extends WorkflowState> WorkflowFactory<T> builder(
             String name, Supplier<T> newContextCreator) {
-        return new WorkflowFactory<T>(name, newContextCreator);
+        return new WorkflowFactory<>(name, newContextCreator);
     }
 
     @Getter
     private final String name;
     private final Supplier<T> newContextCreator;
     private final List<WorkflowStep<T>> workflowSteps = new ArrayList<>();
-    
+
     public Workflow(String name, Supplier<T> newContextCreator) {
         super();
         this.name = name;
         this.newContextCreator = newContextCreator;
     }
-    
+
     public int getStepCount() {
         return workflowSteps.size();
     }
-    
+
     public WorkflowStep<T> nextStep(InternalWorkflowState state) {
         var currentStepIndex = state.getCurrentStepIndex();
         if (currentStepIndex == 0) {
@@ -49,12 +49,12 @@ public class Workflow<T extends WorkflowState> {
         int retryCount = state.stepFailed(nextStep, e);
         return retryCount < nextStep.getMaxRetryCount();
     }
-    
+
     void setWorkflowSteps(Collection<WorkflowStep<T>> workflowSteps) {
         this.workflowSteps.clear();
         this.workflowSteps.addAll(workflowSteps);
     }
-    
+
     public T newEmtyContext() {
         return this.newContextCreator.get();
     }
@@ -67,6 +67,6 @@ public class Workflow<T extends WorkflowState> {
     public WorkflowStep<T> getStepByPosition(int pos) {
         if (pos > workflowSteps.size()) return null;
         else return workflowSteps.get(pos);
-        
+
     }
 }

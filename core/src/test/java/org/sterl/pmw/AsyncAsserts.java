@@ -14,7 +14,7 @@ public class AsyncAsserts {
 
     private List<String> values = Collections.synchronizedList(new ArrayList<String>());
     private Map<String, Integer> counts = new ConcurrentHashMap<>();
-    
+
     public void clear() {
         values.clear();
         counts.clear();
@@ -52,7 +52,7 @@ public class AsyncAsserts {
         awaitValue(value, values);
         assertThat(this.values.indexOf(value))
             .isEqualTo(0);
-        
+
         if (values != null && values.length > 0) {
             for (int i = 0; i < values.length; i++) {
                 assertThat(this.values.indexOf(values[i]))

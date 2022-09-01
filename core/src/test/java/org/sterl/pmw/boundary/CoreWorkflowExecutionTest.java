@@ -27,11 +27,11 @@ public abstract class CoreWorkflowExecutionTest {
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor
     protected static class TestWorkflowCtx extends SimpleWorkflowState {
         private static final long serialVersionUID = 1L;
-        private int tryCount = 0;
+        private int anyValue = 0;
     }
-    
+
     protected WorkflowService<?> subject;
-    
+
     @BeforeEach
     protected void setUp() throws Exception {
         asserts.clear();
@@ -44,34 +44,77 @@ public abstract class CoreWorkflowExecutionTest {
     }
 
     @Test
-    public void testWorkflowServiceCreateds() {
+    public void testWorkflowServiceIsCreated() {
         assertThat(subject).isNotNull();
     }
-    
+
     @Test
-    public void testWorkflowContext() {
+    public void testWorkflowState() {
         // GIVEN
         final AtomicInteger state = new AtomicInteger(0);
+
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", () ->  new TestWorkflowCtx())
-            .next((s, c) -> {
-                state.set(s.getTryCount());
-            })
+            .next((s) -> state.set(s.getAnyValue()))
             .build();
-        
         subject.register(w);
-        
+
         // WHEN
         final String id = subject.execute(w, new TestWorkflowCtx(10));
         Awaitility.await().until(() -> subject.status(id) == WorkflowStatus.COMPLETE);
-        
+
         // THEN
         assertThat(state.get()).isEqualTo(10);
     }
 
     @Test
+    public void testWorkflowStateIsAvailableInNextStep() {
+        // GIVEN
+        final AtomicInteger state = new AtomicInteger(0);
+        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", () ->  new TestWorkflowCtx())
+            .next((s) -> s.setAnyValue(s.getAnyValue() + 1))
+            .next((s) -> state.set(s.getAnyValue()))
+            .build();
+        subject.register(w);
+
+        // WHEN
+        final String id = subject.execute(w, new TestWorkflowCtx(1));
+        Awaitility.await().until(() -> subject.status(id) == WorkflowStatus.COMPLETE);
+
+        // THEN
+        assertThat(state.get()).isEqualTo(2);
+    }
+
+    /**
+     * If we run into an error the user state should be the same
+     * on the next run.
+     */
+    @Test
+    public void testNoUserStateUpdateOnException() {
+        final AtomicLong state = new AtomicLong(0);
+
+        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
+                () ->  new TestWorkflowCtx(77))
+                .next((s, c) -> {
+                    state.set(s.getAnyValue());
+                    s.setAnyValue(99);
+                    if (c.getStepRetryCount() == 0) throw new RuntimeException("Not now");
+                })
+                .build();
+        subject.register(w);
+
+        // WHEN
+        final String workflowId = subject.execute(w);
+
+        // THEN
+        Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.COMPLETE);
+        assertThat(state.get()).isEqualTo(77);
+
+    }
+
+    @Test
     public void testWorkflow() {
         // GIVEN
-        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", 
+        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow",
                 () ->  new SimpleWorkflowState())
             .next((s, c) -> {
                 asserts.info("do-first");
@@ -96,16 +139,16 @@ public abstract class CoreWorkflowExecutionTest {
 
         // WHEN
         subject.execute(w);
-        
+
         // THEN
         asserts.awaitOrdered("do-first", "do-second", "choose", "  going left", "finally");
-        
+
     }
-    
+
     @Test
     public void testRightFirst() {
         // GIVEN
-        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", 
+        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow",
                 () ->  new SimpleWorkflowState())
             .choose((s, c) -> {
                 asserts.info("choose");
@@ -121,46 +164,44 @@ public abstract class CoreWorkflowExecutionTest {
             })
             .build();
         subject.register(w);
-        
+
         // WHEN
         subject.execute(w, new SimpleWorkflowState());
-        
+
         // THEN
         asserts.awaitOrdered("choose", "  going right", "finally");
     }
-    
+
     @Test
     public void testRetry() {
         // GIVEN
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", 
+        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
                 () ->  new TestWorkflowCtx())
                 .next("failing step", (s, c) -> {
-                    asserts.info("failing " + s.getTryCount());
-                    if (s.getTryCount() < 2) {
-                        s.setTryCount(s.getTryCount() + 1);
-                        throw new IllegalStateException("Not now " + s.getTryCount());
+                    asserts.info("failing " + c.getStepRetryCount());
+                    if (c.getStepRetryCount() < 2) {
+                        throw new IllegalStateException("Not now " + c.getStepRetryCount());
                     }
                 }).next((s, c) -> asserts.info("done"))
                 .build();
         subject.register(w);
-        
+
         // WHEN
         subject.execute(w);
 
         // THEN
         asserts.awaitOrdered("failing 0", "failing 1", "failing 2", "done");
     }
-    
+
     @Test
     public void testFailForever() {
         // GIVEN
         final AtomicInteger failCount = new AtomicInteger(0);
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", 
+        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
                 () ->  new TestWorkflowCtx())
                 .next("failing step", (s, c) -> {
                     asserts.info("failing " + failCount.incrementAndGet());
-                    s.setTryCount(s.getTryCount() + 1);
-                    throw new IllegalStateException("Not now " + s.getTryCount());
+                    throw new IllegalStateException("Not now " + failCount.get());
                 }).next((s, c) -> asserts.info("done"))
                 .build();
         subject.register(w);
@@ -172,13 +213,13 @@ public abstract class CoreWorkflowExecutionTest {
         asserts.awaitOrdered("failing 1", "failing 2", "failing 3");
         assertThat(failCount.get()).isEqualTo(3);
     }
-    
+
     @Test
     public void testWaitForNextStep() {
         // GIVEN
         final AtomicLong timeFirstStep = new AtomicLong(0);
         final AtomicLong timeSecondStep = new AtomicLong(0);
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", 
+        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
                 () ->  new TestWorkflowCtx())
                 .next((s, c) -> {
                     asserts.info("wait");

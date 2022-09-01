@@ -5,13 +5,13 @@ import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.sterl.pmw.component.SerializationUtil;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.exception.WorkflowException;
@@ -29,8 +29,8 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
 
     private Map<String, Workflow<?>> runningWorkflows = new ConcurrentHashMap<>();
     private Map<String, WaitingWorkflow<?>> waitingWorkflows = new ConcurrentHashMap<>();
-    
-    record WaitingWorkflow<T extends WorkflowState>(Instant until, RunningWorkflowState<T> runningWorkflowState) {};
+
+    private record WaitingWorkflow<T extends WorkflowState>(Instant until, RunningWorkflowState<T> runningWorkflowState) {}
 
     public InMemoryWorkflowService() {
         stepExecutor = Executors.newWorkStealingPool();
@@ -52,9 +52,11 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
         });
     }
 
+    @Override
     public <T extends WorkflowState>  String execute(Workflow<T> w) {
         return execute(w, w.newEmtyContext());
     }
+    @Override
     public <T extends WorkflowState>  String execute(Workflow<T> w, T c) {
         var workflowId = UUID.randomUUID().toString();
         runningWorkflows.put(workflowId, w);
@@ -71,25 +73,37 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
 
         @Override
         public Void call() throws Exception {
+
+            byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
+
             try {
                 if (this.call(runningWorkflowState)) {
-                    final Optional<Duration> delay = runningWorkflowState.internalState().clearDelay();
-                    if (delay.isEmpty()) {
-                        stepExecutor.submit(new StepCallable<>(runningWorkflowState, workflowId));
-                    } else {
-                        waitingWorkflows.put(workflowId, 
-                                new WaitingWorkflow<>(Instant.now().plus(delay.get()), runningWorkflowState));
-                    }
+                    queueNextStepExecution(workflowId, runningWorkflowState);
                 } else {
                     runningWorkflows.remove(workflowId);
                 }
             } catch (WorkflowException.WorkflowFailedDoRetryException e) {
-                stepExecutor.submit(new StepCallable<>(runningWorkflowState, workflowId));
+
+                queueNextStepExecution(workflowId, new RunningWorkflowState<>(
+                        runningWorkflowState.workflow(),
+                        SerializationUtil.deserializeWorkflowState(originalState),
+                        runningWorkflowState.internalState())
+                    );
             }
             return null;
-        } 
+        }
     }
-    
+
+    private void queueNextStepExecution(String workflowId, RunningWorkflowState<?> runningWorkflowState) {
+        final Duration delay = runningWorkflowState.internalState().consumeDelay();
+        if (delay.toMillis() <= 0) {
+            stepExecutor.submit(new StepCallable<>(runningWorkflowState, workflowId));
+        } else {
+            waitingWorkflows.put(workflowId,
+                    new WaitingWorkflow<>(Instant.now().plus(delay), runningWorkflowState));
+        }
+    }
+
     public void stop() {
         stepExecutor.shutdown();
     }
@@ -116,12 +130,12 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public String execute(String workflowName, WorkflowState c) {
-        Workflow w = (Workflow)workflowRepository.getWorkflow(workflowName);
+        Workflow w = workflowRepository.getWorkflow(workflowName);
         final Class<? extends WorkflowState> newContextClass = w.newEmtyContext().getClass();
         if (c != null && newContextClass.isAssignableFrom(c.getClass())) {
             return execute((Workflow)workflowRepository.getWorkflow(workflowName), c);
         } else {
-            throw new IllegalArgumentException("Context of type " 
+            throw new IllegalArgumentException("Context of type "
                     + c == null ? "null" : c.getClass().getName()
                     + " is not compatible to " + newContextClass.getName());
         }

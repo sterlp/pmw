@@ -10,14 +10,14 @@ public abstract class WorkflowException extends RuntimeException {
     private final Workflow<?> workflow;
     @Getter
     private final WorkflowStep<?> failedStep;
-    
+
     static final String buildDefaultErrorMessage(Workflow<?> workflow, WorkflowStep<?> failedStep, Exception cause) {
         return "Workflow=" + workflow.getName()
             + " failed in step=" + failedStep.getName()
             + " message=" + cause.getMessage();
-    
+
     }
-    
+
     public WorkflowException(Workflow<?> workflow, WorkflowStep<?> failedStep, Exception cause) {
         super(buildDefaultErrorMessage(workflow, failedStep, cause), cause);
         this.workflow = workflow;

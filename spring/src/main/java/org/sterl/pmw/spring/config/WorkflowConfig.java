@@ -26,7 +26,7 @@ public class WorkflowConfig {
 
     @Value("${spring.pmw.spring-bean-job-factory.enabled:true}")
     private boolean enableSpringBeanJobFactory = true;
-    
+
     @Bean
     WorkflowRepository workflowRepository() {
         return new WorkflowRepository();
@@ -53,7 +53,7 @@ public class WorkflowConfig {
                     new SimpleWorkflowStepStrategy(), workflowRepository(), mapper, trx, jobFactory));
         };
     }
-    
+
     @Bean
     SchedulerFactoryBeanCustomizer addExecuteInJTATransactionSupport(PlatformTransactionManager trxM) {
         return (sc) -> sc.setTransactionManager(trxM);
