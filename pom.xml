@@ -5,7 +5,7 @@
 
     <groupId>org.sterl.pmw</groupId>
     <artifactId>pmw-root</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <inceptionYear>2022</inceptionYear>
@@ -34,7 +34,7 @@
     </parent>
 
     <properties>
-        <pmw.version>1.0.0</pmw.version>
+        <pmw.version>1.0.1-SNAPSHOT</pmw.version>
         <java.version>17</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
