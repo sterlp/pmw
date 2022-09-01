@@ -91,7 +91,12 @@ public abstract class CoreWorkflowExecutionTest {
         Workflow<SimpleWorkflowState> w = Workflow.builder("any-workflow", () -> new SimpleWorkflowState())
                 .next(s -> {
                     try {
-                        Thread.sleep(75);
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {}
+                })
+                .next(s -> {
+                    try {
+                        Thread.sleep(50);
                     } catch (InterruptedException e) {}
                 })
                 .build();
@@ -103,7 +108,7 @@ public abstract class CoreWorkflowExecutionTest {
         // THEN
         assertThat(subject.status(id)).isEqualTo(WorkflowStatus.SLEEPING);
         // AND
-        Awaitility.await().pollDelay(Duration.ofMillis(50)) .until(() -> subject.status(id) == WorkflowStatus.RUNNING);
+        Awaitility.await().pollInterval(Duration.ofMillis(25)) .until(() -> subject.status(id) == WorkflowStatus.RUNNING);
         // AND
         Awaitility.await().until(() -> subject.status(id) == WorkflowStatus.COMPLETE);
     }

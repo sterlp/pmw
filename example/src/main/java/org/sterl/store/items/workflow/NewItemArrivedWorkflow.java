@@ -10,17 +10,13 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.store.items.boundary.ItemService;
 import org.sterl.store.items.component.DiscountComponent;
 import org.sterl.store.items.component.UpdateInStockCountComponent;
 import org.sterl.store.items.component.WarehouseStockComponent;
-import org.sterl.store.items.entity.Item;
 import org.sterl.store.warehouse.WarehouseService;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NewItemArrivedWorkflow {
@@ -32,7 +28,7 @@ public class NewItemArrivedWorkflow {
     private final WorkflowService<JobDetail> workflowService;
 
     private Workflow<NewItemArrivedWorkflowState> w;
-    private Workflow<NewItemArrivedWorkflowState> restorePriceWorkflow;
+    private Workflow<NewItemArrivedWorkflowState> restorePriceSubWorkflow;
     
 
     @PostConstruct
@@ -50,25 +46,25 @@ public class NewItemArrivedWorkflow {
                 })
                 .choose(s -> {
                         if (s.getWarehouseStockCount() > 40) return "discount-price";
-                        else return "check-warehouse";
+                        else return "check-warehouse-again";
                     })
                     .ifSelected("discount-price", s -> {
                         var originalPrice = discountComponent.applyDiscount(s.getItemId(), s.getWarehouseStockCount());
                         s.setOriginalPrice(originalPrice);
                         
-                        workflowService.execute(restorePriceWorkflow, s, Duration.ofMinutes(2));
+                        workflowService.execute(restorePriceSubWorkflow, s, Duration.ofMinutes(2));
                     })
-                    .ifSelected("check-warehouse", s -> this.execute(s.getItemId()))
+                    .ifSelected("check-warehouse-again", s -> this.execute(s.getItemId()))
                     .build()
                 .build();
 
         workflowService.register(w);
         
-        restorePriceWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
+        restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
                 .next(s -> discountComponent.setPrize(s.getItemId(), s.getOriginalPrice()))
                 .build();
         
-        workflowService.register(restorePriceWorkflow);
+        workflowService.register(restorePriceSubWorkflow);
     }
     
     @Transactional(propagation = Propagation.MANDATORY)
