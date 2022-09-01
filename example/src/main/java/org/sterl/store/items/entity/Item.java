@@ -1,6 +1,7 @@
 package org.sterl.store.items.entity;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -27,5 +28,11 @@ public class Item {
     private BigDecimal price;
 
     @Builder.Default
-    private int inStock = 0;
+    private long inStock = 0;
+
+    public BigDecimal applyDiscount(BigDecimal percent) {
+        var result = price;
+        price = price.multiply(percent, new MathContext(2));
+        return result;
+    }
 }

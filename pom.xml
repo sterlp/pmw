@@ -34,7 +34,7 @@
     </parent>
 
     <properties>
-        <pmw.version>0.1.0-SNAPSHOT</pmw.version>
+        <pmw.version>1.0.0-SNAPSHOT</pmw.version>
         <java.version>17</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>

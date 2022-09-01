@@ -164,7 +164,7 @@ public abstract class CoreWorkflowExecutionTest {
             .next((s, c) -> {
                 asserts.info("do-second");
             })
-            .choose((s, c) -> {
+            .choose(s -> {
                 asserts.info("choose");
                 return "left";
             }).ifSelected("left", (s, c) -> {
@@ -192,7 +192,7 @@ public abstract class CoreWorkflowExecutionTest {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow",
                 () ->  new SimpleWorkflowState())
-            .choose((s, c) -> {
+            .choose(s -> {
                 asserts.info("choose");
                 return "right";
             }).ifSelected("left", (s, c) -> {

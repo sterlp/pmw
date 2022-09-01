@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.sterl.store.items.entity.Item;
 import org.sterl.store.items.repository.ItemRepository;
-import org.sterl.store.items.workflow.CreateItemWorkflow;
+import org.sterl.store.items.workflow.NewItemArrivedWorkflow;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class ItemService {
 
     private final ItemRepository itemRepository;
-    private final CreateItemWorkflow createItemWorkflow;
+    private final NewItemArrivedWorkflow newItemArrivedWorkflow;
     
     @PostConstruct
     void init() {
@@ -28,14 +28,13 @@ public class ItemService {
     public Optional<Item> get(long id) {
         return itemRepository.findById(id);
     }
+
     public Item createNewItem(Item item) {
         itemRepository.save(item);
         itemRepository.flush();
         
-        createItemWorkflow.execute(item);
+        newItemArrivedWorkflow.execute(item.getId());
         
         return item;
     }
-    
-    
 }

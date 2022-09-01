@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class StockItem {
+public class WarehouseItem {
 
     @Id
     @GeneratedValue

@@ -1,9 +1,12 @@
 package org.sterl.pmw.quartz.boundary;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.quartz.DateBuilder;
+import org.quartz.DateBuilder.IntervalUnit;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
 import org.quartz.Scheduler;
@@ -12,6 +15,7 @@ import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.sterl.pmw.boundary.WorkflowService;
+import org.sterl.pmw.component.SerializationUtil;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
@@ -42,27 +46,7 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
         log.info("Workflows initialized, {} workflows deployed.", workflowRepository.getWorkflowNames().size());
     }
 
-    @Override
-    public <T extends WorkflowState> String execute(Workflow<T> w, T c) {
-        JobDetail job = workflowJobs.get(w.getName());
-        if (job == null) throw new IllegalStateException(
-                w.getName() + " not registered, register the workflowJobs first.");
-
-        try {
-            final TriggerBuilder<Trigger> t = TriggerBuilder.newTrigger()
-                    .forJob(job)
-                    .startNow();
-
-            workflowStateParser.setUserState(t, c);
-            workflowStateParser.setWorkflowStatus(t, WorkflowStatus.PENDING);
-
-            final Trigger trigger = t.build();
-            scheduler.scheduleJob(trigger);
-            return trigger.getKey().getName();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    
 
     @Override
     public <T extends WorkflowState> String execute(Workflow<T> w) {
@@ -111,16 +95,47 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
-    public String execute(String workflowName, WorkflowState c) {
+    public String execute(String workflowName, WorkflowState state) {
         Workflow w = workflowRepository.getWorkflow(workflowName);
+        SerializationUtil.verifyStateType(w, state);
+        return execute(w, state);
+    }
+    @Override
+    public <T extends WorkflowState> String execute(Workflow<T> w, T state) {
+        return execute(w, state, Duration.ZERO);
+    }
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override
+    public String execute(String workflowName, WorkflowState state, Duration delay) {
+        Workflow w = workflowRepository.getWorkflow(workflowName);
+        SerializationUtil.verifyStateType(w, state);
+        return execute(w, state, delay);
+    }
 
-        final Class<? extends WorkflowState> newContextClass = w.newEmtyContext().getClass();
-        if (c != null && newContextClass.isAssignableFrom(c.getClass())) {
-            return execute((Workflow)workflowRepository.getWorkflow(workflowName), c);
-        } else {
-            throw new IllegalArgumentException("Context of type "
-                    + c == null ? "null" : c.getClass().getName()
-                    + " is not compatible to " + newContextClass.getName());
+    @Override
+    public <T extends WorkflowState> String execute(Workflow<T> w, T state, Duration delay) {
+        JobDetail job = workflowJobs.get(w.getName());
+        if (job == null) throw new IllegalStateException(
+                w.getName() + " not registered, register the workflowJobs first.");
+
+        try {
+            final TriggerBuilder<Trigger> t = TriggerBuilder.newTrigger()
+                    .forJob(job);
+
+            workflowStateParser.setUserState(t, state);
+            if (delay.toMillis() >= 0) {
+                workflowStateParser.setWorkflowStatus(t, WorkflowStatus.SLEEPING);
+                t.startAt(DateBuilder.futureDate((int)delay.toMillis(), IntervalUnit.MILLISECOND));
+            } else {
+                workflowStateParser.setWorkflowStatus(t, WorkflowStatus.PENDING);
+                t.startNow();
+            }
+
+            final Trigger trigger = t.build();
+            scheduler.scheduleJob(trigger);
+            return trigger.getKey().getName();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -144,5 +159,10 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
         } catch (SchedulerException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public int workflowCount() {
+        return workflowRepository.workflowCount();
     }
 }

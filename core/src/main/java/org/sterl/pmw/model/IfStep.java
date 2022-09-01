@@ -18,7 +18,7 @@ public class IfStep<StateType extends WorkflowState> extends AbstractStep<StateT
 
     @Override
     public void apply(StateType state, WorkflowContext context) {
-        final String stepName = chooseFn.apply(state, context);
+        final String stepName = chooseFn.apply(state);
         WorkflowStep<StateType> selectedStep = subSteps.get(stepName);
 
         if (selectedStep == null) throw new IllegalStateException("No step with name "
