@@ -12,6 +12,29 @@
     </parent>
 
     <artifactId>pmw-spring</artifactId>
+    <description>Poor mans workflow Spring integration code</description>
+    
+    <inceptionYear>2022</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/sterlp/pmw/blob/main/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    
+    <scm>
+        <url>https://github.com/sterlp/pmw</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>paul_sterl</id>
+            <name>Paul Sterl</name>
+            <email>paul@sterl.org</email>
+        </developer>
+    </developers>
 
     <dependencies>
         <dependency>

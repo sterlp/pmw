@@ -17,6 +17,10 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+    
+    <scm>
+        <url>https://github.com/sterlp/pmw</url>
+    </scm>
 
     <developers>
         <developer>
