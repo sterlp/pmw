@@ -11,14 +11,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class AsyncAsserts {
 
-    private List<String> values = Collections.synchronizedList(new ArrayList<String>());
-    private Map<String, Integer> counts = new ConcurrentHashMap<>();
+    private final List<String> values = Collections.synchronizedList(new ArrayList<String>());
+    private final Map<String, Integer> counts = new ConcurrentHashMap<>();
 
-    public void clear() {
+    public synchronized void clear() {
         values.clear();
         counts.clear();
     }
-    public int add(String value) {
+    public synchronized int add(String value) {
         values.add(value);
         final int count = getCount(value) + 1;
         counts.put(value, count);
@@ -57,9 +57,8 @@ public class AsyncAsserts {
     }
     public void awaitOrdered(String value, String... values) {
         awaitValue(value, values);
-        assertThat(this.values.indexOf(value))
-            .isEqualTo(0);
 
+        assertThat(this.values.indexOf(value)).isEqualTo(0);
         if (values != null && values.length > 0) {
             for (int i = 0; i < values.length; i++) {
                 assertThat(this.values.indexOf(values[i]))
