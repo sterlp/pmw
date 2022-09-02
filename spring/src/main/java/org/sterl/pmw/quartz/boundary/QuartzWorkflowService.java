@@ -61,7 +61,7 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
                 .build();
 
         try {
-            workflowRepository.registerUnique(w);
+            workflowRepository.registerUnique((Workflow<WorkflowState>) w);
             scheduler.addJob(job, true);
             workflowJobs.put(w.getName(), job);
             return job;

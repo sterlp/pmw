@@ -132,9 +132,10 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
         stepExecutor = Executors.newWorkStealingPool();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends WorkflowState> String register(Workflow<T> w) {
-        workflowRepository.registerUnique(w);
+        workflowRepository.registerUnique((Workflow<WorkflowState>)w);
         return w.getName();
     }
 

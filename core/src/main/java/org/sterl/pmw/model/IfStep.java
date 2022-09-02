@@ -1,5 +1,6 @@
 package org.sterl.pmw.model;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import lombok.Getter;
@@ -25,5 +26,9 @@ public class IfStep<StateType extends WorkflowState> extends AbstractStep<StateT
                     + stepName + " exists anymore. Select one of " + subSteps.keySet());
 
         selectedStep.apply(state, context);
+    }
+    
+    public Map<String, WorkflowStep<?>> getSubSteps() {
+        return new LinkedHashMap<>(this.subSteps);
     }
 }

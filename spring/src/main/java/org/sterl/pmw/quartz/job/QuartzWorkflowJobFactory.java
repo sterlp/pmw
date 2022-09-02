@@ -11,6 +11,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowState;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -36,7 +37,7 @@ public class QuartzWorkflowJobFactory implements JobFactory {
     @Override
     public Job newJob(TriggerFiredBundle bundle, Scheduler scheduler) throws SchedulerException {
         String name = bundle.getJobDetail().getKey().getName();
-        Optional<Workflow<?>> w = workflowRepository.findWorkflow(name);
+        final Optional<Workflow<? extends WorkflowState>> w = workflowRepository.findWorkflow(name);
 
         log.debug("{} results in {}", name, w);
         if (w.isEmpty() && delegate == null) {

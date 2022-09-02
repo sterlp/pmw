@@ -2,6 +2,7 @@ package org.sterl.pmw.model;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -23,6 +24,10 @@ public class Workflow<T extends WorkflowState> {
         super();
         this.name = name;
         this.newContextCreator = newContextCreator;
+    }
+    
+    public List<WorkflowStep<T>> getSteps() {
+        return Collections.unmodifiableList(this.workflowSteps);
     }
 
     public int getStepCount() {

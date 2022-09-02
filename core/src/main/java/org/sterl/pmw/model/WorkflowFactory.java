@@ -17,17 +17,24 @@ public class WorkflowFactory<StateType extends WorkflowState> extends AbstractWo
     public WorkflowFactory<StateType> next(Consumer<StateType> fn) {
         return step(new SequentialStep<>(defaultStepName(), WorkflowFunction.of(fn)));
     }
+    
+    public WorkflowFactory<StateType> next(String name, WorkflowFunction<StateType> fn) {
+        return step(new SequentialStep<>(name, fn));
+    }
+    public WorkflowFactory<StateType> next(String name, Consumer<StateType> fn) {
+        return step(new SequentialStep<>(name, WorkflowFunction.of(fn)));
+    }
 
     public IfFactory<StateType> choose(WorkflowChooseFunction<StateType> chooseFn) {
         return new IfFactory<>(this, chooseFn);
     }
 
+    public IfFactory<StateType> choose(String name, WorkflowChooseFunction<StateType> chooseFn) {
+        return new IfFactory<>(this, chooseFn).name(name);
+    }
+
     public Workflow<StateType> build() {
         workflow.setWorkflowSteps(this.workflowSteps.values());
         return workflow;
-    }
-
-    public WorkflowFactory<StateType> next(String name, WorkflowFunction<StateType> fn) {
-        return step(new SequentialStep<>(name, fn));
     }
 }
