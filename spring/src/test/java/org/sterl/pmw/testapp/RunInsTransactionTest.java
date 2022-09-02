@@ -79,27 +79,30 @@ class RunInsTransactionTest {
         // GIVEN
         final AtomicInteger retries = new AtomicInteger(0);
         Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
-                .next(c -> {
-                    Long itemId = itemService.newItem(c.getItemName()).getId();
-                    c.setItemId(itemId);
-                })
-                .next(c -> {
+                .next(c -> c.setItemId(itemService.newItem(c.getItemName()).getId()))
+                .next( (c, s) -> {
                     assertThat(c.getItemId()).isNotNull();
                     itemService.updateStock(c.getItemId(), c.getStock());
                     retries.incrementAndGet();
-                    throw new RuntimeException("Nope! " + asserts.info("NOPE"));
+                    // we to a rollback
+                    throw new RuntimeException("Nope for item " + c.getItemId() + " times " + (s.getStepRetryCount() + 1));
                 })
                 .build();
         workflowService.register(w);
 
         // WHEN
-        String wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
+        final String w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
+        final String w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(99).build());
+        final String w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(99).build());
 
         // THEN
-        Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
-        Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);
-        assertThat(itemRepository.findByName("MyName").getInStock()).isZero();
-        assertThat(retries.get()).isGreaterThan(1);
+        Awaitility.await().until(() -> workflowService.status(w1) == WorkflowStatus.COMPLETE);
+        Awaitility.await().until(() -> workflowService.status(w2) == WorkflowStatus.COMPLETE);
+        Awaitility.await().until(() -> workflowService.status(w3) == WorkflowStatus.COMPLETE);
+        assertThat(itemRepository.findByName("MyName1").getInStock()).isZero();
+        assertThat(itemRepository.findByName("MyName2").getInStock()).isZero();
+        assertThat(itemRepository.findByName("MyName3").getInStock()).isZero();
+        assertThat(retries.get()).isGreaterThan(8);
     }
 
     @Test
