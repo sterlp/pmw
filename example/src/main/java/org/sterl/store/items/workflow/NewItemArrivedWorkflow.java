@@ -43,10 +43,8 @@ public class NewItemArrivedWorkflow {
                     updateStock.updateInStockCount(s.getItemId(), stockCount);
                     
                     s.setWarehouseStockCount(stockCount);
-                    
-                    // check after a while if we have still so many items in stock
-                    if (stockCount > 40) c.delayNextStepBy(Duration.ofMinutes(2));
                 })
+                .sleep("Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)
                 .choose("stock > 40?", s -> {
                         if (s.getWarehouseStockCount() > 40) return "discount-price";
                         else return "check-warehouse-again";

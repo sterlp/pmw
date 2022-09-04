@@ -13,5 +13,5 @@ public abstract class AbstractStep <StateType extends WorkflowState> implements 
     @NonNull
     protected final String name;
     @Getter
-    private int maxRetryCount = 3;
+    protected int maxRetryCount = 3;
 }

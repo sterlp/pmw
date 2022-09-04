@@ -44,7 +44,7 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
             byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
 
             try {
-                if (this.call(runningWorkflowState) != null) {
+                if (this.executeNextStep(runningWorkflowState) != null) {
                     queueNextStepExecution(workflowId, runningWorkflowState);
                 } else {
                     runningWorkflows.remove(workflowId);

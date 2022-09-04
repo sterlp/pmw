@@ -16,7 +16,7 @@ public class SequentialStep<StateType extends WorkflowState> extends AbstractSte
 
     @Override
     public void apply(StateType state, WorkflowContext context) {
-        Objects.requireNonNull(state, "State cannot be null.");
+        Objects.requireNonNull(state, "WorkflowState cannot be null.");
         Objects.requireNonNull(context, "WorkflowContext cannot be null.");
         fn.accept(state, context);
     }

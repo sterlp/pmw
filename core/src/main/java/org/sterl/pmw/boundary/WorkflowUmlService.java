@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import org.sterl.pmw.component.PlanUmlDiagram;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.IfStep;
+import org.sterl.pmw.model.WaitStep;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStep;
@@ -51,6 +52,8 @@ public class WorkflowUmlService {
         for (WorkflowStep<? extends WorkflowState> step : workflow.getSteps()) {
             if (step instanceof IfStep<?> ifStep) {
                 addIfStep(ifStep, diagram);
+            } else if (step instanceof WaitStep<?>) {
+                diagram.appendWaitState(step.getName());
             } else {
                 addStepName(step, diagram);
             }

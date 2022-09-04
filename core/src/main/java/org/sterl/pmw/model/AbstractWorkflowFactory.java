@@ -16,6 +16,10 @@ public abstract class AbstractWorkflowFactory<FactoryType
     }
 
     protected String defaultStepName() {
-        return "Step " + workflowSteps.size();
+        return defaultStepName("Step ");
+    }
+    
+    protected String defaultStepName(String prefix) {
+        return prefix + workflowSteps.size();
     }
 }

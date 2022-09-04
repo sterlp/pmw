@@ -16,7 +16,7 @@ public class SimpleWorkflowStepStrategy {
      * @throws WorkflowException in case of an error
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public WorkflowStep call(RunningWorkflowState<?> runningWorkflowState) {
+    public WorkflowStep executeNextStep(RunningWorkflowState<?> runningWorkflowState) {
         WorkflowStep nextStep = runningWorkflowState.nextStep();
         logWorkflowStart(runningWorkflowState);
         if (nextStep != null) {

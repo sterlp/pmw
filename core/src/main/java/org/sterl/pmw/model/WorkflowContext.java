@@ -17,6 +17,9 @@ public interface WorkflowContext {
      */
     int getStepRetryCount();
 
+    /**
+     * This method shouldn't be directly called, use the <b>sleep</b> factory method of the workflow builder.
+     */
     WorkflowContext delayNextStepBy(Duration duration);
     /**
      * @return the current set delay and clears it, never <code>null</code>

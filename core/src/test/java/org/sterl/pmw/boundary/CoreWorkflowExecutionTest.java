@@ -288,4 +288,32 @@ public abstract class CoreWorkflowExecutionTest {
         asserts.awaitOrdered("wait", "done");
         assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(1000L);
     }
+    
+    @Test
+    public void testWaitForNextStepCorrectWay() {
+        // GIVEN
+        final AtomicLong timeFirstStep = new AtomicLong(0);
+        final AtomicLong timeSecondStep = new AtomicLong(0);
+        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
+                () ->  new TestWorkflowCtx())
+                .next((s, c) -> {
+                    asserts.info("wait");
+                    timeFirstStep.set(System.currentTimeMillis());
+                })
+                .sleep(Duration.ofSeconds(1))
+                .next((s) -> {
+                    timeSecondStep.set(System.currentTimeMillis());
+                    asserts.info("done");
+                })
+                .build();
+        subject.register(w);
+
+        // WHEN
+        final String workflowId = subject.execute(w);
+
+        // THEN
+        Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.SLEEPING);
+        asserts.awaitOrdered("wait", "done");
+        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(1000L);
+    }
 }

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
+import java.time.Duration;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,6 +130,26 @@ class WorkflowUmlServiceTest {
                 case ()
                 :right;
                 endswitch
+                stop
+                @enduml
+                """);
+    }
+    
+    @Test
+    void testSleep() {
+        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", () ->  new SimpleWorkflowState())
+                .next(s -> {})
+                .sleep(Duration.ofHours(2))
+                .next(s -> {})
+                .build();
+
+        assertWorkflolw(w,
+                """
+                @startuml "test-workflow"
+                start
+                :Step 0;
+                :<&clock> Sleep for PT2H;
+                :Step 2;
                 stop
                 @enduml
                 """);

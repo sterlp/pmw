@@ -46,6 +46,11 @@ public class PlanUmlDiagram {
         appendLine("stop");
         return this;
     }
+    
+    public PlanUmlDiagram appendWaitState(String name) {
+        this.appendState("<&clock> " + name);
+        return this;
+    }
 
     public PlanUmlDiagram appendState(String stateName) {
         diagram.append(":").append(stateName).append( ";").append(NEW_LINE);
