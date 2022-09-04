@@ -1,8 +1,5 @@
 package org.sterl.store.items.workflow;
 
-import java.io.File;
-import java.io.FileOutputStream;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,7 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.quartz.JobDetail;
 import org.sterl.pmw.boundary.WorkflowService;
-import org.sterl.pmw.boundary.WorkflowUmlService;
+import org.sterl.pmw.component.SerializationUtil;
 import org.sterl.store.items.component.DiscountComponent;
 import org.sterl.store.items.component.UpdateInStockCountComponent;
 import org.sterl.store.items.component.WarehouseStockComponent;
@@ -35,11 +32,6 @@ class NewItemArrivedWorkflowMockTest {
 
     @Test
     void test() throws Exception {
-        File d = new File("./check-warehouse.svg");
-        if (d.exists()) d.delete();
-        
-        try (FileOutputStream out = new FileOutputStream(d)) {
-            new WorkflowUmlService(null).printWorkflowAsPlantUmlSvg(subject.getCheckWarehouse(), out);
-        }
+        SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse());
     }
 }

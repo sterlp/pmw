@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,8 @@ class WorkflowUmlServiceTest {
             subject.printWorkflowAsPlantUmlSvg("test-workflow", out);
         }
         
+        assertThat(d).exists();
+        assertThat(Files.size(d.toPath())).isGreaterThan(5L);
     }
 
     @Test

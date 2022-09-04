@@ -100,6 +100,31 @@ public class NewItemArrivedWorkflow {
     }
 }
 ```
+### Export Workflow as UML
+
+```java
+@ExtendWith(MockitoExtension.class)
+class NewItemArrivedWorkflowMockTest {
+
+    @Mock WarehouseService warehouseService;
+    @Mock DiscountComponent discountComponent;
+    @Mock WarehouseStockComponent createStock;
+    @Mock UpdateInStockCountComponent updateStock;
+    @Mock WorkflowService<JobDetail> workflowService;
+
+    @InjectMocks NewItemArrivedWorkflow subject;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        subject.createWorkflow();
+    }
+
+    @Test
+    void test() throws Exception {
+        SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse());
+    }
+}
+``
 
 ### IDE
 
