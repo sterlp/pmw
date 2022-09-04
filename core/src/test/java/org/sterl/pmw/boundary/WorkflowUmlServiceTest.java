@@ -132,7 +132,7 @@ class WorkflowUmlServiceTest {
     }
 
     public void assertWorkflolw(Workflow<?> w, String expected) {
-        final PlanUmlDiagram result = new PlanUmlDiagram(w.getName());
+        final PlanUmlDiagram result = new PlanUmlDiagram(w.getName(), null);
         subject.addWorkflow(w, result);
         final String diagram = result.build();
         if (!diagram.equals(expected)) {
