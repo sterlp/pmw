@@ -17,9 +17,9 @@ Build a very basic workflow `engine` which does only really basic stuff and is u
 - [x] First Quartz integration
 - [x] First Spring integration
 - [x] First PlantUML integration
-- [] Wait as own step
-- [] Trigger workflows in an own step
-- [] Standalone flow version
+- [ ] Wait as own step
+- [ ] Trigger workflows in an own step
+- [ ] Standalone flow version
 
 ## Spring setup
 
