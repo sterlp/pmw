@@ -11,7 +11,7 @@
     </parent>
     <groupId>org.sterl.pmw</groupId>
     <artifactId>pmw-example</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <name>pmw-example</name>
     <description>PMW Example Project</description>
 
@@ -23,7 +23,7 @@
         <dependency>
             <groupId>org.sterl.pmw</groupId>
             <artifactId>pmw-spring</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
