@@ -61,12 +61,13 @@ public class InternalWorkflowState implements WorkflowContext {
 
     Instant workflowStarted() {
         if (workflowStartTime == null) workflowStartTime = Instant.now();
+        this.workflowStatus = WorkflowStatus.RUNNING;
         return workflowStartTime;
-
     }
     Instant workflowEnded() {
         if (workflowEndTime == null) {
             workflowEndTime = Instant.now();
+            this.workflowStatus = WorkflowStatus.COMPLETE;
         }
         return workflowEndTime;
     }
@@ -88,7 +89,9 @@ public class InternalWorkflowState implements WorkflowContext {
     }
     @Override
     public WorkflowContext cancelWorkflow() {
+        final Instant then = workflowEnded();
         workflowStatus = WorkflowStatus.CANCELED;
+        this.lastError = "Workflow " + WorkflowStatus.CANCELED + " at " + then;
         return this;
     }
     @Override
@@ -101,5 +104,9 @@ public class InternalWorkflowState implements WorkflowContext {
         }
         this.nextStepDelay = null;
         return result;
+    }
+
+    public boolean hasDelay() {
+        return nextStepDelay != null && nextStepDelay.toMillis() > 0;
     }
 }

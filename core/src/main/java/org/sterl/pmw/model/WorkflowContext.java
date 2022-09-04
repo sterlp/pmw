@@ -25,6 +25,7 @@ public interface WorkflowContext {
      * @return the current set delay and clears it, never <code>null</code>
      */
     Duration consumeDelay();
+    boolean hasDelay();
 
     WorkflowContext cancelWorkflow();
 

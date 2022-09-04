@@ -20,6 +20,7 @@ import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
+import org.sterl.pmw.model.WorkflowStep;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,7 +28,7 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     private ExecutorService stepExecutor;
     private WorkflowRepository workflowRepository = new WorkflowRepository();
 
-    private Map<String, Workflow<?>> runningWorkflows = new ConcurrentHashMap<>();
+    private Map<String, RunningWorkflowState<?>> runningWorkflows = new ConcurrentHashMap<>();
     private Map<String, WaitingWorkflow<?>> waitingWorkflows = new ConcurrentHashMap<>();
 
     private record WaitingWorkflow<T extends WorkflowState>(Instant until, RunningWorkflowState<T> runningWorkflowState) {}
@@ -41,14 +42,23 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
         @Override
         public Void call() throws Exception {
 
-            byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
 
+            byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
             try {
-                if (this.executeNextStep(runningWorkflowState) != null) {
-                    queueNextStepExecution(workflowId, runningWorkflowState);
-                } else {
-                    runningWorkflows.remove(workflowId);
+                // we loop throw all steps as long we have one
+                WorkflowStep<?> nexStep = this.executeNextStep(runningWorkflowState);
+                while (nexStep != null && runningWorkflowState.isNotCanceled()) {
+                    if (runningWorkflowState.hasDelay()) {
+                        queueNextStepExecution(workflowId, runningWorkflowState);
+                        break;
+                    } else {
+                        originalState = SerializationUtil.serialize(runningWorkflowState.userState());
+                        nexStep = this.executeNextStep(runningWorkflowState);
+                    }
                 }
+
+                if (nexStep == null || runningWorkflowState.isCanceled()) runningWorkflows.remove(workflowId);
+
             } catch (WorkflowException.WorkflowFailedDoRetryException e) {
 
                 queueNextStepExecution(workflowId, new RunningWorkflowState<>(
@@ -73,7 +83,7 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
                     }
                 }
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(250);
                 } catch (InterruptedException e) {
                     if (Thread.interrupted()) break;
                 }
@@ -102,11 +112,11 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     @Override
     public <T extends WorkflowState> String execute(Workflow<T> w, T state, Duration delay) {
         var workflowId = UUID.randomUUID().toString();
-        runningWorkflows.put(workflowId, w);
         RunningWorkflowState<T> runningState = new RunningWorkflowState<>(w, state, new InternalWorkflowState(delay));
-        
+
+        runningWorkflows.put(workflowId, runningState);
         queueNextStepExecution(workflowId, runningState);
-        
+
         return workflowId;
     }
 
@@ -157,10 +167,13 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
         WorkflowStatus result;
         if (this.waitingWorkflows.containsKey(workflowId)) {
             result = WorkflowStatus.SLEEPING;
-        } else if (this.runningWorkflows.containsKey(workflowId)) {
-            result = WorkflowStatus.RUNNING;
         } else {
-            result = WorkflowStatus.COMPLETE;
+            final RunningWorkflowState<?> running = this.runningWorkflows.get(workflowId);
+            if (running == null) {
+                result = WorkflowStatus.COMPLETE;
+            } else {
+                result = running.internalState().getWorkflowStatus();
+            }
         }
         return result;
     }

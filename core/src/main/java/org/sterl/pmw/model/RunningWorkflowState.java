@@ -20,4 +20,15 @@ public record RunningWorkflowState<T extends WorkflowState>(Workflow<T> workflow
     public boolean failStep(WorkflowStep<T> step, Exception e) {
         return workflow.fail(step, internalState, e);
     }
+    
+    public boolean hasDelay() {
+        return internalState.hasDelay();
+    }
+    
+    public boolean isCanceled() {
+        return internalState.getWorkflowStatus() == WorkflowStatus.CANCELED;
+    }
+    public boolean isNotCanceled() {
+        return internalState.getWorkflowStatus() != WorkflowStatus.CANCELED;
+    }
 }

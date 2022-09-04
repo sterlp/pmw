@@ -200,12 +200,14 @@ public abstract class CoreWorkflowExecutionTest {
             .choose(s -> {
                 asserts.info("choose");
                 return "right";
-            }).ifSelected("left", (s, c) -> {
-                asserts.info("  going left");
-            }).ifSelected("right", (s, c) -> {
-                asserts.info("  going right");
             })
-            .build()
+                .ifSelected("left", (s, c) -> {
+                    asserts.info("  going left");
+                })
+                .ifSelected("right", (s, c) -> {
+                    asserts.info("  going right");
+                })
+                .build()
             .next((s, c) -> {
                 asserts.info("finally");
             })
@@ -315,5 +317,28 @@ public abstract class CoreWorkflowExecutionTest {
         Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.SLEEPING);
         asserts.awaitOrdered("wait", "done");
         assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(1000L);
+    }
+    
+    @Test
+    public void testCancelWorkflow() {
+        // GIVEN
+        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
+                () ->  new TestWorkflowCtx())
+                .next(s -> asserts.info("step 1"))
+                .next((s, c) -> {
+                    asserts.info("step 2");
+                    c.cancelWorkflow();
+                })
+                .next(s -> asserts.info("cancel"))
+                .build();
+        subject.register(w);
+
+        // WHEN
+        final String workflowId = subject.execute(w);
+
+        // THEN
+        Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.COMPLETE);
+        asserts.awaitOrdered("step 1", "step 2");
+        asserts.assertMissing("cancel");
     }
 }

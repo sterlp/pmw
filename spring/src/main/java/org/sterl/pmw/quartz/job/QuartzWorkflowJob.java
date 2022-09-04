@@ -66,7 +66,7 @@ public class QuartzWorkflowJob implements Job {
         try {
             trx.executeWithoutResult(t -> {
                 final WorkflowStep<?> nextStep = callStrategy.executeNextStep(runningWorkflowState);
-                if (nextStep != null) {
+                if (nextStep != null && runningWorkflowState.isNotCanceled()) {
                     try {
                         queueNextStepFor(context.getTrigger(),
                                 runningWorkflowState.internalState().consumeDelay(),

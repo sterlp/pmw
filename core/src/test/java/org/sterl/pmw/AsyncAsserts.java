@@ -66,4 +66,7 @@ public class AsyncAsserts {
             }
         }
     }
+    public void assertMissing(String value) {
+        assertThat(values).doesNotContain(value);
+    }
 }

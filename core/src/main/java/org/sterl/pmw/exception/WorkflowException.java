@@ -6,6 +6,7 @@ import org.sterl.pmw.model.WorkflowStep;
 import lombok.Getter;
 
 public abstract class WorkflowException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
     @Getter
     private final Workflow<?> workflow;
     @Getter
@@ -25,6 +26,7 @@ public abstract class WorkflowException extends RuntimeException {
     }
 
     public static class WorkflowFailedNoRetryException extends WorkflowException {
+        private static final long serialVersionUID = 1L;
         @Getter
         private final int tryCount;
 
@@ -34,6 +36,7 @@ public abstract class WorkflowException extends RuntimeException {
         }
     }
     public static class WorkflowFailedDoRetryException extends WorkflowException {
+        private static final long serialVersionUID = 1L;
         @Getter
         private final int tryCount;
 
