@@ -8,9 +8,18 @@ Build a very basic workflow `engine` which does only really basic stuff and is u
 
 - one simple jar to get it running
 - no own deployment of a workflow server or any stuff
-- reuse of a schedular framework
+- reuse of a scheduler framework
 - be compatible to other frameworks
 - Spring integration
+
+## ToDo
+
+- [x] First Quartz integration
+- [x] First Spring integration
+- [x] First PlantUML integration
+- [] Wait as own step
+- [] Trigger workflows in an own step
+- [] Standalone flow version
 
 ## Spring setup
 
@@ -124,7 +133,7 @@ class NewItemArrivedWorkflowMockTest {
         SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse());
     }
 }
-``
+```
 
 ### IDE
 
