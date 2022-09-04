@@ -12,10 +12,11 @@ public class SimpleWorkflowStepStrategy {
 
     /**
      * Runs the next step in the workflow
-     * @return <code>true</code> if a retry or next step should run, otherwise <code>false</code>
+     * @return {@link WorkflowStep} if a next step is available, otherwise <code>null</code>
+     * @throws WorkflowException in case of an error
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public boolean call(RunningWorkflowState<?> runningWorkflowState) {
+    public WorkflowStep call(RunningWorkflowState<?> runningWorkflowState) {
         WorkflowStep nextStep = runningWorkflowState.nextStep();
         logWorkflowStart(runningWorkflowState);
         if (nextStep != null) {
@@ -31,7 +32,7 @@ public class SimpleWorkflowStepStrategy {
             }
 
         }
-        return nextStep != null;
+        return nextStep;
     }
 
     private <C extends WorkflowState> WorkflowException logWorkflowStepFailed(RunningWorkflowState<C> runningWorkflowState, WorkflowStep<C> step, Exception e) {

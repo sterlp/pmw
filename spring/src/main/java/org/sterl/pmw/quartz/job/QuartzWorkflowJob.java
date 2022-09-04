@@ -19,6 +19,7 @@ import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
+import org.sterl.pmw.model.WorkflowStep;
 import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -64,8 +65,8 @@ public class QuartzWorkflowJob implements Job {
 
         try {
             trx.executeWithoutResult(t -> {
-                boolean hasNext = callStrategy.call(runningWorkflowState);
-                if (hasNext) {
+                final WorkflowStep<?> nextStep = callStrategy.call(runningWorkflowState);
+                if (nextStep != null) {
                     try {
                         queueNextStepFor(context.getTrigger(),
                                 runningWorkflowState.internalState().consumeDelay(),

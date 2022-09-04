@@ -1,15 +1,16 @@
 package org.sterl.pmw.boundary;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.File;
+import java.io.FileOutputStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sterl.pmw.boundary.CoreWorkflowExecutionTest.TestWorkflowCtx;
+import org.sterl.pmw.component.PlanUmlDiagram;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.SimpleWorkflowState;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.model.WorkflowState;
 
 class WorkflowUmlServiceTest {
 
@@ -18,8 +19,30 @@ class WorkflowUmlServiceTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        repository.clear();
     }
     
+    @Test
+    void testPlanUmlDiagram() throws Exception {
+        // GIVEN
+        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", () ->  new SimpleWorkflowState())
+                .next(s -> {})
+                .next(s -> {})
+                .next(s -> {})
+                .build();
+        
+        repository.register(w);
+        
+        File d = new File("./test-workflow.svg");
+        if (d.exists()) d.delete();
+        d.deleteOnExit();
+
+        try (FileOutputStream out = new FileOutputStream(d)) {
+            subject.printWorkflowAsPlantUmlSvg("test-workflow", out);
+        }
+        
+    }
+
     @Test
     void testOneStep() {
         // GIVEN
@@ -28,14 +51,13 @@ class WorkflowUmlServiceTest {
                 .build();
 
         // WHEN
-        final StringBuilder result = subject.printWorkflow(w);
-
-        // THEN
-        assertThat(result.toString()).isEqualTo(
+        assertWorkflolw(w,
                 """
+                @startuml "test-workflow"
                 start
                 :Step 0;
                 stop
+                @enduml
                 """);
     }
     
@@ -49,9 +71,11 @@ class WorkflowUmlServiceTest {
         // THEN
         assertWorkflolw(w,
                 """
+                @startuml "test-workflow"
                 start
                 :foo bar;
                 stop
+                @enduml
                 """);
     }
 
@@ -68,6 +92,7 @@ class WorkflowUmlServiceTest {
 
         assertWorkflolw(w,
                 """
+                @startuml "test-workflow"
                 start
                 :Step 0;
                 switch ()
@@ -78,6 +103,7 @@ class WorkflowUmlServiceTest {
                 endswitch
                 :Step 2;
                 stop
+                @enduml
                 """);
     }
     
@@ -92,6 +118,7 @@ class WorkflowUmlServiceTest {
 
         assertWorkflolw(w,
                 """
+                @startuml "test-workflow"
                 start
                 switch (if any)
                 case ()
@@ -100,14 +127,17 @@ class WorkflowUmlServiceTest {
                 :right;
                 endswitch
                 stop
+                @enduml
                 """);
     }
 
     public void assertWorkflolw(Workflow<?> w, String expected) {
-        final StringBuilder result = subject.printWorkflow(w);
-        if (!result.toString().equals(expected)) {
-            System.err.println(result);
+        final PlanUmlDiagram result = new PlanUmlDiagram(w.getName());
+        subject.addWorkflow(w, result);
+        final String diagram = result.build();
+        if (!diagram.equals(expected)) {
+            System.err.println(diagram);
         }
-        assertThat(result.toString()).isEqualTo(expected);
+        assertThat(diagram).isEqualTo(expected);
     }
 }

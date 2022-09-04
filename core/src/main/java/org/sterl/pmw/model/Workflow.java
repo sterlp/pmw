@@ -45,13 +45,18 @@ public class Workflow<T extends WorkflowState> {
         return workflowSteps.get(currentStepIndex);
     }
 
+    /**
+     * Marks the current step as a success and returns the next step if available
+     * @return the next step if available, otherwise <code>null</code>
+     */
     public WorkflowStep<T> success(WorkflowStep<T> currentStep, InternalWorkflowState state) {
         state.stepSuccessfullyFinished(currentStep);
-        return nextStep(state);
+        final WorkflowStep<T> nextStep = nextStep(state);
+        return nextStep;
     }
 
     public boolean fail(WorkflowStep<T> nextStep, InternalWorkflowState state, Exception e) {
-        int retryCount = state.stepFailed(nextStep, e);
+        final int retryCount = state.stepFailed(nextStep, e);
         return retryCount < nextStep.getMaxRetryCount();
     }
 

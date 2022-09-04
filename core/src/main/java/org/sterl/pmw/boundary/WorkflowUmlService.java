@@ -1,7 +1,10 @@
 package org.sterl.pmw.boundary;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Map.Entry;
 
+import org.sterl.pmw.component.PlanUmlDiagram;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.IfStep;
 import org.sterl.pmw.model.Workflow;
@@ -9,53 +12,71 @@ import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStep;
 
 import lombok.RequiredArgsConstructor;
+import net.sourceforge.plantuml.FileFormat;
+import net.sourceforge.plantuml.FileFormatOption;
+import net.sourceforge.plantuml.SourceStringReader;
+import net.sourceforge.plantuml.core.DiagramDescription;
 
 @RequiredArgsConstructor
 public class WorkflowUmlService {
 
     private final WorkflowRepository workflowRepository;
     
+    public DiagramDescription printWorkflowAsPlantUmlSvg(String workflowId, OutputStream out) throws IOException {
+        return this.printWorkflowAsPlantUmlSvg(workflowRepository.getWorkflow(workflowId), out);
+    }
+    public DiagramDescription printWorkflowAsPlantUmlSvg(Workflow<? extends WorkflowState> workflow, OutputStream out) throws IOException {
+        final String workflowUml = printWorkflow(workflow);
+        return convertAsPlantUmlSvg(workflowUml, out);
+    }
+    
+    public DiagramDescription convertAsPlantUmlSvg(String diagram, OutputStream out) throws IOException {
+        SourceStringReader reader = new SourceStringReader(diagram);
+        return reader.outputImage(out, 0, new FileFormatOption(FileFormat.SVG));
+    }
+    
     public String printWorkflow(String workflowId) {
-        final Workflow<? extends WorkflowState> workflow = workflowRepository.getWorkflow(workflowId);
-        
-        printWorkflow(workflow);
-        
-        return null;
+        return printWorkflow(workflowRepository.getWorkflow(workflowId));
     }
 
-    public StringBuilder printWorkflow(final Workflow<? extends WorkflowState> workflow) {
-        StringBuilder result = new StringBuilder("start").append("\n");
+    public String printWorkflow(Workflow<? extends WorkflowState> workflow) {
+        PlanUmlDiagram diagram = new PlanUmlDiagram(workflow.getName());
+        addWorkflow(workflow, diagram);
+        return diagram.build();
+    }
+
+    void addWorkflow(final Workflow<? extends WorkflowState> workflow, final PlanUmlDiagram diagram) {
+        diagram.start();
 
         for (WorkflowStep<? extends WorkflowState> step : workflow.getSteps()) {
             if (step instanceof IfStep<?> ifStep) {
-                addSwitch(ifStep, result);
-                for (Entry<String, WorkflowStep<?>> e : ifStep.getSubSteps().entrySet()) {
-                    result.append("case ()\n");
-                    addStepName(e.getKey(), result);
-                }
-                result.append("endswitch\n");
+                addIfStep(ifStep, diagram);
             } else {
-                addStepName(step, result);
+                addStepName(step, diagram);
             }
         }
-        result.append("stop").append("\n");
-        
-        return result;
+
+        diagram.stop();
     }
-    
-    public void addSwitch(IfStep<?> step, StringBuilder result) {
-        result.append("switch (");
-        if (!step.getName().startsWith("Step ")) {
-            result.append(step.getName());
+
+    private void addIfStep(IfStep<?> ifStep, PlanUmlDiagram diagram) {
+        addSwitch(ifStep, diagram);
+        for (Entry<String, WorkflowStep<?>> e : ifStep.getSubSteps().entrySet()) {
+            diagram.appendLine("case ()");
+            diagram.appendState(e.getKey());
         }
-        result.append(")\n");
+        diagram.appendLine("endswitch");
     }
     
-    public void addStepName(WorkflowStep<?> step, StringBuilder result) {
-        addStepName(step.getName(), result);
+    private void addSwitch(IfStep<?> step, PlanUmlDiagram diagram) {
+        diagram.append("switch (");
+        if (!step.getName().startsWith("Step ")) {
+            diagram.append(step.getName());
+        }
+        diagram.appendLine(")");
     }
     
-    public void addStepName(String stepName, StringBuilder result) {
-        result.append(":").append(stepName).append( ";\n");
+    private void addStepName(WorkflowStep<?> step, PlanUmlDiagram diagram) {
+        diagram.appendState(step.getName());
     }
 }

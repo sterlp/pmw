@@ -13,7 +13,7 @@
 
     <artifactId>pmw-core</artifactId>
     <description>Poor mans workflow engine core which has no framework dependencies</description>
-    
+
     <inceptionYear>2022</inceptionYear>
 
     <licenses>
@@ -23,7 +23,7 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    
+
     <scm>
         <url>https://github.com/sterlp/pmw</url>
     </scm>
@@ -40,6 +40,11 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.plantuml</groupId>
+            <artifactId>plantuml</artifactId>
+            <version>1.2022.7</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
