@@ -36,11 +36,13 @@ spring:
 
 ### Maven
 
+Select latest version: https://search.maven.org/search?q=a:pmw-spring
+
 ```xml
 <dependency>
     <groupId>org.sterl.pmw</groupId>
     <artifactId>pmw-spring</artifactId>
-    <version>1.0.0</version>
+    <version>1.x.x</version>
 </dependency>
 
 ```
