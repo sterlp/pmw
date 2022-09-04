@@ -38,6 +38,8 @@ spring:
 
 ### Define a workflow
 
+![check-warehouse](/spring/check-warehouse.svg)
+
 ```java
 @Service
 @RequiredArgsConstructor
@@ -49,15 +51,17 @@ public class NewItemArrivedWorkflow {
     private final UpdateInStockCountComponent updateStock;
     private final WorkflowService<JobDetail> workflowService;
 
-    private Workflow<NewItemArrivedWorkflowState> w;
-    private Workflow<NewItemArrivedWorkflowState> restorePriceWorkflow;
+    @Getter
+    private Workflow<NewItemArrivedWorkflowState> checkWarehouse;
+    @Getter
+    private Workflow<NewItemArrivedWorkflowState> restorePriceSubWorkflow;
     
 
     @PostConstruct
     void createWorkflow() {
-        w = Workflow.builder("check-warehouse", () -> NewItemArrivedWorkflowState.builder().build())
-                .next(s -> createStock.checkWarehouseForNewStock(s.getItemId()))
-                .next((s, c) -> {
+        checkWarehouse = Workflow.builder("check-warehouse", () -> NewItemArrivedWorkflowState.builder().build())
+                .next("check warehouse for new stock", s -> createStock.checkWarehouseForNewStock(s.getItemId()))
+                .next("update item stock", (s, c) -> {
                     final long stockCount = warehouseService.countStock(s.getItemId());
                     updateStock.updateInStockCount(s.getItemId(), stockCount);
                     
@@ -66,32 +70,32 @@ public class NewItemArrivedWorkflow {
                     // check after a while if we have still so many items in stock
                     if (stockCount > 40) c.delayNextStepBy(Duration.ofMinutes(2));
                 })
-                .choose(s -> {
+                .choose("stock > 40?", s -> {
                         if (s.getWarehouseStockCount() > 40) return "discount-price";
-                        else return "check-warehouse";
+                        else return "check-warehouse-again";
                     })
                     .ifSelected("discount-price", s -> {
                         var originalPrice = discountComponent.applyDiscount(s.getItemId(), s.getWarehouseStockCount());
                         s.setOriginalPrice(originalPrice);
                         
-                        workflowService.execute(restorePriceWorkflow, s, Duration.ofMinutes(2));
+                        workflowService.execute(restorePriceSubWorkflow, s, Duration.ofMinutes(2));
                     })
-                    .ifSelected("check-warehouse", s -> this.execute(s.getItemId()))
+                    .ifSelected("check-warehouse-again", s -> this.execute(s.getItemId()))
                     .build()
                 .build();
 
-        workflowService.register(w);
+        workflowService.register(checkWarehouse);
         
-        restorePriceWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
+        restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
                 .next(s -> discountComponent.setPrize(s.getItemId(), s.getOriginalPrice()))
                 .build();
         
-        workflowService.register(restorePriceWorkflow);
+        workflowService.register(restorePriceSubWorkflow);
     }
     
     @Transactional(propagation = Propagation.MANDATORY)
     public String execute(long itemId) {
-        return workflowService.execute(w, NewItemArrivedWorkflowState.builder()
+        return workflowService.execute(checkWarehouse, NewItemArrivedWorkflowState.builder()
                 .itemId(itemId).build());
     }
 }
