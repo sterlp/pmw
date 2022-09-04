@@ -38,7 +38,7 @@ spring:
 
 ### Define a workflow
 
-![check-warehouse](/spring/check-warehouse.svg)
+![check-warehouse](/example/check-warehouse.svg)
 
 ```java
 @Service
