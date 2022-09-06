@@ -45,17 +45,17 @@ public class NewItemArrivedWorkflow {
                     s.setWarehouseStockCount(stockCount);
                 })
                 .sleep("Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)
-                .choose("stock > 40?", s -> {
+                .choose("check stock", s -> {
                         if (s.getWarehouseStockCount() > 40) return "discount-price";
                         else return "check-warehouse-again";
                     })
-                    .ifSelected("discount-price", s -> {
+                    .ifSelected("discount-price", "> 40", s -> {
                         var originalPrice = discountComponent.applyDiscount(s.getItemId(), s.getWarehouseStockCount());
                         s.setOriginalPrice(originalPrice);
                         
                         workflowService.execute(restorePriceSubWorkflow, s, Duration.ofMinutes(2));
                     })
-                    .ifSelected("check-warehouse-again", s -> this.execute(s.getItemId()))
+                    .ifSelected("check-warehouse-again", "< 40", s -> this.execute(s.getItemId()))
                     .build()
                 .build();
 

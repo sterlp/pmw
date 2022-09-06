@@ -77,21 +77,19 @@ public class NewItemArrivedWorkflow {
                     updateStock.updateInStockCount(s.getItemId(), stockCount);
                     
                     s.setWarehouseStockCount(stockCount);
-                    
-                    // check after a while if we have still so many items in stock
-                    if (stockCount > 40) c.delayNextStepBy(Duration.ofMinutes(2));
                 })
-                .choose("stock > 40?", s -> {
+                .sleep("Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)
+                .choose("check stock", s -> {
                         if (s.getWarehouseStockCount() > 40) return "discount-price";
                         else return "check-warehouse-again";
                     })
-                    .ifSelected("discount-price", s -> {
+                    .ifSelected("discount-price", "> 40", s -> {
                         var originalPrice = discountComponent.applyDiscount(s.getItemId(), s.getWarehouseStockCount());
                         s.setOriginalPrice(originalPrice);
                         
                         workflowService.execute(restorePriceSubWorkflow, s, Duration.ofMinutes(2));
                     })
-                    .ifSelected("check-warehouse-again", s -> this.execute(s.getItemId()))
+                    .ifSelected("check-warehouse-again", "< 40", s -> this.execute(s.getItemId()))
                     .build()
                 .build();
 
