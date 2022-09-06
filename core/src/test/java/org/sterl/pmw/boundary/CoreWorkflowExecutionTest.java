@@ -193,21 +193,38 @@ public abstract class CoreWorkflowExecutionTest {
     }
 
     @Test
-    public void testRightFirst() {
+    public void testChoose() {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow",
                 () ->  new SimpleWorkflowState())
             .choose(s -> {
-                asserts.info("choose");
+                asserts.info("choose 1");
                 return "right";
             })
                 .ifSelected("left", (s, c) -> {
                     asserts.info("  going left");
                 })
+                .ifSelected("mid", (s, c) -> {
+                    asserts.info("  going mid");
+                })
                 .ifSelected("right", (s, c) -> {
                     asserts.info("  going right");
                 })
                 .build()
+            .choose(s -> {
+                    asserts.info("choose 2");
+                    return "mid";
+                })
+                    .ifSelected("left", (s, c) -> {
+                        asserts.info("  going left");
+                    })
+                    .ifSelected("mid", (s, c) -> {
+                        asserts.info("  going mid");
+                    })
+                    .ifSelected("right", (s, c) -> {
+                        asserts.info("  going right");
+                    })
+                    .build()
             .next((s, c) -> {
                 asserts.info("finally");
             })
@@ -218,7 +235,7 @@ public abstract class CoreWorkflowExecutionTest {
         subject.execute(w, new SimpleWorkflowState());
 
         // THEN
-        asserts.awaitOrdered("choose", "  going right", "finally");
+        asserts.awaitOrdered("choose 1", "  going right", "choose 2", "  going mid", "finally");
     }
 
     @Test

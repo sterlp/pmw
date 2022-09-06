@@ -3,7 +3,7 @@ package org.sterl.pmw.boundary;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
-import org.sterl.pmw.model.IfStep;
+import org.sterl.pmw.model.ChooseStep;
 import org.sterl.pmw.model.SimpleWorkflowState;
 import org.sterl.pmw.model.Workflow;
 
@@ -24,8 +24,8 @@ public class WorkflowFactoryTest {
 
         // THEN
         assertThat(w.getStepByPosition(0).getName()).isEqualTo("Step 0");
-        assertThat(((IfStep<?>)w.getStepByPosition(0)).getSubSteps().get("left").getName()).isEqualTo("left");
-        assertThat(((IfStep<?>)w.getStepByPosition(0)).getSubSteps().get("right").getName()).isEqualTo("right");
+        assertThat(((ChooseStep<?>)w.getStepByPosition(0)).getSubSteps().get("left").getName()).isEqualTo("left");
+        assertThat(((ChooseStep<?>)w.getStepByPosition(0)).getSubSteps().get("right").getName()).isEqualTo("right");
         assertThat(w.getStepByPosition(1).getName()).isEqualTo("Step 1");
         assertThat(w.getStepByPosition(2).getName()).isEqualTo("foo");
 

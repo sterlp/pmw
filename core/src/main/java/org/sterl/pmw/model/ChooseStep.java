@@ -6,13 +6,13 @@ import java.util.Map;
 import lombok.Getter;
 
 @Getter
-public class IfStep<StateType extends WorkflowState> extends AbstractStep<StateType> {
+public class ChooseStep<StateType extends WorkflowState> extends AbstractStep<StateType> {
 
     private final WorkflowChooseFunction<StateType> chooseFn;
     private final Map<String, WorkflowStep<StateType>> subSteps;
 
-    IfStep(String name, WorkflowChooseFunction<StateType> chooseFn, Map<String, WorkflowStep<StateType>> subSteps) {
-        super(name);
+    ChooseStep(String name, WorkflowChooseFunction<StateType> chooseFn, Map<String, WorkflowStep<StateType>> subSteps) {
+        super(name, null);
         this.chooseFn = chooseFn;
         this.subSteps = subSteps;
     }

@@ -61,8 +61,7 @@ public class AsyncAsserts {
         assertThat(this.values.indexOf(value)).isEqualTo(0);
         if (values != null && values.length > 0) {
             for (int i = 0; i < values.length; i++) {
-                assertThat(this.values.indexOf(values[i]))
-                    .isEqualTo(i + 1);
+                assertThat(this.values.indexOf(values[i])).isEqualTo(i + 1);
             }
         }
     }

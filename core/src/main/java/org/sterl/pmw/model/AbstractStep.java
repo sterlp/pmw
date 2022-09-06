@@ -12,6 +12,7 @@ import lombok.ToString;
 public abstract class AbstractStep <StateType extends WorkflowState> implements WorkflowStep<StateType> {
     @NonNull
     protected final String name;
+    protected final String connectorLabel;
     @Getter
     protected int maxRetryCount = 3;
 }

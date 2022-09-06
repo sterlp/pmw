@@ -9,7 +9,11 @@ public class SequentialStep<StateType extends WorkflowState> extends AbstractSte
     private final WorkflowFunction<StateType> fn;
 
     SequentialStep(String name, WorkflowFunction<StateType> fn) {
-        super(name);
+        this(name, null, fn);
+    }
+    
+    SequentialStep(String name, String connectorLabel, WorkflowFunction<StateType> fn) {
+        super(name, connectorLabel);
         Objects.requireNonNull(fn, "WorkflowFunction cannot be null.");
         this.fn = fn;
     }

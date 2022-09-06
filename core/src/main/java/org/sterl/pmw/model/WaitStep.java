@@ -8,7 +8,7 @@ public class WaitStep<StateType extends WorkflowState> extends AbstractStep<Stat
     private final Function<StateType, Duration> fn;
 
     WaitStep(String name, Function<StateType, Duration> fn) {
-        super(name);
+        super(name, null);
         this.fn = fn;
         this.maxRetryCount = 0;
     }

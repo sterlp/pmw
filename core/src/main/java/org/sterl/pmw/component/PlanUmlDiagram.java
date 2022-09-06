@@ -61,4 +61,12 @@ public class PlanUmlDiagram {
         diagram.append(value);
         return this;
     }
+
+    public void appendCase(String label) {
+        diagram.append("case (");
+        if (label != null) {
+            diagram.append(label);
+        }
+        diagram.append(")").append(NEW_LINE);
+    }
 }

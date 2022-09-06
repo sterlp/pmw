@@ -56,12 +56,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <spring.version>2.7.1</spring.version>
+        <plantuml.version>1.2022.7</plantuml.version>
+        <spring.version>2.7.3</spring.version>
         <lombok.version>1.18.24</lombok.version>
         <h2.version>2.1.214</h2.version>
-        <jackson.version>2.13.3</jackson.version>
+        <jackson.version>2.13.4</jackson.version>
 
-        <pmd.version>6.47.0</pmd.version>
+        <pmd.version>6.49.0</pmd.version>
     </properties>
 
     <modules>

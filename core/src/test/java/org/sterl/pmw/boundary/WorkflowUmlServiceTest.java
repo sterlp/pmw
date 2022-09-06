@@ -89,7 +89,7 @@ class WorkflowUmlServiceTest {
                 .next(s -> {})
                 .choose(s -> "a")
                     .ifSelected("left", s -> {})
-                    .ifSelected("right", s -> {})
+                    .ifSelected("do stuff on right", "if right", s -> {})
                     .build()
                 .next(s -> {})
                 .build();
@@ -102,8 +102,8 @@ class WorkflowUmlServiceTest {
                 switch ()
                 case ()
                 :left;
-                case ()
-                :right;
+                case (if right)
+                :do stuff on right;
                 endswitch
                 :Step 2;
                 stop

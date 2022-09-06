@@ -14,33 +14,40 @@ public class WorkflowFactory<StateType extends WorkflowState> extends AbstractWo
     }
 
     public WorkflowFactory<StateType> next(WorkflowFunction<StateType> fn) {
-        return step(new SequentialStep<>(defaultStepName(), fn));
+        return addStep(new SequentialStep<>(defaultStepName(), fn));
     }
     public WorkflowFactory<StateType> next(Consumer<StateType> fn) {
-        return step(new SequentialStep<>(defaultStepName(), WorkflowFunction.of(fn)));
+        return addStep(new SequentialStep<>(defaultStepName(), WorkflowFunction.of(fn)));
     }
     public WorkflowFactory<StateType> next(String name, WorkflowFunction<StateType> fn) {
-        return step(new SequentialStep<>(name, fn));
+        return addStep(new SequentialStep<>(name, fn));
     }
     public WorkflowFactory<StateType> next(String name, Consumer<StateType> fn) {
-        return step(new SequentialStep<>(name, WorkflowFunction.of(fn)));
+        return addStep(new SequentialStep<>(name, WorkflowFunction.of(fn)));
     }
     
     public WorkflowFactory<StateType> sleep(Function<StateType, Duration> fn) {
-        return step(new WaitStep<>("Sleep", fn));
+        return addStep(new WaitStep<>("Sleep", fn));
     }
     public WorkflowFactory<StateType> sleep(String name, Function<StateType, Duration> fn) {
-        return step(new WaitStep<>(name, fn));
+        return addStep(new WaitStep<>(name, fn));
     }
     public WorkflowFactory<StateType> sleep(Duration duration) {
-        return step(new WaitStep<>("Sleep for " + duration, (s) -> duration));
+        return addStep(new WaitStep<>("Sleep for " + duration, (s) -> duration));
     }
 
-    public IfFactory<StateType> choose(WorkflowChooseFunction<StateType> chooseFn) {
-        return new IfFactory<>(this, chooseFn);
+    /**
+     * Allows to select multiple different named steps by returning the name of the step to execute.
+     */
+    public ChooseFactory<StateType> choose(WorkflowChooseFunction<StateType> chooseFn) {
+        return new ChooseFactory<>(this, chooseFn);
     }
-    public IfFactory<StateType> choose(String name, WorkflowChooseFunction<StateType> chooseFn) {
-        return new IfFactory<>(this, chooseFn).name(name);
+    /**
+     * Allows to select multiple different named steps by returning the name of the step to execute.
+     * @param name a optional name for better readability and export to UML
+     */
+    public ChooseFactory<StateType> choose(String name, WorkflowChooseFunction<StateType> chooseFn) {
+        return new ChooseFactory<>(this, chooseFn).name(name);
     }
 
     public Workflow<StateType> build() {

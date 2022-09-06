@@ -6,7 +6,7 @@ import java.util.Map.Entry;
 
 import org.sterl.pmw.component.PlanUmlDiagram;
 import org.sterl.pmw.component.WorkflowRepository;
-import org.sterl.pmw.model.IfStep;
+import org.sterl.pmw.model.ChooseStep;
 import org.sterl.pmw.model.WaitStep;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
@@ -50,7 +50,7 @@ public class WorkflowUmlService {
         diagram.start();
 
         for (WorkflowStep<? extends WorkflowState> step : workflow.getSteps()) {
-            if (step instanceof IfStep<?> ifStep) {
+            if (step instanceof ChooseStep<?> ifStep) {
                 addIfStep(ifStep, diagram);
             } else if (step instanceof WaitStep<?>) {
                 diagram.appendWaitState(step.getName());
@@ -62,16 +62,16 @@ public class WorkflowUmlService {
         diagram.stop();
     }
 
-    private void addIfStep(IfStep<?> ifStep, PlanUmlDiagram diagram) {
+    private void addIfStep(ChooseStep<?> ifStep, PlanUmlDiagram diagram) {
         addSwitch(ifStep, diagram);
         for (Entry<String, WorkflowStep<?>> e : ifStep.getSubSteps().entrySet()) {
-            diagram.appendLine("case ()");
+            diagram.appendCase(e.getValue().getConnectorLabel());
             diagram.appendState(e.getKey());
         }
         diagram.appendLine("endswitch");
     }
     
-    private void addSwitch(IfStep<?> step, PlanUmlDiagram diagram) {
+    private void addSwitch(ChooseStep<?> step, PlanUmlDiagram diagram) {
         diagram.append("switch (");
         if (!step.getName().startsWith("Step ")) {
             diagram.append(step.getName());
