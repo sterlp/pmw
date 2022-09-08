@@ -18,8 +18,10 @@ Build a very basic workflow `engine` which does only really basic stuff and is u
 - [x] First Spring integration
 - [x] First PlantUML integration
 - [x] Wait as own step
-- [ ] Trigger workflows in an own step
-- [ ] Standalone flow version
+- [x] Trigger workflows in an own step
+- [x] Link to workflows in repository using `trigger->`
+- [ ] Standalone flow version using a single thread
+- [ ] Support multiple sub steps if choose
 
 ## Spring setup
 
