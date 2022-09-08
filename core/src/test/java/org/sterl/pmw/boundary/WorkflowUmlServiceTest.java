@@ -59,7 +59,7 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "test-workflow"
                 start
-                :Step 0;
+                :0. Step;
                 stop
                 @enduml
                 """);
@@ -98,14 +98,14 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "test-workflow"
                 start
-                :Step 0;
+                :0. Step;
                 switch ()
                 case ()
                 :left;
                 case (if right)
                 :do stuff on right;
                 endswitch
-                :Step 2;
+                :2. Step;
                 stop
                 @enduml
                 """);
@@ -147,9 +147,9 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "test-workflow"
                 start
-                :Step 0;
+                :0. Step;
                 :<&clock> Sleep for PT2H;
-                :Step 2;
+                :2. Step;
                 stop
                 @enduml
                 """);

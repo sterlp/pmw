@@ -60,7 +60,7 @@ public class WorkflowUmlService {
     private void addWorkflowStepToDiagramByType(final PlanUmlDiagram diagram,
             WorkflowStep<? extends WorkflowState> step) {
         if (step instanceof ChooseStep<?> ifStep) {
-            addIfStep(ifStep, diagram);
+            addCooseStep(ifStep, diagram);
         } else if (step instanceof WaitStep<?>) {
             diagram.appendWaitState(step.getName());
         } else if (step instanceof TriggerWorkflowStep<?, ?> subW) {
@@ -90,7 +90,7 @@ public class WorkflowUmlService {
         diagram.appendLine("}");
         diagram.appendLine("endfork");
     }
-    private void addIfStep(ChooseStep<?> ifStep, PlanUmlDiagram diagram) {
+    private void addCooseStep(ChooseStep<?> ifStep, PlanUmlDiagram diagram) {
         addSwitch(ifStep, diagram);
         for (Entry<String, WorkflowStep<?>> e : ifStep.getSubSteps().entrySet()) {
             diagram.appendCase(e.getValue().getConnectorLabel());
@@ -102,7 +102,7 @@ public class WorkflowUmlService {
     
     private void addSwitch(ChooseStep<?> step, PlanUmlDiagram diagram) {
         diagram.append("switch (");
-        if (!step.getName().startsWith("Step ")) {
+        if (!step.getName().endsWith(" Step")) {
             diagram.append(step.getName());
         }
         diagram.appendLine(")");

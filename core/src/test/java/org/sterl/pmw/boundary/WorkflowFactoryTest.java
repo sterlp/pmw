@@ -23,10 +23,10 @@ public class WorkflowFactoryTest {
             .build();
 
         // THEN
-        assertThat(w.getStepByPosition(0).getName()).isEqualTo("Step 0");
+        assertThat(w.getStepByPosition(0).getName()).isEqualTo("0. Step");
         assertThat(((ChooseStep<?>)w.getStepByPosition(0)).getSubSteps().get("left").getName()).isEqualTo("left");
         assertThat(((ChooseStep<?>)w.getStepByPosition(0)).getSubSteps().get("right").getName()).isEqualTo("right");
-        assertThat(w.getStepByPosition(1).getName()).isEqualTo("Step 1");
+        assertThat(w.getStepByPosition(1).getName()).isEqualTo("1. Step");
         assertThat(w.getStepByPosition(2).getName()).isEqualTo("foo");
 
     }
