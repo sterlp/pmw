@@ -307,7 +307,7 @@ public abstract class CoreWorkflowExecutionTest {
         // THEN
         Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.SLEEPING);
         asserts.awaitOrdered("wait", "done");
-        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(1000L);
+        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(999L);
     }
     
     @Test
