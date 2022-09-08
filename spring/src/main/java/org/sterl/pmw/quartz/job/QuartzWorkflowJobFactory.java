@@ -9,9 +9,10 @@ import org.quartz.spi.JobFactory;
 import org.quartz.spi.TriggerFiredBundle;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
-import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
+import org.sterl.pmw.quartz.boundary.QuartzWorkflowService;
+import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -26,7 +27,7 @@ public class QuartzWorkflowJobFactory implements JobFactory {
     @NonNull
     private final SimpleWorkflowStepStrategy strategy;
     @NonNull
-    private final WorkflowRepository workflowRepository;
+    private final QuartzWorkflowService workflowService;
     @NonNull
     private final ObjectMapper mapper;
     @NonNull
@@ -37,7 +38,7 @@ public class QuartzWorkflowJobFactory implements JobFactory {
     @Override
     public Job newJob(TriggerFiredBundle bundle, Scheduler scheduler) throws SchedulerException {
         String name = bundle.getJobDetail().getKey().getName();
-        final Optional<Workflow<? extends WorkflowState>> w = workflowRepository.findWorkflow(name);
+        final Optional<Workflow<? extends WorkflowState>> w = workflowService.findWorkflow(name);
 
         log.debug("{} results in {}", name, w);
         if (w.isEmpty() && delegate == null) {
@@ -46,6 +47,6 @@ public class QuartzWorkflowJobFactory implements JobFactory {
             return delegate.newJob(bundle, scheduler);
         }
 
-        return new QuartzWorkflowJob(strategy, w.get(), scheduler, mapper, trx);
+        return new QuartzWorkflowJob(strategy, workflowService, w.get(), trx, new WorkflowStateParserComponent(mapper));
     }
 }

@@ -23,7 +23,9 @@ import org.sterl.pmw.model.WorkflowStatus;
 import org.sterl.pmw.model.WorkflowStep;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class InMemoryWorkflowService implements WorkflowService<String> {
     private ExecutorService stepExecutor;
     private WorkflowRepository workflowRepository = new WorkflowRepository();
@@ -34,10 +36,11 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     private record WaitingWorkflow<T extends WorkflowState>(Instant until, RunningWorkflowState<T> runningWorkflowState) {}
 
     @RequiredArgsConstructor
-    private class StepCallable<T extends WorkflowState> extends SimpleWorkflowStepStrategy
+    private static class StepCallable<T extends WorkflowState> extends SimpleWorkflowStepStrategy
         implements Callable<Void> {
         private final RunningWorkflowState<T> runningWorkflowState;
         private final String workflowId;
+        private final InMemoryWorkflowService workflowService;
 
         @Override
         public Void call() throws Exception {
@@ -46,22 +49,22 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
             byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
             try {
                 // we loop throw all steps as long we have one
-                WorkflowStep<?> nexStep = this.executeNextStep(runningWorkflowState);
+                WorkflowStep<?> nexStep = this.executeNextStep(runningWorkflowState, workflowService);
                 while (nexStep != null && runningWorkflowState.isNotCanceled()) {
                     if (runningWorkflowState.hasDelay()) {
-                        queueNextStepExecution(workflowId, runningWorkflowState);
+                        workflowService.queueNextStepExecution(workflowId, runningWorkflowState);
                         break;
                     } else {
                         originalState = SerializationUtil.serialize(runningWorkflowState.userState());
-                        nexStep = this.executeNextStep(runningWorkflowState);
+                        nexStep = this.executeNextStep(runningWorkflowState, workflowService);
                     }
                 }
 
-                if (nexStep == null || runningWorkflowState.isCanceled()) runningWorkflows.remove(workflowId);
+                if (nexStep == null || runningWorkflowState.isCanceled()) workflowService.runningWorkflows.remove(workflowId);
 
             } catch (WorkflowException.WorkflowFailedDoRetryException e) {
 
-                queueNextStepExecution(workflowId, new RunningWorkflowState<>(
+                workflowService.queueNextStepExecution(workflowId, new RunningWorkflowState<>(
                         runningWorkflowState.workflow(),
                         SerializationUtil.deserializeWorkflowState(originalState),
                         runningWorkflowState.internalState())
@@ -78,7 +81,7 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
                 final Instant now = Instant.now();
                 for (Entry<String, WaitingWorkflow<?>> w : new HashSet<>(waitingWorkflows.entrySet())) {
                     if (now.isAfter(w.getValue().until)) {
-                        stepExecutor.submit(new StepCallable<>(w.getValue().runningWorkflowState(), w.getKey()));
+                        stepExecutor.submit(new StepCallable<>(w.getValue().runningWorkflowState(), w.getKey(), this));
                         waitingWorkflows.remove(w.getKey());
                     }
                 }
@@ -123,10 +126,12 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
     private void queueNextStepExecution(String workflowId, RunningWorkflowState<?> runningWorkflowState) {
         final Duration delay = runningWorkflowState.internalState().consumeDelay();
         if (delay.toMillis() <= 0) {
-            stepExecutor.submit(new StepCallable<>(runningWorkflowState, workflowId));
+            stepExecutor.submit(new StepCallable<>(runningWorkflowState, workflowId, this));
+            log.debug("Started workflow={} with id={}", runningWorkflowState.workflow().getName(), workflowId);
         } else {
             waitingWorkflows.put(workflowId,
                     new WaitingWorkflow<>(Instant.now().plus(delay), runningWorkflowState));
+            log.debug("Queued workflow={} with id={} delay={}", runningWorkflowState.workflow().getName(), workflowId, delay);
         }
     }
 

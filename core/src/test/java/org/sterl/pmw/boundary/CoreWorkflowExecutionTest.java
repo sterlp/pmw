@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -357,5 +359,30 @@ public abstract class CoreWorkflowExecutionTest {
         Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.COMPLETE);
         asserts.awaitOrdered("step 1", "step 2");
         asserts.assertMissing("cancel");
+    }
+    
+    @Test
+    public void testTriggerWorkflow() throws InterruptedException {
+        // GIVEN
+        final AtomicInteger stateValue = new AtomicInteger(0);
+        final CountDownLatch latch = new CountDownLatch(1);
+        Workflow<TestWorkflowCtx> subW = Workflow.builder("subW", () ->  new TestWorkflowCtx())
+                .next(s -> stateValue.set(s.getAnyValue()))
+                .next(s -> latch.countDown())
+                .build();
+
+        Workflow<TestWorkflowCtx> w = Workflow.builder("w", () ->  new TestWorkflowCtx())
+                .next(s -> s.setAnyValue(2))
+                .trigger(subW, s -> s)
+                .build();
+        
+        // WHEN
+        subject.register(w);
+        subject.register(subW);
+        subject.execute(w);
+        
+        // THEN
+        assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+        assertThat(stateValue.get()).isEqualTo(2);
     }
 }

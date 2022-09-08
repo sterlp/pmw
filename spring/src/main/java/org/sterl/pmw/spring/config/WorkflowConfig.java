@@ -1,6 +1,7 @@
 package org.sterl.pmw.spring.config;
 
 import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.quartz.SchedulerFactoryBeanCustomizer;
 import org.springframework.context.ApplicationContext;
@@ -33,14 +34,14 @@ public class WorkflowConfig {
     }
 
     @Bean
-    QuartzWorkflowService quartzWorkflowService(Scheduler scheduler, ObjectMapper mapper) {
-        return new QuartzWorkflowService(scheduler, workflowRepository(), mapper);
-    }
+    QuartzWorkflowService quartzWorkflowService(
+            ApplicationContext applicationContext, 
+            Scheduler scheduler, 
+            ObjectMapper mapper,
+            TransactionTemplate trx) throws SchedulerException {
 
-    @Bean
-    SchedulerFactoryBeanCustomizer registerPwm(
-            ApplicationContext applicationContext, ObjectMapper mapper, TransactionTemplate trx) {
-
+        final QuartzWorkflowService quartzWorkflowService = new QuartzWorkflowService(scheduler, workflowRepository(), mapper);
+        
         final SpringBeanJobFactory jobFactory = enableSpringBeanJobFactory ? new SpringBeanJobFactory() : null;
         if (enableSpringBeanJobFactory) {
             jobFactory.setApplicationContext(applicationContext);
@@ -48,11 +49,12 @@ public class WorkflowConfig {
             log.info("SpringBeanJobFactory disabled!");
         }
 
-        return (sf) -> {
-            sf.setJobFactory(new QuartzWorkflowJobFactory(
-                    new SimpleWorkflowStepStrategy(), workflowRepository(), mapper, trx, jobFactory));
-        };
+        scheduler.setJobFactory(new QuartzWorkflowJobFactory(
+                new SimpleWorkflowStepStrategy(), quartzWorkflowService, mapper, trx, jobFactory));
+        
+        return quartzWorkflowService;
     }
+
 
     @Bean
     SchedulerFactoryBeanCustomizer addExecuteInJTATransactionSupport(PlatformTransactionManager trxM) {

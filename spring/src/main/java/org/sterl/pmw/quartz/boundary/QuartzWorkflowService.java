@@ -3,12 +3,14 @@ package org.sterl.pmw.quartz.boundary;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.quartz.DateBuilder;
 import org.quartz.DateBuilder.IntervalUnit;
 import org.quartz.JobBuilder;
 import org.quartz.JobDetail;
+import org.quartz.JobExecutionException;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
@@ -17,12 +19,14 @@ import org.quartz.TriggerKey;
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.component.SerializationUtil;
 import org.sterl.pmw.component.WorkflowRepository;
+import org.sterl.pmw.model.InternalWorkflowState;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
 import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 import org.sterl.pmw.quartz.job.QuartzWorkflowJob;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.NonNull;
@@ -45,8 +49,6 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
 
         log.info("Workflows initialized, {} workflows deployed.", workflowRepository.getWorkflowNames().size());
     }
-
-    
 
     @Override
     public <T extends WorkflowState> String execute(Workflow<T> w) {
@@ -119,17 +121,10 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
                 w.getName() + " not registered, register the workflowJobs first.");
 
         try {
-            final TriggerBuilder<Trigger> t = TriggerBuilder.newTrigger()
-                    .forJob(job);
-
-            workflowStateParser.setUserState(t, state);
-            if (delay.toMillis() >= 0) {
-                workflowStateParser.setWorkflowStatus(t, WorkflowStatus.SLEEPING);
-                t.startAt(DateBuilder.futureDate((int)delay.toMillis(), IntervalUnit.MILLISECOND));
-            } else {
-                workflowStateParser.setWorkflowStatus(t, WorkflowStatus.PENDING);
-                t.startNow();
-            }
+            final TriggerBuilder<Trigger> t = TriggerBuilder.newTrigger().forJob(job);
+            
+            
+            setWorkflowDelayStatusAndSate(t, WorkflowStatus.PENDING, state, new InternalWorkflowState(delay));
 
             final Trigger trigger = t.build();
             scheduler.scheduleJob(trigger);
@@ -164,5 +159,67 @@ public class QuartzWorkflowService implements WorkflowService<JobDetail> {
     @Override
     public int workflowCount() {
         return workflowRepository.workflowCount();
+    }
+
+    public Optional<Workflow<? extends WorkflowState>> findWorkflow(String name) {
+        return this.workflowRepository.findWorkflow(name);
+    }
+
+    /**
+     * RescheduleJob a trigger of a already running workflow.
+     * 
+     * @param trigger required trigger to reschedule with the reference to the workflow
+     * @param internalState the required current internal state
+     * @param userState optional user state to set into the trigger, maybe <code>null</code>
+     * @throws JobExecutionException if the trigger or {@link InternalWorkflowState} is <code>null</code>
+     */
+    public void rescheduleTrigger(Trigger trigger, 
+            InternalWorkflowState internalState,
+            WorkflowState userState) throws JobExecutionException {
+        if (trigger == null || internalState == null) throw new JobExecutionException(true);
+
+        TriggerBuilder<? extends Trigger>  newTrigger;
+        try {
+            newTrigger = trigger.getTriggerBuilder()
+                    .forJob(trigger.getJobKey())
+                    .usingJobData(trigger.getJobDataMap());
+
+            setWorkflowDelayStatusAndSate(newTrigger, WorkflowStatus.RUNNING, userState, internalState);
+
+        } catch (JsonProcessingException e) {
+            throw new JobExecutionException(e, true);
+        }
+
+
+        try {
+            boolean notSchduled = scheduler.rescheduleJob(trigger.getKey(), newTrigger.build()) == null;
+            if (notSchduled) {
+                scheduler.scheduleJob(newTrigger.build());
+            }
+        } catch (SchedulerException e) {
+            throw new JobExecutionException(e, true);
+        }
+    }
+
+    private void setWorkflowDelayStatusAndSate(
+            TriggerBuilder<? extends Trigger> trigger, 
+            WorkflowStatus desiredWorkflowStatus,
+            WorkflowState userState,
+            InternalWorkflowState internalState) throws JsonProcessingException {
+        
+        Duration delay;
+        if (internalState == null) delay = Duration.ZERO;
+        else delay = internalState.consumeDelay();
+        
+        workflowStateParser.setInternalState(trigger, internalState);
+        workflowStateParser.setUserState(trigger, userState);
+
+        if (delay.toMillis() > 0L) {
+            trigger.startAt(DateBuilder.futureDate((int)delay.toMillis(), IntervalUnit.MILLISECOND));
+            workflowStateParser.setWorkflowStatus(trigger, WorkflowStatus.SLEEPING);
+        } else {
+            trigger.startNow();
+            workflowStateParser.setWorkflowStatus(trigger, desiredWorkflowStatus);
+        }
     }
 }

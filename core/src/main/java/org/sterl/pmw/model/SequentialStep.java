@@ -2,6 +2,8 @@ package org.sterl.pmw.model;
 
 import java.util.Objects;
 
+import org.sterl.pmw.boundary.WorkflowService;
+
 import lombok.Getter;
 
 @Getter
@@ -19,7 +21,7 @@ public class SequentialStep<StateType extends WorkflowState> extends AbstractSte
     }
 
     @Override
-    public void apply(StateType state, WorkflowContext context) {
+    public void apply(StateType state, WorkflowContext context, WorkflowService<?> workflowService) {
         Objects.requireNonNull(state, "WorkflowState cannot be null.");
         Objects.requireNonNull(context, "WorkflowContext cannot be null.");
         fn.accept(state, context);

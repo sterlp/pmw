@@ -3,6 +3,8 @@ package org.sterl.pmw.model;
 import java.time.Duration;
 import java.util.function.Function;
 
+import org.sterl.pmw.boundary.WorkflowService;
+
 public class WaitStep<StateType extends WorkflowState> extends AbstractStep<StateType> {
 
     private final Function<StateType, Duration> fn;
@@ -14,8 +16,7 @@ public class WaitStep<StateType extends WorkflowState> extends AbstractStep<Stat
     }
 
     @Override
-    public void apply(StateType state, WorkflowContext context) {
+    public void apply(StateType state, WorkflowContext context, WorkflowService<?> workflowService) {
         context.delayNextStepBy(fn.apply(state));
     }
-
 }
