@@ -154,6 +154,79 @@ class WorkflowUmlServiceTest {
                 @enduml
                 """);
     }
+    
+    @Test
+    void testSubWorkflow() {
+        // GIVEN
+        Workflow<SimpleWorkflowState> child = Workflow.builder("any child", () ->  new SimpleWorkflowState())
+                .next(s -> {})
+                .next(s -> {})
+                .build();
+
+        Workflow<SimpleWorkflowState> parent = Workflow.builder("parent", () ->  new SimpleWorkflowState())
+                .next(s -> {})
+                .trigger(child, s -> s)
+                .next(s -> {})
+                .build();
+        
+        // THEN
+        assertWorkflolw(parent,
+                """
+                @startuml "parent"
+                start
+                :0. Step;
+                fork
+                fork again
+                partition "any child"{
+                start
+                :0. Step;
+                :1. Step;
+                stop
+                }
+                endfork
+                :2. Step;
+                stop
+                @enduml
+                """);
+    }
+    
+    @Test
+    void testSubWorkflowByName() {
+        // GIVEN
+        Workflow<SimpleWorkflowState> child = Workflow.builder("any child", () ->  new SimpleWorkflowState())
+                .next(s -> {})
+                .next(s -> {})
+                .build();
+
+        Workflow<SimpleWorkflowState> parent = Workflow.builder("parent", () ->  new SimpleWorkflowState())
+                .next(s -> {})
+                .next("trigger->any child", s -> {})
+                .next(s -> {})
+                .build();
+        
+        repository.register(parent);
+        repository.register(child);
+        
+        // THEN
+        assertThat(subject.printWorkflow("parent")).isEqualTo("""
+                @startuml "parent"
+                !theme carbon-gray
+                start
+                :0. Step;
+                fork
+                fork again
+                partition "any child"{
+                start
+                :0. Step;
+                :1. Step;
+                stop
+                }
+                endfork
+                :2. Step;
+                stop
+                @enduml
+                """);
+    }
 
     public void assertWorkflolw(Workflow<?> w, String expected) {
         final PlanUmlDiagram result = new PlanUmlDiagram(w.getName(), null);

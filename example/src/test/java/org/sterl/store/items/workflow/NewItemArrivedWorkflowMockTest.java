@@ -8,7 +8,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.quartz.JobDetail;
 import org.sterl.pmw.boundary.WorkflowService;
+import org.sterl.pmw.boundary.WorkflowUmlService;
 import org.sterl.pmw.component.SerializationUtil;
+import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.store.items.component.DiscountComponent;
 import org.sterl.store.items.component.UpdateInStockCountComponent;
 import org.sterl.store.items.component.WarehouseStockComponent;
@@ -32,6 +34,12 @@ class NewItemArrivedWorkflowMockTest {
 
     @Test
     void test() throws Exception {
-        SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse());
+        WorkflowRepository repo = new WorkflowRepository();
+        WorkflowUmlService umlService = new WorkflowUmlService(repo);
+        
+        repo.register(subject.getCheckWarehouse());
+        repo.register(subject.getRestorePriceSubWorkflow());
+
+        SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse().getName(), umlService);
     }
 }

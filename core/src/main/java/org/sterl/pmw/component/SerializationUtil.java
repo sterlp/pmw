@@ -23,6 +23,14 @@ public class SerializationUtil {
             new WorkflowUmlService(null).printWorkflowAsPlantUmlSvg(workflow, out);
         }
     }
+    public static void writeAsPlantUmlSvg(String filename, String name, WorkflowUmlService service) throws IOException {
+        final File d = new File(filename);
+        if (d.exists()) d.delete();
+        
+        try (FileOutputStream out = new FileOutputStream(d)) {
+            service.printWorkflowAsPlantUmlSvg(name, out);
+        }
+    }
 
     public static byte[] serialize(WorkflowState state) throws IOException {
         Objects.requireNonNull(state, "WorkflowState cannot be null");
