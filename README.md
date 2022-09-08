@@ -89,14 +89,14 @@ public class NewItemArrivedWorkflow {
                         
                         workflowService.execute(restorePriceSubWorkflow, s, Duration.ofMinutes(2));
                     })
-                    .ifSelected("check-warehouse-again", "< 40", s -> this.execute(s.getItemId()))
+                    .ifSelected("trigger->restore-item-price", "< 40", s -> this.execute(s.getItemId()))
                     .build()
                 .build();
 
         workflowService.register(checkWarehouse);
         
         restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
-                .next(s -> discountComponent.setPrize(s.getItemId(), s.getOriginalPrice()))
+                .next("set price from workflow state", s -> discountComponent.setPrize(s.getItemId(), s.getOriginalPrice()))
                 .build();
         
         workflowService.register(restorePriceSubWorkflow);
@@ -129,8 +129,19 @@ class NewItemArrivedWorkflowMockTest {
     }
 
     @Test
-    void test() throws Exception {
+    void testPrintSimple() throws Exception {
         SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse());
+    }
+    
+    @Test
+    void testPrintWithSubworkflowSupportByName() throws Exception {
+        WorkflowRepository repo = new WorkflowRepository();
+        WorkflowUmlService umlService = new WorkflowUmlService(repo);
+        
+        repo.register(subject.getCheckWarehouse());
+        repo.register(subject.getRestorePriceSubWorkflow());
+
+        SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse().getName(), umlService);
     }
 }
 ```
