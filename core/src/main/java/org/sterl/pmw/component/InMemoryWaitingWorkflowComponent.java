@@ -111,4 +111,8 @@ public class InMemoryWaitingWorkflowComponent {
     public void clear() {
         this.waitingWorkflows.clear();
     }
+
+    public void remove(WorkflowId workflowId) {
+        this.waitingWorkflows.remove(workflowId);
+    }
 }

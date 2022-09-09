@@ -25,7 +25,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-public abstract class CoreWorkflowExecutionTest {
+public class CoreWorkflowExecutionTest {
 
     protected final AsyncAsserts asserts = new AsyncAsserts();
 
@@ -114,6 +114,27 @@ public abstract class CoreWorkflowExecutionTest {
         Awaitility.await().pollInterval(Duration.ofMillis(25)) .until(() -> subject.status(id) == WorkflowStatus.RUNNING);
         // AND
         Awaitility.await().until(() -> subject.status(id) == WorkflowStatus.COMPLETE);
+    }
+    
+    @Test
+    public void testCancelWorkflowByService() {
+        // GIVEN
+        Workflow<SimpleWorkflowState> w = Workflow.builder("cancel-workflow", () -> new SimpleWorkflowState())
+                .next(s -> {})
+                .build();
+        
+        subject.register(w);
+        
+        // WHEN
+        final WorkflowId id = subject.execute("cancel-workflow", new SimpleWorkflowState(), Duration.ofSeconds(1));
+        
+        // THEN
+        assertThat(subject.status(id)).isEqualTo(WorkflowStatus.SLEEPING);
+        
+        // WHEN
+        subject.cancel(id);
+        // THEN
+        assertThat(subject.status(id)).isEqualTo(WorkflowStatus.COMPLETE);
     }
 
     @Test

@@ -5,7 +5,7 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.SchedulerException;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
+import org.sterl.pmw.component.SimpleWorkflowStepExecutor;
 import org.sterl.pmw.exception.WorkflowException;
 import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 public class QuartzWorkflowJob implements Job {
 
     @NonNull
-    private final SimpleWorkflowStepStrategy callStrategy;
+    private final SimpleWorkflowStepExecutor callStrategy;
     @NonNull
     private final QuartzWorkflowService workflowService;
     @NonNull

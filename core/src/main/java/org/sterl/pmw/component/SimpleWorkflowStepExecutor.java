@@ -11,7 +11,7 @@ import org.sterl.pmw.model.WorkflowStep;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class SimpleWorkflowStepStrategy {
+public class SimpleWorkflowStepExecutor {
 
     /**
      * Runs the next step in the workflow

@@ -209,5 +209,12 @@ public class QuartzWorkflowService extends AbstractWorkflowService<JobDetail> {
         }
     }
 
-
+    @Override
+    public void cancel(WorkflowId workflowId) {
+        try {
+            this.scheduler.unscheduleJob(TriggerKey.triggerKey(workflowId.value()));
+        } catch (SchedulerException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

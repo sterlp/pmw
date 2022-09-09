@@ -8,7 +8,7 @@ import org.quartz.SchedulerException;
 import org.quartz.spi.JobFactory;
 import org.quartz.spi.TriggerFiredBundle;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.sterl.pmw.component.SimpleWorkflowStepStrategy;
+import org.sterl.pmw.component.SimpleWorkflowStepExecutor;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.quartz.boundary.QuartzWorkflowService;
@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class QuartzWorkflowJobFactory implements JobFactory {
 
     @NonNull
-    private final SimpleWorkflowStepStrategy strategy;
+    private final SimpleWorkflowStepExecutor strategy;
     @NonNull
     private final QuartzWorkflowService workflowService;
     @NonNull
