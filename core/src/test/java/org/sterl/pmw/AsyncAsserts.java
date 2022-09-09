@@ -45,7 +45,7 @@ public class AsyncAsserts {
                 if (Thread.interrupted()) break;
             }
         }
-        assertThat(values).contains(value);
+        assertThat(new ArrayList<>(values)).contains(value);
     }
     public void awaitValue(String value, String... values) {
         awaitValue(value);
