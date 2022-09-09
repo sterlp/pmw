@@ -48,8 +48,8 @@ public class QuartzWorkflowJob implements Job {
                 final WorkflowStep<?> nextStep = callStrategy.executeNextStep(runningWorkflowState, workflowService);
                 if (nextStep != null && runningWorkflowState.isNotCanceled()) {
                     try {
-                        workflowService.rescheduleTrigger(context.getTrigger(), 
-                                runningWorkflowState.internalState(), 
+                        workflowService.rescheduleTrigger(context.getTrigger(),
+                                runningWorkflowState.internalState(),
                                 runningWorkflowState.userState());
 
                     } catch (SchedulerException e) {

@@ -6,31 +6,31 @@ public class PlanUmlDiagram {
     private final StringBuilder diagram = new StringBuilder();
     private final String name;
     private final String theme;
-    
+
     public PlanUmlDiagram(String name) {
         this(name, "!theme carbon-gray");
     }
-    
+
     public PlanUmlDiagram(String name, String theme) {
         super();
         this.name = name;
         this.theme = theme;
         init();
     }
-    
+
     private void init() {
         diagram.setLength(0);
         diagram.append("@startuml ").append("\"").append(name).append("\"").append(NEW_LINE);
         appendLine(theme);
     }
-    
+
     public PlanUmlDiagram appendLine(String line) {
         if (line != null) {
             diagram.append(line).append(NEW_LINE);
         }
         return this;
     }
-    
+
     public String build() {
         appendLine("@enduml");
         final String result = diagram.toString();
@@ -46,7 +46,7 @@ public class PlanUmlDiagram {
         appendLine("stop");
         return this;
     }
-    
+
     public PlanUmlDiagram appendWaitState(String name) {
         this.appendState("<&clock> " + name);
         return this;

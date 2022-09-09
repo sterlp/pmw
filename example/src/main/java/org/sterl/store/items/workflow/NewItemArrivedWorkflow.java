@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.store.items.component.DiscountComponent;
 import org.sterl.store.items.component.UpdateInStockCountComponent;
 import org.sterl.store.items.component.WarehouseStockComponent;
@@ -21,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class NewItemArrivedWorkflow {
-    
+
     private final WarehouseService warehouseService;
     private final DiscountComponent discountComponent;
     private final WarehouseStockComponent createStock;
@@ -32,7 +33,7 @@ public class NewItemArrivedWorkflow {
     private Workflow<NewItemArrivedWorkflowState> checkWarehouse;
     @Getter
     private Workflow<NewItemArrivedWorkflowState> restorePriceSubWorkflow;
-    
+
 
     @PostConstruct
     void createWorkflow() {
@@ -41,7 +42,7 @@ public class NewItemArrivedWorkflow {
                 .next("update item stock", (s, c) -> {
                     final long stockCount = warehouseService.countStock(s.getItemId());
                     updateStock.updateInStockCount(s.getItemId(), stockCount);
-                    
+
                     s.setWarehouseStockCount(stockCount);
                 })
                 .sleep("Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)
@@ -52,7 +53,7 @@ public class NewItemArrivedWorkflow {
                     .ifSelected("discount-price", "> 40", s -> {
                         var originalPrice = discountComponent.applyDiscount(s.getItemId(), s.getWarehouseStockCount());
                         s.setOriginalPrice(originalPrice);
-                        
+
                         workflowService.execute(restorePriceSubWorkflow, s, Duration.ofMinutes(2));
                     })
                     .ifSelected("trigger->restore-item-price", "< 40", s -> this.execute(s.getItemId()))
@@ -60,16 +61,16 @@ public class NewItemArrivedWorkflow {
                 .build();
 
         workflowService.register(checkWarehouse);
-        
+
         restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
                 .next("set price from workflow state", s -> discountComponent.setPrize(s.getItemId(), s.getOriginalPrice()))
                 .build();
-        
+
         workflowService.register(restorePriceSubWorkflow);
     }
-    
+
     @Transactional(propagation = Propagation.MANDATORY)
-    public String execute(long itemId) {
+    public WorkflowId execute(long itemId) {
         return workflowService.execute(checkWarehouse, NewItemArrivedWorkflowState.builder()
                 .itemId(itemId).build());
     }

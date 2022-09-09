@@ -14,11 +14,11 @@ import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
 
 public class SerializationUtil {
-    
+
     public static void writeAsPlantUmlSvg(String filename, Workflow<? extends WorkflowState> workflow) throws IOException {
         final File d = new File(filename);
         if (d.exists()) d.delete();
-        
+
         try (FileOutputStream out = new FileOutputStream(d)) {
             new WorkflowUmlService(null).printWorkflowAsPlantUmlSvg(workflow, out);
         }
@@ -26,7 +26,7 @@ public class SerializationUtil {
     public static void writeAsPlantUmlSvg(String filename, String name, WorkflowUmlService service) throws IOException {
         final File d = new File(filename);
         if (d.exists()) d.delete();
-        
+
         try (FileOutputStream out = new FileOutputStream(d)) {
             service.printWorkflowAsPlantUmlSvg(name, out);
         }
@@ -49,7 +49,7 @@ public class SerializationUtil {
             return (WorkflowState)bais.readObject();
         }
     }
-    
+
     /**
      * Checks that the given state is assignable to the given workflow
      */

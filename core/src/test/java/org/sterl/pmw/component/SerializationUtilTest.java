@@ -8,7 +8,7 @@ import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowState;
 
 class SerializationUtilTest {
-    
+
     private class ExtendetSimpleWorkflowState extends SimpleWorkflowState {}
     private class OtherSimpleWorkflowState implements WorkflowState {}
 
@@ -22,7 +22,7 @@ class SerializationUtilTest {
         SerializationUtil.verifyStateType(w, new SimpleWorkflowState());
         SerializationUtil.verifyStateType(w, new ExtendetSimpleWorkflowState());
     }
-    
+
     @Test
     void testInCorrectStateType() {
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow",

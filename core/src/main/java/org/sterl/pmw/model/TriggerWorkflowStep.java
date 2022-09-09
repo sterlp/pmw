@@ -10,14 +10,14 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class TriggerWorkflowStep<StateType extends WorkflowState,
-    TriggerWorkflowStateType extends WorkflowState> 
+    TriggerWorkflowStateType extends WorkflowState>
     extends AbstractStep<StateType> {
 
     @Getter
     private final Workflow<TriggerWorkflowStateType> toTrigger;
     private final Function<StateType, TriggerWorkflowStateType> fn;
     private final Duration delay;
-    
+
     TriggerWorkflowStep(String name, String connectorLabel, Workflow<TriggerWorkflowStateType> toTrigger,
         Function<StateType, TriggerWorkflowStateType> fn, Duration delay) {
         super(name, connectorLabel);

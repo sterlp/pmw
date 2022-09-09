@@ -35,7 +35,7 @@ public class InternalWorkflowState implements WorkflowContext {
     private Instant workflowStartTime;
     @Getter
     private Instant workflowEndTime;
-    
+
     public InternalWorkflowState(Duration nextStepDelay) {
         this.nextStepDelay = nextStepDelay;
     }
@@ -106,6 +106,7 @@ public class InternalWorkflowState implements WorkflowContext {
         return result;
     }
 
+    @Override
     public boolean hasDelay() {
         return nextStepDelay != null && nextStepDelay.toMillis() > 0;
     }

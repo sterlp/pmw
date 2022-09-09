@@ -24,7 +24,7 @@ import net.sourceforge.plantuml.core.DiagramDescription;
 public class WorkflowUmlService {
 
     private final WorkflowRepository workflowRepository;
-    
+
     public DiagramDescription printWorkflowAsPlantUmlSvg(String workflowId, OutputStream out) throws IOException {
         return this.printWorkflowAsPlantUmlSvg(workflowRepository.getWorkflow(workflowId), out);
     }
@@ -32,12 +32,12 @@ public class WorkflowUmlService {
         final String workflowUml = printWorkflow(workflow);
         return convertAsPlantUmlSvg(workflowUml, out);
     }
-    
+
     public DiagramDescription convertAsPlantUmlSvg(String diagram, OutputStream out) throws IOException {
         SourceStringReader reader = new SourceStringReader(diagram);
         return reader.outputImage(out, 0, new FileFormatOption(FileFormat.SVG));
     }
-    
+
     public String printWorkflow(String workflowId) {
         return printWorkflow(workflowRepository.getWorkflow(workflowId));
     }
@@ -71,10 +71,10 @@ public class WorkflowUmlService {
             addStepName(step, diagram);
         }
     }
-    
+
     private Optional<Workflow<? extends WorkflowState>> hasSubworkflow(String name) {
         Optional<Workflow<? extends WorkflowState>> result = workflowRepository.findWorkflow(name);
-        
+
         if (result.isEmpty() && name.toLowerCase().startsWith("trigger->")) {
             String workflowName = name.substring(9, name.length());
             result = workflowRepository.findWorkflow(workflowName);
@@ -94,12 +94,12 @@ public class WorkflowUmlService {
         addSwitch(ifStep, diagram);
         for (Entry<String, WorkflowStep<?>> e : ifStep.getSubSteps().entrySet()) {
             diagram.appendCase(e.getValue().getConnectorLabel());
-            
+
             addWorkflowStepToDiagramByType(diagram, e.getValue());
         }
         diagram.appendLine("endswitch");
     }
-    
+
     private void addSwitch(ChooseStep<?> step, PlanUmlDiagram diagram) {
         diagram.append("switch (");
         if (!step.getName().endsWith(" Step")) {
@@ -107,7 +107,7 @@ public class WorkflowUmlService {
         }
         diagram.appendLine(")");
     }
-    
+
     private void addStepName(WorkflowStep<?> step, PlanUmlDiagram diagram) {
         diagram.appendState(step.getName());
     }

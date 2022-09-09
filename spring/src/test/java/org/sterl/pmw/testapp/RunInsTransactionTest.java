@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.sterl.pmw.AsyncAsserts;
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
 import org.sterl.pmw.testapp.item.boundary.ItemService;
@@ -91,9 +92,9 @@ class RunInsTransactionTest {
         workflowService.register(w);
 
         // WHEN
-        final String w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
-        final String w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(99).build());
-        final String w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(99).build());
+        final WorkflowId w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
+        final WorkflowId w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(99).build());
+        final WorkflowId w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(99).build());
 
         // THEN
         Awaitility.await().until(() -> workflowService.status(w1) == WorkflowStatus.COMPLETE);
@@ -124,7 +125,7 @@ class RunInsTransactionTest {
         workflowService.register(w);
 
         // WHEN
-        String wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
+        WorkflowId wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
 
         // THEN
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
@@ -155,7 +156,7 @@ class RunInsTransactionTest {
         workflowService.register(w);
 
         // WHEN
-        String wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
+        WorkflowId wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
 
         // THEN
         Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);

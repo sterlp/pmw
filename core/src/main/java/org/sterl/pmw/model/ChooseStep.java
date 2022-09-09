@@ -29,7 +29,7 @@ public class ChooseStep<StateType extends WorkflowState> extends AbstractStep<St
 
         selectedStep.apply(state, context, workflowService);
     }
-    
+
     public Map<String, WorkflowStep<?>> getSubSteps() {
         return new LinkedHashMap<>(this.subSteps);
     }

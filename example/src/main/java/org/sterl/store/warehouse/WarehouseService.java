@@ -20,13 +20,13 @@ public class WarehouseService {
 
     private final Random random = new Random();
     private final StockItemRepository stockItemRepository;
-    
+
     private final static AtomicLong STOCK_ARRIVALS = new AtomicLong(0);
-    
+
     public long countStock(long itemId) {
         return stockItemRepository.countItems(itemId);
     }
-    
+
     public List<WarehouseItem> checkForNewItemsInStock(Item item) {
         int stockCount = random.nextInt(0, 100);
 

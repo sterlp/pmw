@@ -35,13 +35,13 @@ public class WorkflowConfig {
 
     @Bean
     QuartzWorkflowService quartzWorkflowService(
-            ApplicationContext applicationContext, 
-            Scheduler scheduler, 
+            ApplicationContext applicationContext,
+            Scheduler scheduler,
             ObjectMapper mapper,
             TransactionTemplate trx) throws SchedulerException {
 
         final QuartzWorkflowService quartzWorkflowService = new QuartzWorkflowService(scheduler, workflowRepository(), mapper);
-        
+
         final SpringBeanJobFactory jobFactory = enableSpringBeanJobFactory ? new SpringBeanJobFactory() : null;
         if (enableSpringBeanJobFactory) {
             jobFactory.setApplicationContext(applicationContext);
@@ -51,7 +51,7 @@ public class WorkflowConfig {
 
         scheduler.setJobFactory(new QuartzWorkflowJobFactory(
                 new SimpleWorkflowStepStrategy(), quartzWorkflowService, mapper, trx, jobFactory));
-        
+
         return quartzWorkflowService;
     }
 

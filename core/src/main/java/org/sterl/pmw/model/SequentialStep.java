@@ -13,7 +13,7 @@ public class SequentialStep<StateType extends WorkflowState> extends AbstractSte
     SequentialStep(String name, WorkflowFunction<StateType> fn) {
         this(name, null, fn);
     }
-    
+
     SequentialStep(String name, String connectorLabel, WorkflowFunction<StateType> fn) {
         super(name, connectorLabel);
         Objects.requireNonNull(fn, "WorkflowFunction cannot be null.");

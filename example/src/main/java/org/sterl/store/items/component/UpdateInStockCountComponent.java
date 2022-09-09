@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 public class UpdateInStockCountComponent {
 
     private final ItemRepository itemRepository;
-    
+
     @Transactional
     public void updateInStockCount(long itemId, long stockCount) {
         final Item item = itemRepository.getReferenceById(itemId);

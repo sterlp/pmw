@@ -11,7 +11,7 @@ import lombok.Setter;
 @Getter @Setter @Builder
 public class NewItemArrivedWorkflowState implements WorkflowState {
     private static final long serialVersionUID = 1L;
-    private long itemId;  
+    private long itemId;
     private Long warehouseStockCount;
     @Builder.Default
     private long retry = 0;

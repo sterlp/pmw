@@ -16,7 +16,7 @@ import org.sterl.store.items.entity.Item;
 class ItemServiceTest {
 
     @Autowired ItemService subject;
-    
+
     @BeforeEach
     void setUp() throws Exception {
     }
@@ -25,10 +25,10 @@ class ItemServiceTest {
     void test() {
         // GIVEN
         var item = Item.builder().name("Foo1").price(new BigDecimal("12.99")).build();
-        
+
         // WHEN
         subject.createNewItem(item);
-        
+
         // THEN
         assertThat(subject.get(item.getId())).isPresent();
     }

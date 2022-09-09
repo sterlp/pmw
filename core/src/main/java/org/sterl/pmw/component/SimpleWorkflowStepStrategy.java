@@ -2,6 +2,8 @@ package org.sterl.pmw.component;
 
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.exception.WorkflowException;
+import org.sterl.pmw.exception.WorkflowException.WorkflowFailedDoRetryException;
+import org.sterl.pmw.exception.WorkflowException.WorkflowFailedNoRetryException;
 import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStep;
@@ -13,7 +15,7 @@ public class SimpleWorkflowStepStrategy {
 
     /**
      * Runs the next step in the workflow
-     * 
+     *
      * @return {@link WorkflowStep} if a next step is available, otherwise <code>null</code>
      * @throws WorkflowFailedDoRetryException in case of an error, <b>do</b> retry
      * @throws WorkflowFailedNoRetryException in case of an error, <b>no</b> retry

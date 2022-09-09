@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.sterl.pmw.AsyncAsserts;
 import org.sterl.pmw.model.SimpleWorkflowState;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
 
@@ -51,7 +52,7 @@ public abstract class CoreWorkflowExecutionTest {
     public void testWorkflowServiceIsCreated() {
         assertThat(subject).isNotNull();
     }
-    
+
     @Test
     public void testRegisterWorkflow() {
         // GIVEN
@@ -61,10 +62,10 @@ public abstract class CoreWorkflowExecutionTest {
 
         // WHEN
         subject.register(w);
-        
+
         // THEN
         assertThat(subject.workflowCount()).isOne();
-        
+
         // AND
         assertThrows(IllegalArgumentException.class, () -> subject.register(w));
     }
@@ -80,13 +81,13 @@ public abstract class CoreWorkflowExecutionTest {
         subject.register(w);
 
         // WHEN
-        final String id = subject.execute(w, new TestWorkflowCtx(10));
+        final WorkflowId id = subject.execute(w, new TestWorkflowCtx(10));
         Awaitility.await().until(() -> subject.status(id) == WorkflowStatus.COMPLETE);
 
         // THEN
         assertThat(state.get()).isEqualTo(10);
     }
-    
+
     @Test
     public void testWorkflowStatus() {
         // GIVEN
@@ -103,10 +104,10 @@ public abstract class CoreWorkflowExecutionTest {
                 })
                 .build();
         subject.register(w);
-        
+
         // WHEN
-        final String id = subject.execute(w, new SimpleWorkflowState(), Duration.ofMillis(250));
-        
+        final WorkflowId id = subject.execute(w, new SimpleWorkflowState(), Duration.ofMillis(250));
+
         // THEN
         assertThat(subject.status(id)).isEqualTo(WorkflowStatus.SLEEPING);
         // AND
@@ -126,7 +127,7 @@ public abstract class CoreWorkflowExecutionTest {
         subject.register(w);
 
         // WHEN
-        final String id = subject.execute(w, new TestWorkflowCtx(1));
+        final WorkflowId id = subject.execute(w, new TestWorkflowCtx(1));
         Awaitility.await().until(() -> subject.status(id) == WorkflowStatus.COMPLETE);
 
         // THEN
@@ -152,14 +153,14 @@ public abstract class CoreWorkflowExecutionTest {
         subject.register(w);
 
         // WHEN
-        final String workflowId = subject.execute(w);
+        final WorkflowId workflowId = subject.execute(w);
 
         // THEN
         Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.COMPLETE);
         assertThat(state.get()).isEqualTo(77);
 
     }
-    
+
     @Test
     public void testWorkflow() {
         // GIVEN
@@ -302,14 +303,14 @@ public abstract class CoreWorkflowExecutionTest {
         subject.register(w);
 
         // WHEN
-        final String workflowId = subject.execute(w);
+        final WorkflowId workflowId = subject.execute(w);
 
         // THEN
         Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.SLEEPING);
         asserts.awaitOrdered("wait", "done");
         assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(999L);
     }
-    
+
     @Test
     public void testWaitForNextStepCorrectWay() {
         // GIVEN
@@ -330,14 +331,14 @@ public abstract class CoreWorkflowExecutionTest {
         subject.register(w);
 
         // WHEN
-        final String workflowId = subject.execute(w);
+        final WorkflowId workflowId = subject.execute(w);
 
         // THEN
         Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.SLEEPING);
         asserts.awaitOrdered("wait", "done");
         assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(1000L);
     }
-    
+
     @Test
     public void testCancelWorkflow() {
         // GIVEN
@@ -353,14 +354,14 @@ public abstract class CoreWorkflowExecutionTest {
         subject.register(w);
 
         // WHEN
-        final String workflowId = subject.execute(w);
+        final WorkflowId workflowId = subject.execute(w);
 
         // THEN
         Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.COMPLETE);
         asserts.awaitOrdered("step 1", "step 2");
         asserts.assertMissing("cancel");
     }
-    
+
     @Test
     public void testTriggerWorkflow() throws InterruptedException {
         // GIVEN
@@ -375,12 +376,12 @@ public abstract class CoreWorkflowExecutionTest {
                 .next(s -> s.setAnyValue(2))
                 .trigger(subW, s -> s)
                 .build();
-        
+
         // WHEN
         subject.register(w);
         subject.register(subW);
         subject.execute(w);
-        
+
         // THEN
         assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
         assertThat(stateValue.get()).isEqualTo(2);

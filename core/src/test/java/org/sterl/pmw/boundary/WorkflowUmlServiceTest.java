@@ -23,7 +23,7 @@ class WorkflowUmlServiceTest {
     void setUp() throws Exception {
         repository.clear();
     }
-    
+
     @Test
     void testPlanUmlDiagram() throws Exception {
         // GIVEN
@@ -32,9 +32,9 @@ class WorkflowUmlServiceTest {
                 .next(s -> {})
                 .next(s -> {})
                 .build();
-        
+
         repository.register(w);
-        
+
         File d = new File("./test-workflow.svg");
         if (d.exists()) d.delete();
         d.deleteOnExit();
@@ -42,7 +42,7 @@ class WorkflowUmlServiceTest {
         try (FileOutputStream out = new FileOutputStream(d)) {
             subject.printWorkflowAsPlantUmlSvg("test-workflow", out);
         }
-        
+
         assertThat(d).exists();
         assertThat(Files.size(d.toPath())).isGreaterThan(5L);
     }
@@ -64,7 +64,7 @@ class WorkflowUmlServiceTest {
                 @enduml
                 """);
     }
-    
+
     @Test
     void testOneGivenName() {
         // GIVEN
@@ -110,7 +110,7 @@ class WorkflowUmlServiceTest {
                 @enduml
                 """);
     }
-    
+
     @Test
     void testChooseWithName() {
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", () ->  new SimpleWorkflowState())
@@ -134,7 +134,7 @@ class WorkflowUmlServiceTest {
                 @enduml
                 """);
     }
-    
+
     @Test
     void testSleep() {
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", () ->  new SimpleWorkflowState())
@@ -154,7 +154,7 @@ class WorkflowUmlServiceTest {
                 @enduml
                 """);
     }
-    
+
     @Test
     void testSubWorkflow() {
         // GIVEN
@@ -168,7 +168,7 @@ class WorkflowUmlServiceTest {
                 .trigger(child, s -> s)
                 .next(s -> {})
                 .build();
-        
+
         // THEN
         assertWorkflolw(parent,
                 """
@@ -189,7 +189,7 @@ class WorkflowUmlServiceTest {
                 @enduml
                 """);
     }
-    
+
     @Test
     void testSubWorkflowByName() {
         // GIVEN
@@ -203,10 +203,10 @@ class WorkflowUmlServiceTest {
                 .next("trigger->any child", s -> {})
                 .next(s -> {})
                 .build();
-        
+
         repository.register(parent);
         repository.register(child);
-        
+
         // THEN
         assertThat(subject.printWorkflow("parent")).isEqualTo("""
                 @startuml "parent"

@@ -25,7 +25,7 @@ public class WorkflowFactory<StateType extends WorkflowState> extends AbstractWo
     public WorkflowFactory<StateType> next(String name, Consumer<StateType> fn) {
         return addStep(new SequentialStep<>(name, WorkflowFunction.of(fn)));
     }
-    
+
     public <TriggeredWorkflowStateType extends WorkflowState> WorkflowFactory<StateType> trigger(
             Workflow<TriggeredWorkflowStateType> toTriger, Function<StateType, TriggeredWorkflowStateType> fn) {
         addStep(new TriggerWorkflowStep<>(this.defaultStepName("Trigger " + toTriger.getName()), null, toTriger, fn, Duration.ZERO));

@@ -37,7 +37,7 @@ public class AsyncAsserts {
     }
     public void awaitValue(String value) {
         Instant now = Instant.now();
-        while (!values.contains(value) 
+        while (!values.contains(value)
                 && (System.currentTimeMillis() - now.toEpochMilli() <= 30_000)) {
             try {
                 Thread.sleep(50);

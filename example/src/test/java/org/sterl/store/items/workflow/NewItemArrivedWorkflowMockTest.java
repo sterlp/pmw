@@ -36,7 +36,7 @@ class NewItemArrivedWorkflowMockTest {
     void test() throws Exception {
         WorkflowRepository repo = new WorkflowRepository();
         WorkflowUmlService umlService = new WorkflowUmlService(repo);
-        
+
         repo.register(subject.getCheckWarehouse());
         repo.register(subject.getRestorePriceSubWorkflow());
 

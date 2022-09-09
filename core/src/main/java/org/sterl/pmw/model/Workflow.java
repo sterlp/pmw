@@ -25,7 +25,7 @@ public class Workflow<T extends WorkflowState> {
         this.name = name;
         this.newContextCreator = newContextCreator;
     }
-    
+
     public List<WorkflowStep<T>> getSteps() {
         return Collections.unmodifiableList(this.workflowSteps);
     }

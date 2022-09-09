@@ -19,10 +19,10 @@ public class ItemService {
 
     private final ItemRepository itemRepository;
     private final NewItemArrivedWorkflow newItemArrivedWorkflow;
-    
+
     @PostConstruct
     void init() {
-        
+
     }
     @Transactional(readOnly = true, timeout = 10)
     public Optional<Item> get(long id) {
@@ -32,9 +32,9 @@ public class ItemService {
     public Item createNewItem(Item item) {
         itemRepository.save(item);
         itemRepository.flush();
-        
+
         newItemArrivedWorkflow.execute(item.getId());
-        
+
         return item;
     }
 }
