@@ -13,8 +13,10 @@ public class SimpleWorkflowStepStrategy {
 
     /**
      * Runs the next step in the workflow
+     * 
      * @return {@link WorkflowStep} if a next step is available, otherwise <code>null</code>
-     * @throws WorkflowException in case of an error
+     * @throws WorkflowFailedDoRetryException in case of an error, <b>do</b> retry
+     * @throws WorkflowFailedNoRetryException in case of an error, <b>no</b> retry
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public WorkflowStep executeNextStep(RunningWorkflowState<?> runningWorkflowState, WorkflowService<?> workflowService) {

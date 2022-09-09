@@ -45,7 +45,6 @@ public class InMemoryWorkflowService implements WorkflowService<String> {
         @Override
         public Void call() throws Exception {
 
-
             byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
             try {
                 // we loop throw all steps as long we have one

@@ -11,7 +11,7 @@ import lombok.Getter;
 public class Workflow<T extends WorkflowState> {
 
     public static <T extends WorkflowState> WorkflowFactory<T> builder(
-            String name, Supplier<T> newContextCreator) {
+            final String name, final Supplier<T> newContextCreator) {
         return new WorkflowFactory<>(name, newContextCreator);
     }
 
