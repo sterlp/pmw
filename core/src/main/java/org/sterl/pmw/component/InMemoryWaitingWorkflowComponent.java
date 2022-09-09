@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class InMemoryWaitingWorkflowComponent {
 
-    public static record WaitingWorkflow<T extends WorkflowState>(Instant until, RunningWorkflowState<T> runningWorkflowState) {}
+    public record WaitingWorkflow<T extends WorkflowState>(Instant until, RunningWorkflowState<T> runningWorkflowState) {}
 
     private Map<WorkflowId, WaitingWorkflow<?>> waitingWorkflows = new ConcurrentHashMap<>();
 
