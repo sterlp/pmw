@@ -8,11 +8,13 @@ import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public abstract class AbstractWorkflowService<RegistryType> implements WorkflowService<RegistryType> {
 
+    @NonNull
     protected final WorkflowRepository workflowRepository;
 
     @Override

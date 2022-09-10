@@ -1,5 +1,6 @@
 package org.sterl.pmw.component;
 
+import java.io.IOException;
 import java.util.concurrent.Callable;
 
 import org.sterl.pmw.boundary.WorkflowService;
@@ -22,29 +23,37 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
     @Override
     public Void call() throws Exception {
     
+        boolean hasNextStep = true;
+        while (hasNextStep && runningWorkflowState.isNextStepReady()) {
+            hasNextStep = executeSingleStepIncludingQueuing();
+        }
+
+        if (runningWorkflowState.isCanceled()) workflowService.cancel(workflowId);
+        return null;
+    }
+
+    protected boolean executeSingleStepIncludingQueuing() throws IOException, ClassNotFoundException {
+        boolean result;
         byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
         try {
             // we loop throw all steps as long we have one
             WorkflowStep<?> nexStep = this.executeNextStep(runningWorkflowState, workflowService);
-            while (nexStep != null && runningWorkflowState.isNotCanceled()) {
-                if (runningWorkflowState.hasDelay()) {
-                    workflowService.runOrQueueNextStep(workflowId, runningWorkflowState);
-                    break;
-                } else {
-                    originalState = SerializationUtil.serialize(runningWorkflowState.userState());
-                    nexStep = this.executeNextStep(runningWorkflowState, workflowService);
-                }
+
+            if (runningWorkflowState.isNextStepDelayed()) {
+                workflowService.runOrQueueNextStep(workflowId, runningWorkflowState);
+                result = false;
+            } else {
+                result = nexStep != null;
             }
-    
-            if (nexStep == null || runningWorkflowState.isCanceled()) workflowService.cancel(workflowId);
-    
+
         } catch (WorkflowException.WorkflowFailedDoRetryException e) {
+            result = false;
             workflowService.runOrQueueNextStep(workflowId, new RunningWorkflowState<>(
                     runningWorkflowState.workflow(),
                     SerializationUtil.deserializeWorkflowState(originalState),
                     runningWorkflowState.internalState())
                 );
         }
-        return null;
+        return result;
     }
 }

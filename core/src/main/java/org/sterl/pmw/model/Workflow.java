@@ -55,9 +55,17 @@ public class Workflow<T extends WorkflowState> {
         return nextStep;
     }
 
+    /**
+     * Increments the fail counter for the given step and set the {@link WorkflowStatus} to {@link WorkflowStatus#FAILED}
+     * if the max retry count is exceeded.
+     * 
+     * @return <code>true</code> retry should be attempted, otherwise <code>false</code>
+     */
     public boolean fail(WorkflowStep<T> nextStep, InternalWorkflowState state, Exception e) {
         final int retryCount = state.stepFailed(nextStep, e);
-        return retryCount < nextStep.getMaxRetryCount();
+        boolean shouldRetry = retryCount < nextStep.getMaxRetryCount();
+        if (!shouldRetry) state.setWorkflowStatus(WorkflowStatus.FAILED);
+        return shouldRetry;
     }
 
     void setWorkflowSteps(Collection<WorkflowStep<T>> workflowSteps) {

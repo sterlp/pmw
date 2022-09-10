@@ -17,12 +17,21 @@ public record RunningWorkflowState<T extends WorkflowState>(Workflow<T> workflow
         return workflow.success(step, internalState);
     }
 
+    /**
+     * Increments the fail counter for the given step and set the {@link WorkflowStatus} to {@link WorkflowStatus#FAILED}
+     * if the max retry count is exceeded.
+     * 
+     * @return <code>true</code> retry should be attempted, otherwise <code>false</code>
+     */
     public boolean failStep(WorkflowStep<T> step, Exception e) {
         return workflow.fail(step, internalState, e);
     }
 
-    public boolean hasDelay() {
-        return internalState.hasDelay();
+    public boolean isNextStepDelayed() {
+        return isNotFailed() && isNotCanceled() && internalState.hasDelay();
+    }
+    public boolean hasNoDelay() {
+        return !internalState.hasDelay();
     }
 
     public boolean isCanceled() {
@@ -30,5 +39,13 @@ public record RunningWorkflowState<T extends WorkflowState>(Workflow<T> workflow
     }
     public boolean isNotCanceled() {
         return internalState.getWorkflowStatus() != WorkflowStatus.CANCELED;
+    }
+    
+    public boolean isNotFailed() {
+        return internalState.getWorkflowStatus() != WorkflowStatus.FAILED;
+    }
+    
+    public boolean isNextStepReady() {
+        return hasNoDelay() && isNotCanceled() && isNotFailed();
     }
 }

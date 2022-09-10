@@ -26,7 +26,6 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
 
     private Map<WorkflowId, RunningWorkflowState<?>> runningWorkflows = new ConcurrentHashMap<>();
 
-
     public InMemoryWorkflowService() {
         super(new WorkflowRepository());
         this.waitingWorkflowComponent = new InMemoryWaitingWorkflowComponent(this);
