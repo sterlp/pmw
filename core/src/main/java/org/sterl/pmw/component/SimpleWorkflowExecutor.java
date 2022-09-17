@@ -1,6 +1,5 @@
 package org.sterl.pmw.component;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 
 import org.sterl.pmw.boundary.WorkflowService;
@@ -12,6 +11,11 @@ import org.sterl.pmw.model.WorkflowStep;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Executes the workflow until a sleep or an error.
+ * 
+ * @param <T> the state type
+ */
 @RequiredArgsConstructor
 public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWorkflowStepExecutor
     implements Callable<Void> {
@@ -32,7 +36,7 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
         return null;
     }
 
-    protected boolean executeSingleStepIncludingQueuing() throws IOException, ClassNotFoundException {
+    protected boolean executeSingleStepIncludingQueuing() throws Exception {
         boolean result;
         byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
         try {
