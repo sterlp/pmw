@@ -21,7 +21,7 @@ public class SimpleWorkflowStepExecutor {
      * @throws WorkflowFailedNoRetryException in case of an error, <b>no</b> retry
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public WorkflowStep executeNextStep(RunningWorkflowState<?> runningWorkflowState, WorkflowService<?> workflowService) {
+    public WorkflowStep<?> executeNextStep(RunningWorkflowState<?> runningWorkflowState, WorkflowService<?> workflowService) {
         WorkflowStep nextStep = runningWorkflowState.nextStep();
         logWorkflowStart(runningWorkflowState);
         if (nextStep != null) {

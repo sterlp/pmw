@@ -38,23 +38,23 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
 
     protected boolean executeSingleStepIncludingQueuing() throws Exception {
         boolean result;
-        byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
+        byte[] originalUserState = SerializationUtil.serialize(runningWorkflowState.userState());
         try {
             // we loop throw all steps as long we have one
-            WorkflowStep<?> nexStep = this.executeNextStep(runningWorkflowState, workflowService);
+            final WorkflowStep<?> nextStep = this.executeNextStep(runningWorkflowState, workflowService);
 
             if (runningWorkflowState.isNextStepDelayed()) {
                 workflowService.runOrQueueNextStep(workflowId, runningWorkflowState);
                 result = false;
             } else {
-                result = nexStep != null;
+                result = nextStep != null;
             }
 
         } catch (WorkflowException.WorkflowFailedDoRetryException e) {
             result = false;
             workflowService.runOrQueueNextStep(workflowId, new RunningWorkflowState<>(
                     runningWorkflowState.workflow(),
-                    SerializationUtil.deserializeWorkflowState(originalState),
+                    SerializationUtil.deserializeWorkflowState(originalUserState),
                     runningWorkflowState.internalState())
                 );
         }

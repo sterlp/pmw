@@ -20,6 +20,7 @@ Build a very basic workflow `engine` which does only really basic stuff and is u
 - [x] Wait as own step
 - [x] Trigger workflows in an own step
 - [x] Link to workflows in repository using `trigger->`
+- [ ] Logging & Audit & History Plugin
 - [ ] Standalone flow version using a single thread
 - [ ] Support multiple sub steps if choose
 
