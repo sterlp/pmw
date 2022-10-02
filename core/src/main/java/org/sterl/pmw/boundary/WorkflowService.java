@@ -17,7 +17,7 @@ public interface WorkflowService<RegistryType> {
     <T extends WorkflowState> WorkflowId execute(Workflow<T> workflow, T state);
     <T extends WorkflowState> WorkflowId execute(Workflow<T> workflow, T state, Duration delay);
 
-    void runOrQueueNextStep(WorkflowId id, RunningWorkflowState<?> runningWorkflowState);
+    void runOrQueueNextStep(RunningWorkflowState<?> runningWorkflowState);
 
     WorkflowStatus status(WorkflowId workflowId);
     void cancel(WorkflowId workflowId);

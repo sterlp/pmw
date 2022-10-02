@@ -138,11 +138,11 @@ public class QuartzWorkflowService extends AbstractWorkflowService<JobDetail> {
     }
 
     @Override
-    public void runOrQueueNextStep(WorkflowId id, RunningWorkflowState<?> runningWorkflowState) {
+    public void runOrQueueNextStep(RunningWorkflowState<?> runningWorkflowState) {
         JobDetail job = workflowJobs.get(runningWorkflowState.workflow().getName());
         final TriggerBuilder<Trigger> t = TriggerBuilder.newTrigger()
                     .forJob(job)
-                    .withIdentity(id.value());
+                    .withIdentity(runningWorkflowState.workflowId().value());
 
         try {
             rescheduleTrigger(t.build(), runningWorkflowState.internalState(), runningWorkflowState.userState());

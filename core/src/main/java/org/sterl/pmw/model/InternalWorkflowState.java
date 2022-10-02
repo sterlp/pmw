@@ -12,6 +12,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Internal State of the PMW, best not access.
+ */
 @Getter @Setter(AccessLevel.PACKAGE)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor

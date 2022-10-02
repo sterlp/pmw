@@ -8,10 +8,12 @@ import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStep;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
-@Slf4j
+@RequiredArgsConstructor
 public class SimpleWorkflowStepExecutor {
+
+    protected final WorkflowStatusObserver observer;
 
     /**
      * Runs the next step in the workflow
@@ -22,50 +24,33 @@ public class SimpleWorkflowStepExecutor {
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public WorkflowStep<?> executeNextStep(RunningWorkflowState<?> runningWorkflowState, WorkflowService<?> workflowService) {
-        WorkflowStep nextStep = runningWorkflowState.nextStep();
-        logWorkflowStart(runningWorkflowState);
-        if (nextStep != null) {
-            log.debug("Selecting step={} on workflow={}", nextStep.getName(),
-                    runningWorkflowState.workflow().getName());
+        WorkflowStep stepToRun = runningWorkflowState.getCurrentStep();
+        if (stepToRun != null) {
             try {
-                nextStep.apply(runningWorkflowState.userState(), runningWorkflowState.internalState(), workflowService);
-                nextStep = runningWorkflowState.successStep(nextStep);
+                observer.stepStart(getClass(), runningWorkflowState);
+                stepToRun.apply(runningWorkflowState.userState(), runningWorkflowState.internalState(), workflowService);
+                observer.stepSuccess(getClass(), runningWorkflowState);
 
-                if (nextStep == null) logWorkflowEnd(runningWorkflowState);
+                stepToRun = runningWorkflowState.successStep(stepToRun);
             } catch (Exception e) {
-                throw logWorkflowStepFailed(runningWorkflowState, nextStep, e);
+                throw handleWorkflowStepFailed(runningWorkflowState, stepToRun, e);
             }
 
         }
-        return nextStep;
+        return stepToRun;
     }
 
-    private <C extends WorkflowState> WorkflowException logWorkflowStepFailed(RunningWorkflowState<C> runningWorkflowState, WorkflowStep<C> step, Exception e) {
+    private <C extends WorkflowState> WorkflowException handleWorkflowStepFailed(RunningWorkflowState<C> runningWorkflowState, WorkflowStep<C> step, Exception e) {
         boolean willRetry = runningWorkflowState.failStep(step, e);
         WorkflowException result;
         int retryCount = runningWorkflowState.internalState().getLastFailedStepRetryCount();
         if (willRetry) {
+            observer.stepFailedRetry(getClass(), runningWorkflowState, e);
             result = new WorkflowException.WorkflowFailedDoRetryException(runningWorkflowState.workflow(), step, e, retryCount);
-            log.warn("{} retryCount={}", e.getMessage(), retryCount, e);
         } else {
+            observer.stepFailed(getClass(), runningWorkflowState, e);
             result = new WorkflowException.WorkflowFailedNoRetryException(runningWorkflowState.workflow(), step, e, retryCount);
-            log.error("{} retryCount={}", e.getMessage(), retryCount, e);
         }
         return result;
-    }
-
-    private <C extends WorkflowState> void logWorkflowEnd(RunningWorkflowState<C> runningWorkflowState) {
-        log.info("workflow={} success durationMs={} at={}.",
-                runningWorkflowState.workflow().getName(),
-                runningWorkflowState.internalState().workflowRunDuration().toMillis(),
-                runningWorkflowState.internalState().getWorkflowEndTime());
-    }
-
-    private <C extends WorkflowState> void logWorkflowStart(RunningWorkflowState<C> runningWorkflowState) {
-        if (runningWorkflowState.internalState().isFirstWorkflowStep()) {
-            log.info("Starting workflow={} at={}",
-                    runningWorkflowState.workflow().getName(),
-                    runningWorkflowState.internalState().getWorkflowStartTime());
-        }
     }
 }

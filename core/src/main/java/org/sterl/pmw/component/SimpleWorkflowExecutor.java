@@ -5,34 +5,50 @@ import java.util.concurrent.Callable;
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.exception.WorkflowException;
 import org.sterl.pmw.model.RunningWorkflowState;
-import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStep;
 
-import lombok.RequiredArgsConstructor;
-
 /**
  * Executes the workflow until a sleep or an error.
- * 
+ *
  * @param <T> the state type
  */
-@RequiredArgsConstructor
 public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWorkflowStepExecutor
     implements Callable<Void> {
 
-    private final WorkflowId workflowId;
     private final RunningWorkflowState<T> runningWorkflowState;
     private final WorkflowService<?> workflowService;
-    
+
+    public SimpleWorkflowExecutor(RunningWorkflowState<T> runningWorkflowState,
+            WorkflowService<?> workflowService, WorkflowStatusObserver observer) {
+        super(observer);
+        this.runningWorkflowState = runningWorkflowState;
+        this.workflowService = workflowService;
+    }
+
     @Override
     public Void call() throws Exception {
-    
-        boolean hasNextStep = true;
-        while (hasNextStep && runningWorkflowState.isNextStepReady()) {
-            hasNextStep = executeSingleStepIncludingQueuing();
-        }
 
-        if (runningWorkflowState.isCanceled()) workflowService.cancel(workflowId);
+        if (runningWorkflowState.internalState().isFirstWorkflowStep()) {
+            observer.workflowStart(getClass(), runningWorkflowState);
+        }
+        try {
+            boolean hasNextStep = true;
+
+            while (hasNextStep && runningWorkflowState.isNextStepReady()) {
+                hasNextStep = executeSingleStepIncludingQueuing();
+            }
+
+            if (runningWorkflowState.isCanceled()) {
+                workflowService.cancel(runningWorkflowState.workflowId());
+            }
+            if (runningWorkflowState.isFinished()) {
+                observer.workflowSuccess(getClass(), runningWorkflowState);
+            }
+        } catch (Exception e) {
+            observer.workflowFailed(getClass(), runningWorkflowState, e);
+            throw e;
+        }
         return null;
     }
 
@@ -44,7 +60,7 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
             final WorkflowStep<?> nextStep = this.executeNextStep(runningWorkflowState, workflowService);
 
             if (runningWorkflowState.isNextStepDelayed()) {
-                workflowService.runOrQueueNextStep(workflowId, runningWorkflowState);
+                workflowService.runOrQueueNextStep(runningWorkflowState);
                 result = false;
             } else {
                 result = nextStep != null;
@@ -52,7 +68,8 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
 
         } catch (WorkflowException.WorkflowFailedDoRetryException e) {
             result = false;
-            workflowService.runOrQueueNextStep(workflowId, new RunningWorkflowState<>(
+            workflowService.runOrQueueNextStep(new RunningWorkflowState<>(
+                    runningWorkflowState.workflowId(),
                     runningWorkflowState.workflow(),
                     SerializationUtil.deserializeWorkflowState(originalUserState),
                     runningWorkflowState.internalState())

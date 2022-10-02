@@ -14,6 +14,9 @@ public class Workflow<T extends WorkflowState> {
             final String name, final Supplier<T> newContextCreator) {
         return new WorkflowFactory<>(name, newContextCreator);
     }
+    public static WorkflowFactory<SimpleWorkflowState> builder(final String name) {
+        return new WorkflowFactory<>(name, SimpleWorkflowState::new);
+    }
 
     @Getter
     private final String name;
@@ -34,7 +37,7 @@ public class Workflow<T extends WorkflowState> {
         return workflowSteps.size();
     }
 
-    public WorkflowStep<T> nextStep(InternalWorkflowState state) {
+    public WorkflowStep<T> getCurrentStep(InternalWorkflowState state) {
         var currentStepIndex = state.getCurrentStepIndex();
         if (currentStepIndex == 0) {
             state.workflowStarted();
@@ -51,14 +54,14 @@ public class Workflow<T extends WorkflowState> {
      */
     public WorkflowStep<T> success(WorkflowStep<T> currentStep, InternalWorkflowState state) {
         state.stepSuccessfullyFinished(currentStep);
-        final WorkflowStep<T> nextStep = nextStep(state);
+        final WorkflowStep<T> nextStep = getCurrentStep(state);
         return nextStep;
     }
 
     /**
      * Increments the fail counter for the given step and set the {@link WorkflowStatus} to {@link WorkflowStatus#FAILED}
      * if the max retry count is exceeded.
-     * 
+     *
      * @return <code>true</code> retry should be attempted, otherwise <code>false</code>
      */
     public boolean fail(WorkflowStep<T> nextStep, InternalWorkflowState state, Exception e) {

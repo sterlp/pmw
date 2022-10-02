@@ -15,4 +15,5 @@ public abstract class AbstractStep <StateType extends WorkflowState> implements 
     protected final String connectorLabel;
     @Getter
     protected int maxRetryCount = 3;
+
 }

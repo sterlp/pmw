@@ -13,6 +13,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepExecutor;
 import org.sterl.pmw.component.WorkflowRepository;
+import org.sterl.pmw.component.WorkflowStatusObserver;
 import org.sterl.pmw.quartz.boundary.QuartzWorkflowService;
 import org.sterl.pmw.quartz.job.QuartzWorkflowJobFactory;
 
@@ -50,7 +51,7 @@ public class WorkflowConfig {
         }
 
         scheduler.setJobFactory(new QuartzWorkflowJobFactory(
-                new SimpleWorkflowStepExecutor(), quartzWorkflowService, mapper, trx, jobFactory));
+                new SimpleWorkflowStepExecutor(WorkflowStatusObserver.NOP_OBSERVER), quartzWorkflowService, mapper, trx, jobFactory));
 
         return quartzWorkflowService;
     }

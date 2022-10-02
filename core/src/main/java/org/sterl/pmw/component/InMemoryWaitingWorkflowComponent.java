@@ -18,9 +18,7 @@ import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @RequiredArgsConstructor
 public class InMemoryWaitingWorkflowComponent {
 
@@ -45,9 +43,9 @@ public class InMemoryWaitingWorkflowComponent {
         return this.waitingWorkflows.containsKey(workflowId);
     }
 
-    public <T extends WorkflowState> WaitingWorkflow<?> addWaitingWorkflow(WorkflowId id,
+    public <T extends WorkflowState> WaitingWorkflow<?> addWaitingWorkflow(
             RunningWorkflowState<T> runningWorkflowState, Duration duration) {
-        return addWaitingWorkflow(id, new WaitingWorkflow<>(Instant.now().plus(duration), runningWorkflowState));
+        return addWaitingWorkflow(runningWorkflowState.workflowId(), new WaitingWorkflow<>(Instant.now().plus(duration), runningWorkflowState));
     }
 
     /**
@@ -57,7 +55,6 @@ public class InMemoryWaitingWorkflowComponent {
      */
     public <T extends WorkflowState> WaitingWorkflow<?> addWaitingWorkflow(WorkflowId id, WaitingWorkflow<T> waitingWorkflow) {
         final WaitingWorkflow<?> old = waitingWorkflows.put(id, waitingWorkflow);
-        log.debug("Workflow {} is now waiting until {}.", id, waitingWorkflow.until());
         start();
         return old;
     }
@@ -70,7 +67,7 @@ public class InMemoryWaitingWorkflowComponent {
                     final Instant now = Instant.now();
                     for (Entry<WorkflowId, WaitingWorkflow<?>> w : new HashSet<>(waitingWorkflows.entrySet())) {
                         if (now.isAfter(w.getValue().until)) {
-                            workflowService.runOrQueueNextStep(w.getKey(), w.getValue().runningWorkflowState());
+                            workflowService.runOrQueueNextStep(w.getValue().runningWorkflowState());
                             waitingWorkflows.remove(w.getKey());
                         }
                     }

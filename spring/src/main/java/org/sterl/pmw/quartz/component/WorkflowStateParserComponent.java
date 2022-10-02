@@ -7,6 +7,7 @@ import org.quartz.TriggerKey;
 import org.sterl.pmw.model.InternalWorkflowState;
 import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
 
@@ -47,7 +48,7 @@ public class WorkflowStateParserComponent {
         final WorkflowState userState = parse(w.newEmtyContext(), jobData, USER_WORKFLOW_STATE, key);
         final InternalWorkflowState internalState = parse(new InternalWorkflowState(), jobData, INTERNAL_WORKFLOW_STATE, key);
 
-        return new RunningWorkflowState<>(w, userState, internalState);
+        return new RunningWorkflowState<>(new WorkflowId(key.getName()), w, userState, internalState);
     }
 
     @SuppressWarnings("unchecked")
