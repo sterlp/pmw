@@ -18,6 +18,7 @@ import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.sterl.pmw.boundary.AbstractWorkflowService;
 import org.sterl.pmw.component.WorkflowRepository;
+import org.sterl.pmw.component.WorkflowStatusObserver;
 import org.sterl.pmw.model.InternalWorkflowState;
 import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
@@ -37,13 +38,15 @@ import lombok.extern.slf4j.Slf4j;
 public class QuartzWorkflowService extends AbstractWorkflowService<JobDetail> {
 
     private final Scheduler scheduler;
+    private final WorkflowStatusObserver observer;
     private final Map<String, JobDetail> workflowJobs = new HashMap<>();
     private final WorkflowStateParserComponent workflowStateParser;
 
-    public QuartzWorkflowService(@NonNull Scheduler scheduler, @NonNull WorkflowRepository workflowRepository,
+    public QuartzWorkflowService(@NonNull Scheduler scheduler, @NonNull WorkflowStatusObserver observer, @NonNull WorkflowRepository workflowRepository,
             ObjectMapper mapper) {
         super(workflowRepository);
         this.scheduler = scheduler;
+        this.observer = observer;
         this.workflowStateParser = new WorkflowStateParserComponent(mapper);
 
         log.info("Workflows initialized, {} workflows deployed.", workflowRepository.getWorkflowNames().size());
@@ -93,7 +96,11 @@ public class QuartzWorkflowService extends AbstractWorkflowService<JobDetail> {
 
             final Trigger trigger = t.build();
             scheduler.scheduleJob(trigger);
-            return new WorkflowId(trigger.getKey().getName());
+            final WorkflowId result = new WorkflowId(trigger.getKey().getName());
+            
+            observer.workdlowCreated(getClass(), result, w, state);
+            
+            return result;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -138,7 +145,7 @@ public class QuartzWorkflowService extends AbstractWorkflowService<JobDetail> {
     }
 
     @Override
-    public void runOrQueueNextStep(RunningWorkflowState<?> runningWorkflowState) {
+    public void queueStepForExecution(RunningWorkflowState<?> runningWorkflowState) {
         JobDetail job = workflowJobs.get(runningWorkflowState.workflow().getName());
         final TriggerBuilder<Trigger> t = TriggerBuilder.newTrigger()
                     .forJob(job)
@@ -211,6 +218,15 @@ public class QuartzWorkflowService extends AbstractWorkflowService<JobDetail> {
 
     @Override
     public void cancel(WorkflowId workflowId) {
+        try {
+            this.scheduler.unscheduleJob(TriggerKey.triggerKey(workflowId.value()));
+        } catch (SchedulerException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void fail(WorkflowId workflowId) {
         try {
             this.scheduler.unscheduleJob(TriggerKey.triggerKey(workflowId.value()));
         } catch (SchedulerException e) {

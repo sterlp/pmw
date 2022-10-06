@@ -6,14 +6,24 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.sterl.pmw.model.RunningWorkflowState;
+import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@NoArgsConstructor
 public class ChainedWorkflowStatusObserver implements WorkflowStatusObserver {
 
     private final List<WorkflowStatusObserver> observers = new ArrayList<>();
+    
+    public ChainedWorkflowStatusObserver(WorkflowStatusObserver... observer) {
+        for (WorkflowStatusObserver wso : observer) {
+            this.observers.add(wso);
+        }
+    }
 
     public ChainedWorkflowStatusObserver addObserver(WorkflowStatusObserver observer) {
         this.observers.add(observer);
@@ -22,6 +32,12 @@ public class ChainedWorkflowStatusObserver implements WorkflowStatusObserver {
     public ChainedWorkflowStatusObserver removeObserver(WorkflowStatusObserver observer) {
         this.observers.remove(observer);
         return this;
+    }
+
+    @Override
+    public <T extends WorkflowState> void workdlowCreated(Class<?> triggerClass, WorkflowId workflowId,
+            Workflow<T> workflow, T userState) {
+        applyWorkflowStatusObserver(o -> o.workdlowCreated(triggerClass, workflowId, workflow, userState));
     }
 
     @Override
@@ -74,5 +90,15 @@ public class ChainedWorkflowStatusObserver implements WorkflowStatusObserver {
                 log.warn("Observer {} failed.", o.getClass(), e);
             }
         }
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder r = new StringBuilder(this.getClass().getSimpleName()).append("(\n");
+        for (WorkflowStatusObserver workflowStatusObserver : observers) {
+            r.append("  ").append(workflowStatusObserver.getClass().getName()).append(",\n");
+        }
+        r.append(")");
+        return r.toString();
     }
 }

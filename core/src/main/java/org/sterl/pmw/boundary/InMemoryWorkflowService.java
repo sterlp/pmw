@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.sterl.pmw.component.InMemoryWaitingWorkflowComponent;
 import org.sterl.pmw.component.LoggingWorkflowStatusObserver;
 import org.sterl.pmw.component.SimpleWorkflowExecutor;
+import org.sterl.pmw.component.SimpleWorkflowStepExecutor;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.component.WorkflowStatusObserver;
 import org.sterl.pmw.model.InternalWorkflowState;
@@ -21,9 +22,10 @@ import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
 
 public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
-    private final ExecutorService stepExecutor;
+    private final ExecutorService stepExecutorPool;
     private final InMemoryWaitingWorkflowComponent waitingWorkflowComponent;
     private final WorkflowStatusObserver observer;
+    private final SimpleWorkflowStepExecutor stepExecutor;
     private Map<WorkflowId, RunningWorkflowState<?>> runningWorkflows = new ConcurrentHashMap<>();
 
     public InMemoryWorkflowService() {
@@ -34,7 +36,8 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
         super(new WorkflowRepository());
         this.observer = observer;
         this.waitingWorkflowComponent = new InMemoryWaitingWorkflowComponent(this);
-        this.stepExecutor = Executors.newWorkStealingPool();
+        this.stepExecutorPool = Executors.newWorkStealingPool();
+        this.stepExecutor = new SimpleWorkflowStepExecutor(observer);
     }
 
     @Override
@@ -43,16 +46,18 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
         RunningWorkflowState<T> runningState = new RunningWorkflowState<>(workflowId, w, state, new InternalWorkflowState(delay));
 
         runningWorkflows.put(workflowId, runningState);
-        runOrQueueNextStep(runningState);
+        observer.workdlowCreated(getClass(), workflowId, w, state);
+        
+        queueStepForExecution(runningState);
 
         return workflowId;
     }
 
     @Override
-    public void runOrQueueNextStep(RunningWorkflowState<?> runningWorkflowState) {
+    public void queueStepForExecution(RunningWorkflowState<?> runningWorkflowState) {
         final Duration delay = runningWorkflowState.internalState().consumeDelay();
         if (delay.toMillis() <= 0) {
-            stepExecutor.submit(new SimpleWorkflowExecutor<>(runningWorkflowState, this, observer));
+            stepExecutorPool.submit(new SimpleWorkflowExecutor<>(runningWorkflowState, this, observer, stepExecutor));
         } else {
             observer.workflowSuspended(getClass(), Instant.now().plus(delay), runningWorkflowState);
             waitingWorkflowComponent.addWaitingWorkflow(runningWorkflowState, delay);
@@ -60,8 +65,8 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
     }
 
     public void stop() throws InterruptedException {
-        stepExecutor.awaitTermination(30, TimeUnit.SECONDS);
-        stepExecutor.shutdown();
+        stepExecutorPool.awaitTermination(30, TimeUnit.SECONDS);
+        stepExecutorPool.shutdown();
     }
 
     @Override
@@ -71,7 +76,6 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
         this.runningWorkflows.clear();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T extends WorkflowState> String register(Workflow<T> w) {
         workflowRepository.registerUnique(w);
@@ -96,6 +100,12 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
 
     @Override
     public void cancel(WorkflowId workflowId) {
+        this.waitingWorkflowComponent.remove(workflowId);
+        this.runningWorkflows.remove(workflowId);
+    }
+
+    @Override
+    public void fail(WorkflowId workflowId) {
         this.waitingWorkflowComponent.remove(workflowId);
         this.runningWorkflows.remove(workflowId);
     }

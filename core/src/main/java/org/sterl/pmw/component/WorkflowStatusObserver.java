@@ -3,9 +3,14 @@ package org.sterl.pmw.component;
 import java.time.Instant;
 
 import org.sterl.pmw.model.RunningWorkflowState;
+import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 
 public interface WorkflowStatusObserver {
+    <T extends WorkflowState> void workdlowCreated(Class<?> triggerClass, WorkflowId workflowId,
+            Workflow<T> workflow, T userState);
+    
     void workflowStart(Class<?> triggerClass, RunningWorkflowState<? extends WorkflowState> runningWorkflow);
 
     void workflowSuspended(Class<?> triggerClass, Instant until, RunningWorkflowState<? extends WorkflowState> runningWorkflow);
@@ -21,6 +26,11 @@ public interface WorkflowStatusObserver {
 
 
     WorkflowStatusObserver NOP_OBSERVER = new WorkflowStatusObserver() {
+        @Override
+        public <T extends WorkflowState> void workdlowCreated(Class<?> triggerClass, WorkflowId workflowId,
+                Workflow<T> workflow, T userState) {
+        }
+
         @Override
         public void workflowSuspended(Class<?> triggerClass, Instant until,
                 RunningWorkflowState<? extends WorkflowState> runningWorkflow) {}

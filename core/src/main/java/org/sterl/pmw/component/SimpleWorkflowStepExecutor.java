@@ -8,12 +8,16 @@ import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStep;
 
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 public class SimpleWorkflowStepExecutor {
 
-    protected final WorkflowStatusObserver observer;
+    @Getter
+    @NonNull
+    private final WorkflowStatusObserver observer;
 
     /**
      * Runs the next step in the workflow

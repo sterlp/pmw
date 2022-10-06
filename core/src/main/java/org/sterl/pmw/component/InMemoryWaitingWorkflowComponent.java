@@ -67,7 +67,7 @@ public class InMemoryWaitingWorkflowComponent {
                     final Instant now = Instant.now();
                     for (Entry<WorkflowId, WaitingWorkflow<?>> w : new HashSet<>(waitingWorkflows.entrySet())) {
                         if (now.isAfter(w.getValue().until)) {
-                            workflowService.runOrQueueNextStep(w.getValue().runningWorkflowState());
+                            workflowService.queueStepForExecution(w.getValue().runningWorkflowState());
                             waitingWorkflows.remove(w.getKey());
                         }
                     }

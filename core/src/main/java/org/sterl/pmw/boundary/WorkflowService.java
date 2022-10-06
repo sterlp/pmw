@@ -17,10 +17,11 @@ public interface WorkflowService<RegistryType> {
     <T extends WorkflowState> WorkflowId execute(Workflow<T> workflow, T state);
     <T extends WorkflowState> WorkflowId execute(Workflow<T> workflow, T state, Duration delay);
 
-    void runOrQueueNextStep(RunningWorkflowState<?> runningWorkflowState);
+    void queueStepForExecution(RunningWorkflowState<?> runningWorkflowState);
 
     WorkflowStatus status(WorkflowId workflowId);
     void cancel(WorkflowId workflowId);
+    void fail(WorkflowId workflowId);
 
     /**
      * Clear all running and registered workflows, mainly used in tests

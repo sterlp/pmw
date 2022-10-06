@@ -1,5 +1,7 @@
 package org.sterl.pmw.spring.config;
 
+import java.util.List;
+
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,9 +13,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.quartz.SpringBeanJobFactory;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.sterl.pmw.component.ChainedWorkflowStatusObserver;
 import org.sterl.pmw.component.SimpleWorkflowStepExecutor;
 import org.sterl.pmw.component.WorkflowRepository;
-import org.sterl.pmw.component.WorkflowStatusObserver;
 import org.sterl.pmw.quartz.boundary.QuartzWorkflowService;
 import org.sterl.pmw.quartz.job.QuartzWorkflowJobFactory;
 
@@ -33,15 +35,23 @@ public class WorkflowConfig {
     WorkflowRepository workflowRepository() {
         return new WorkflowRepository();
     }
+    
+    @Bean
+    ChainedWorkflowStatusObserver chainWorkflowObserver(List<PmwBeanCustomizer> customizers) {
+        ChainedWorkflowStatusObserver result = new ChainedWorkflowStatusObserver();
+        customizers.forEach(c -> c.customizeWorkflowObserver(result));
+        return result;
+    }
 
     @Bean
     QuartzWorkflowService quartzWorkflowService(
             ApplicationContext applicationContext,
             Scheduler scheduler,
             ObjectMapper mapper,
-            TransactionTemplate trx) throws SchedulerException {
+            TransactionTemplate trx,
+            ChainedWorkflowStatusObserver cwso) throws SchedulerException {
 
-        final QuartzWorkflowService quartzWorkflowService = new QuartzWorkflowService(scheduler, workflowRepository(), mapper);
+        final QuartzWorkflowService quartzWorkflowService = new QuartzWorkflowService(scheduler, cwso, workflowRepository(), mapper);
 
         final SpringBeanJobFactory jobFactory = enableSpringBeanJobFactory ? new SpringBeanJobFactory() : null;
         if (enableSpringBeanJobFactory) {
@@ -49,9 +59,10 @@ public class WorkflowConfig {
         } else {
             log.info("SpringBeanJobFactory disabled!");
         }
-
         scheduler.setJobFactory(new QuartzWorkflowJobFactory(
-                new SimpleWorkflowStepExecutor(WorkflowStatusObserver.NOP_OBSERVER), quartzWorkflowService, mapper, trx, jobFactory));
+                new SimpleWorkflowStepExecutor(cwso), 
+                quartzWorkflowService, mapper, trx, jobFactory)
+            );
 
         return quartzWorkflowService;
     }

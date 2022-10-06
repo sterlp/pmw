@@ -8,23 +8,20 @@ import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStep;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * Executes the workflow until a sleep or an error.
  *
  * @param <T> the state type
  */
-public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWorkflowStepExecutor
-    implements Callable<Void> {
+@RequiredArgsConstructor
+public class SimpleWorkflowExecutor <T extends WorkflowState> implements Callable<Void> {
 
     private final RunningWorkflowState<T> runningWorkflowState;
     private final WorkflowService<?> workflowService;
-
-    public SimpleWorkflowExecutor(RunningWorkflowState<T> runningWorkflowState,
-            WorkflowService<?> workflowService, WorkflowStatusObserver observer) {
-        super(observer);
-        this.runningWorkflowState = runningWorkflowState;
-        this.workflowService = workflowService;
-    }
+    private final WorkflowStatusObserver observer;
+    private final SimpleWorkflowStepExecutor stepExecutor;
 
     @Override
     public Void call() throws Exception {
@@ -47,6 +44,7 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
             }
         } catch (Exception e) {
             observer.workflowFailed(getClass(), runningWorkflowState, e);
+            workflowService.fail(runningWorkflowState.workflowId());
             throw e;
         }
         return null;
@@ -57,10 +55,10 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
         byte[] originalUserState = SerializationUtil.serialize(runningWorkflowState.userState());
         try {
             // we loop throw all steps as long we have one
-            final WorkflowStep<?> nextStep = this.executeNextStep(runningWorkflowState, workflowService);
+            final WorkflowStep<?> nextStep = stepExecutor.executeNextStep(runningWorkflowState, workflowService);
 
             if (runningWorkflowState.isNextStepDelayed()) {
-                workflowService.runOrQueueNextStep(runningWorkflowState);
+                queueNextExecution(runningWorkflowState);
                 result = false;
             } else {
                 result = nextStep != null;
@@ -68,7 +66,7 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
 
         } catch (WorkflowException.WorkflowFailedDoRetryException e) {
             result = false;
-            workflowService.runOrQueueNextStep(new RunningWorkflowState<>(
+            queueNextExecution(new RunningWorkflowState<>(
                     runningWorkflowState.workflowId(),
                     runningWorkflowState.workflow(),
                     SerializationUtil.deserializeWorkflowState(originalUserState),
@@ -76,5 +74,12 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
                 );
         }
         return result;
+    }
+
+    /**
+     * Called in case of an error and retry or a delay detected.
+     */
+    protected void queueNextExecution(RunningWorkflowState<T> state) {
+        workflowService.queueStepForExecution(state);
     }
 }

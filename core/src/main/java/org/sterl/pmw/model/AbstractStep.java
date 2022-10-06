@@ -4,9 +4,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.ToString;
 
-@ToString(of = "name")
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public abstract class AbstractStep <StateType extends WorkflowState> implements WorkflowStep<StateType> {
@@ -16,4 +14,8 @@ public abstract class AbstractStep <StateType extends WorkflowState> implements 
     @Getter
     protected int maxRetryCount = 3;
 
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(name=" + name + ")";
+    }
 }

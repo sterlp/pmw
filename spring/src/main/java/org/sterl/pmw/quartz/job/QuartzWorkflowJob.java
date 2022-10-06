@@ -6,6 +6,7 @@ import org.quartz.JobExecutionException;
 import org.quartz.SchedulerException;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.component.SimpleWorkflowStepExecutor;
+import org.sterl.pmw.component.WorkflowStatusObserver;
 import org.sterl.pmw.exception.WorkflowException;
 import org.sterl.pmw.model.RunningWorkflowState;
 import org.sterl.pmw.model.Workflow;
@@ -15,9 +16,7 @@ import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @RequiredArgsConstructor
 public class QuartzWorkflowJob implements Job {
 
@@ -31,6 +30,8 @@ public class QuartzWorkflowJob implements Job {
     private final TransactionTemplate trx;
     @NonNull
     private final WorkflowStateParserComponent workflowStateParser;
+    @NonNull
+    private final WorkflowStatusObserver workflowStatusObserver;
 
     private static class InternalRetryableJobExeption extends RuntimeException {
         private static final long serialVersionUID = 1L;
@@ -42,6 +43,10 @@ public class QuartzWorkflowJob implements Job {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         final RunningWorkflowState<?> runningWorkflowState = workflowStateParser.readWorkflowState(workflow, context);
+        
+        if (runningWorkflowState.internalState().isFirstWorkflowStep()) {
+            workflowStatusObserver.workflowStart(getClass(), runningWorkflowState);
+        }
 
         try {
             trx.executeWithoutResult(t -> {
@@ -56,9 +61,12 @@ public class QuartzWorkflowJob implements Job {
                         t.setRollbackOnly();
                         throw new InternalRetryableJobExeption(e);
                     }
+                } else {
+                    workflowStatusObserver.workflowSuccess(getClass(), runningWorkflowState);
                 }
             });
         } catch (InternalRetryableJobExeption e) {
+            workflowStatusObserver.stepFailedRetry(getClass(), runningWorkflowState, e);
             // something internally went wrong, rollback and retry
             Throwable cause = e.getCause();
             if (cause instanceof JobExecutionException jee) throw jee;
@@ -71,8 +79,7 @@ public class QuartzWorkflowJob implements Job {
                     null);
 
         } catch (Exception e) {
-            log.error("workflow={} failed, no retry possible. {}",
-                    context.getTrigger().getKey(), e.getMessage(), e);
+            workflowStatusObserver.workflowFailed(getClass(), runningWorkflowState, e);
         }
     }
 }
