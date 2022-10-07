@@ -10,4 +10,9 @@ public record WorkflowId(String value) {
         if (value == null) throw new NullPointerException("WorkflowId value can't be null");
         else if(value.trim().length() == 0) throw new IllegalArgumentException("WorkflowId can't be an empty string.");
     }
+
+    @Override
+    public String toString() {
+        return "WorkflowId=" + value;
+    }
 }

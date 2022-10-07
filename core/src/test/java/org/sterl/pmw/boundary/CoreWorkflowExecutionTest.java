@@ -115,22 +115,22 @@ public class CoreWorkflowExecutionTest {
         // AND
         Awaitility.await().until(() -> subject.status(id) == WorkflowStatus.COMPLETE);
     }
-    
+
     @Test
     public void testCancelWorkflowByService() {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("cancel-workflow", () -> new SimpleWorkflowState())
                 .next(s -> {})
                 .build();
-        
+
         subject.register(w);
-        
+
         // WHEN
         final WorkflowId id = subject.execute("cancel-workflow", new SimpleWorkflowState(), Duration.ofSeconds(1));
-        
+
         // THEN
         assertThat(subject.status(id)).isEqualTo(WorkflowStatus.SLEEPING);
-        
+
         // WHEN
         subject.cancel(id);
         // THEN

@@ -1,59 +1,85 @@
 package org.sterl.pmw.component;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 
 import org.sterl.pmw.boundary.WorkflowService;
 import org.sterl.pmw.exception.WorkflowException;
 import org.sterl.pmw.model.RunningWorkflowState;
-import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStep;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Executes the workflow until a sleep or an error.
+ *
+ * @param <T> the state type
+ */
 @RequiredArgsConstructor
-public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWorkflowStepExecutor
-    implements Callable<Void> {
+public class SimpleWorkflowExecutor <T extends WorkflowState> implements Callable<Void> {
 
-    private final WorkflowId workflowId;
     private final RunningWorkflowState<T> runningWorkflowState;
     private final WorkflowService<?> workflowService;
-    
+    private final WorkflowStatusObserver observer;
+    private final SimpleWorkflowStepExecutor stepExecutor;
+
     @Override
     public Void call() throws Exception {
-    
-        boolean hasNextStep = true;
-        while (hasNextStep && runningWorkflowState.isNextStepReady()) {
-            hasNextStep = executeSingleStepIncludingQueuing();
-        }
 
-        if (runningWorkflowState.isCanceled()) workflowService.cancel(workflowId);
+        if (runningWorkflowState.internalState().isFirstWorkflowStep()) {
+            observer.workflowStart(getClass(), runningWorkflowState);
+        }
+        try {
+            boolean hasNextStep = true;
+
+            while (hasNextStep && runningWorkflowState.isNextStepReady()) {
+                hasNextStep = executeSingleStepIncludingQueuing();
+            }
+
+            if (runningWorkflowState.isCanceled()) {
+                workflowService.cancel(runningWorkflowState.workflowId());
+            }
+            if (runningWorkflowState.isFinished()) {
+                observer.workflowSuccess(getClass(), runningWorkflowState);
+            }
+        } catch (Exception e) {
+            observer.workflowFailed(getClass(), runningWorkflowState, e);
+            workflowService.fail(runningWorkflowState.workflowId());
+            throw e;
+        }
         return null;
     }
 
-    protected boolean executeSingleStepIncludingQueuing() throws IOException, ClassNotFoundException {
+    protected boolean executeSingleStepIncludingQueuing() throws Exception {
         boolean result;
-        byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
+        byte[] originalUserState = SerializationUtil.serialize(runningWorkflowState.userState());
         try {
             // we loop throw all steps as long we have one
-            WorkflowStep<?> nexStep = this.executeNextStep(runningWorkflowState, workflowService);
+            final WorkflowStep<?> nextStep = stepExecutor.executeNextStep(runningWorkflowState, workflowService);
 
             if (runningWorkflowState.isNextStepDelayed()) {
-                workflowService.runOrQueueNextStep(workflowId, runningWorkflowState);
+                queueNextExecution(runningWorkflowState);
                 result = false;
             } else {
-                result = nexStep != null;
+                result = nextStep != null;
             }
 
         } catch (WorkflowException.WorkflowFailedDoRetryException e) {
             result = false;
-            workflowService.runOrQueueNextStep(workflowId, new RunningWorkflowState<>(
+            queueNextExecution(new RunningWorkflowState<>(
+                    runningWorkflowState.workflowId(),
                     runningWorkflowState.workflow(),
-                    SerializationUtil.deserializeWorkflowState(originalState),
+                    SerializationUtil.deserializeWorkflowState(originalUserState),
                     runningWorkflowState.internalState())
                 );
         }
         return result;
+    }
+
+    /**
+     * Called in case of an error and retry or a delay detected.
+     */
+    protected void queueNextExecution(RunningWorkflowState<T> state) {
+        workflowService.queueStepForExecution(state);
     }
 }

@@ -21,7 +21,7 @@ public class WorkflowRepository {
         return workflows.put(w.getName(), w);
     }
 
-    public void registerUnique(Workflow<WorkflowState> w) {
+    public void registerUnique(Workflow<? extends WorkflowState> w) {
         Workflow<? extends WorkflowState> oldWorkflow = register(w);
         if (oldWorkflow != null) {
             throw new IllegalArgumentException("Workflow with the name "

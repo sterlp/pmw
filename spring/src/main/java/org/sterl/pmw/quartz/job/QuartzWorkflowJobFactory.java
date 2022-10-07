@@ -47,6 +47,6 @@ public class QuartzWorkflowJobFactory implements JobFactory {
             return delegate.newJob(bundle, scheduler);
         }
 
-        return new QuartzWorkflowJob(strategy, workflowService, w.get(), trx, new WorkflowStateParserComponent(mapper));
+        return new QuartzWorkflowJob(strategy, workflowService, w.get(), trx, new WorkflowStateParserComponent(mapper), strategy.getObserver());
     }
 }
