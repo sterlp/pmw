@@ -154,6 +154,7 @@ class NewItemArrivedWorkflowMockTest {
 
 ## Looking for a real workflow engine
 
+- https://github.com/quartz-scheduler/quartz
 - https://camunda.com/
 - https://cadenceworkflow.io/
 - https://temporal.io/
