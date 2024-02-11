@@ -2,8 +2,6 @@ package org.sterl.store.items.workflow;
 
 import java.time.Duration;
 
-import javax.annotation.PostConstruct;
-
 import org.quartz.JobDetail;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -16,6 +14,7 @@ import org.sterl.store.items.component.UpdateInStockCountComponent;
 import org.sterl.store.items.component.WarehouseStockComponent;
 import org.sterl.store.warehouse.WarehouseService;
 
+import jakarta.annotation.PostConstruct;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

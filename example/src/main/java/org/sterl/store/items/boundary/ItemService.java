@@ -2,14 +2,13 @@ package org.sterl.store.items.boundary;
 
 import java.util.Optional;
 
-import javax.annotation.PostConstruct;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.sterl.store.items.entity.Item;
 import org.sterl.store.items.repository.ItemRepository;
 import org.sterl.store.items.workflow.NewItemArrivedWorkflow;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
