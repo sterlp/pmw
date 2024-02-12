@@ -20,12 +20,9 @@ public interface WorkflowService<RegistryType> {
     void runOrQueueNextStep(WorkflowId id, RunningWorkflowState<?> runningWorkflowState);
 
     WorkflowStatus status(WorkflowId workflowId);
+    
     void cancel(WorkflowId workflowId);
-
-    /**
-     * Clear all running and registered workflows, mainly used in tests
-     */
-    void clearAllWorkflows();
+    int cancelAll();
 
     /**
      * Should register a new workflow or throw an exception if the workflow is already known.

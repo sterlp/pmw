@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -66,7 +67,7 @@ public class InMemoryWaitingWorkflowComponent {
         @Override
         public void run() {
             try {
-                while (waitingWorkflows.size() > 0 && looping.get()) {
+                while (waitingWorkflows.size() > 0 && isRunning()) {
                     final Instant now = Instant.now();
                     for (Entry<WorkflowId, WaitingWorkflow<?>> w : new HashSet<>(waitingWorkflows.entrySet())) {
                         if (now.isAfter(w.getValue().until)) {
@@ -99,20 +100,34 @@ public class InMemoryWaitingWorkflowComponent {
             }
         }
     }
+    
+    public boolean isRunning() {
+        return looping.get();
+    }
 
     /**
      * Stops this service, {@link #start()} cannot longer be called. This is the destroy method.
      */
     public void stop() {
-        this.clear();
-        this.loopThread.shutdownNow();
+        this.cancelAll();
+        looping.set(false);
+        this.loopThread.shutdown();
+        try {
+            this.loopThread.awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.warn("Shutdown timeout", e.getCause());
+        }
     }
 
-    public void clear() {
+    public void cancelAll() {
         this.waitingWorkflows.clear();
     }
 
     public void remove(WorkflowId workflowId) {
         this.waitingWorkflows.remove(workflowId);
+    }
+    
+    public int waitCount() {
+        return this.waitingWorkflows.size();
     }
 }

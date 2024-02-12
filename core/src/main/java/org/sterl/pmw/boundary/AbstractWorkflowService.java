@@ -46,11 +46,6 @@ public abstract class AbstractWorkflowService<RegistryType> implements WorkflowS
     }
 
     @Override
-    public void clearAllWorkflows() {
-        this.workflowRepository.clear();
-    }
-
-    @Override
     public int workflowCount() {
         return this.workflowRepository.workflowCount();
     }

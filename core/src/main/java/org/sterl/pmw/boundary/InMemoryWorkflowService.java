@@ -48,7 +48,6 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
         final Duration delay = runningWorkflowState.internalState().consumeDelay();
         if (delay.toMillis() <= 0) {
             stepExecutor.submit(new SimpleWorkflowExecutor<>(workflowId, runningWorkflowState, this));
-            log.debug("Started workflow={} with id={}", runningWorkflowState.workflow().getName(), workflowId);
         } else {
             waitingWorkflowComponent.addWaitingWorkflow(workflowId, runningWorkflowState, delay);
         }
@@ -60,10 +59,10 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
     }
 
     @Override
-    public void clearAllWorkflows() {
-        super.clearAllWorkflows();
-        this.waitingWorkflowComponent.clear();
-        this.runningWorkflows.clear();
+    public int cancelAll() {
+        final var result = this.waitingWorkflowComponent.waitCount();
+        this.waitingWorkflowComponent.cancelAll();
+        return result;
     }
 
     @SuppressWarnings("unchecked")

@@ -2,6 +2,7 @@ package org.sterl.pmw;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,15 +10,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import lombok.Setter;
+
 public class AsyncAsserts {
 
     private final List<String> values = Collections.synchronizedList(new ArrayList<String>());
     private final Map<String, Integer> counts = new ConcurrentHashMap<>();
+    @Setter
+    private Duration defaultTimeout = Duration.ofSeconds(10_000);
 
     public synchronized void clear() {
         values.clear();
         counts.clear();
     }
+
     public synchronized int add(String value) {
         values.add(value);
         final int count = getCount(value) + 1;
@@ -27,18 +33,21 @@ public class AsyncAsserts {
         }
         return count;
     }
+
     public int info(String value) {
         int count = this.add(value);
         System.err.println(values.size() + ". " + value + "=" + count);
         return count;
     }
+
     public int getCount(String value) {
         return counts.getOrDefault(value, 0);
     }
+
     public void awaitValue(String value) {
-        Instant now = Instant.now();
+        final var start = Instant.now();
         while (!values.contains(value)
-                && (System.currentTimeMillis() - now.toEpochMilli() <= 30_000)) {
+                && (System.currentTimeMillis() - start.toEpochMilli() <= defaultTimeout.toMillis())) {
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
@@ -47,6 +56,7 @@ public class AsyncAsserts {
         }
         assertThat(new ArrayList<>(values)).contains(value);
     }
+
     public void awaitValue(String value, String... values) {
         awaitValue(value);
         if (values != null && values.length > 0) {
@@ -55,6 +65,7 @@ public class AsyncAsserts {
             }
         }
     }
+
     public void awaitOrdered(String value, String... values) {
         awaitValue(value, values);
 
@@ -65,6 +76,7 @@ public class AsyncAsserts {
             }
         }
     }
+
     public void assertMissing(String value) {
         assertThat(values).doesNotContain(value);
     }

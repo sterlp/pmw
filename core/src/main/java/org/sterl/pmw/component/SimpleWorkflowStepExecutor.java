@@ -16,12 +16,14 @@ public class SimpleWorkflowStepExecutor {
     /**
      * Runs the next step in the workflow
      *
-     * @return {@link WorkflowStep} if a next step is available, otherwise <code>null</code>
+     * @return {@link WorkflowStep} if a next step is available, otherwise
+     *         <code>null</code>
      * @throws WorkflowFailedDoRetryException in case of an error, <b>do</b> retry
      * @throws WorkflowFailedNoRetryException in case of an error, <b>no</b> retry
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public WorkflowStep executeNextStep(RunningWorkflowState<?> runningWorkflowState, WorkflowService<?> workflowService) {
+    public WorkflowStep executeNextStep(RunningWorkflowState<?> runningWorkflowState,
+            WorkflowService<?> workflowService) {
         WorkflowStep nextStep = runningWorkflowState.nextStep();
         logWorkflowStart(runningWorkflowState);
         if (nextStep != null) {
@@ -31,7 +33,8 @@ public class SimpleWorkflowStepExecutor {
                 nextStep.apply(runningWorkflowState.userState(), runningWorkflowState.internalState(), workflowService);
                 nextStep = runningWorkflowState.successStep(nextStep);
 
-                if (nextStep == null) logWorkflowEnd(runningWorkflowState);
+                if (nextStep == null)
+                    logWorkflowEnd(runningWorkflowState);
             } catch (Exception e) {
                 throw logWorkflowStepFailed(runningWorkflowState, nextStep, e);
             }
@@ -40,15 +43,18 @@ public class SimpleWorkflowStepExecutor {
         return nextStep;
     }
 
-    private <C extends WorkflowState> WorkflowException logWorkflowStepFailed(RunningWorkflowState<C> runningWorkflowState, WorkflowStep<C> step, Exception e) {
+    private <C extends WorkflowState> WorkflowException logWorkflowStepFailed(
+            RunningWorkflowState<C> runningWorkflowState, WorkflowStep<C> step, Exception e) {
         boolean willRetry = runningWorkflowState.failStep(step, e);
         WorkflowException result;
         int retryCount = runningWorkflowState.internalState().getLastFailedStepRetryCount();
         if (willRetry) {
-            result = new WorkflowException.WorkflowFailedDoRetryException(runningWorkflowState.workflow(), step, e, retryCount);
+            result = new WorkflowException.WorkflowFailedDoRetryException(runningWorkflowState.workflow(), step, e,
+                    retryCount);
             log.warn("{} retryCount={}", e.getMessage(), retryCount, e);
         } else {
-            result = new WorkflowException.WorkflowFailedNoRetryException(runningWorkflowState.workflow(), step, e, retryCount);
+            result = new WorkflowException.WorkflowFailedNoRetryException(runningWorkflowState.workflow(), step, e,
+                    retryCount);
             log.error("{} retryCount={}", e.getMessage(), retryCount, e);
         }
         return result;

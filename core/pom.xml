@@ -12,7 +12,8 @@
     </parent>
 
     <artifactId>pmw-core</artifactId>
-    <description>Poor mans workflow engine core which has no framework dependencies</description>
+    <description>Poor mans workflow engine core which has no framework
+        dependencies</description>
 
     <inceptionYear>2022</inceptionYear>
 
@@ -47,12 +48,6 @@
             <version>${plantuml.version}</version>
         </dependency>
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.4.14</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
         </dependency>
@@ -60,6 +55,12 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-logging</artifactId>
+            <version>${spring.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

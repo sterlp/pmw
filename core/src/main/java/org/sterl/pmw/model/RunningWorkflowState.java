@@ -27,8 +27,11 @@ public record RunningWorkflowState<T extends WorkflowState>(Workflow<T> workflow
         return workflow.fail(step, internalState, e);
     }
 
-    public boolean isNextStepDelayed() {
-        return isNotFailed() && isNotCanceled() && internalState.hasDelay();
+    /**
+     * Should this workflow still run?
+     */
+    public boolean isAlive() {
+        return isNotFailed() && isNotCanceled();
     }
     public boolean hasNoDelay() {
         return !internalState.hasDelay();

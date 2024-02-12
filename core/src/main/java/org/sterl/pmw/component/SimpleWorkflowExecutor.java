@@ -36,10 +36,10 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
         boolean result;
         byte[] originalState = SerializationUtil.serialize(runningWorkflowState.userState());
         try {
-            // we loop throw all steps as long we have one
+            // we loop through all steps as long we have one
             WorkflowStep<?> nexStep = this.executeNextStep(runningWorkflowState, workflowService);
 
-            if (runningWorkflowState.isNextStepDelayed()) {
+            if (runningWorkflowState.isAlive()) {
                 workflowService.runOrQueueNextStep(workflowId, runningWorkflowState);
                 result = false;
             } else {

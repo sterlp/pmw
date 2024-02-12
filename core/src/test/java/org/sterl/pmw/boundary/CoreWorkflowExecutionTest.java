@@ -39,13 +39,14 @@ public class CoreWorkflowExecutionTest {
 
     @BeforeEach
     protected void setUp() throws Exception {
+        Awaitility.setDefaultTimeout(Duration.ofSeconds(5));
+        asserts.setDefaultTimeout(Duration.ofSeconds(5));
         asserts.clear();
         subject = new InMemoryWorkflowService();
     }
     @AfterEach
     protected void tearDown() throws Exception {
         asserts.clear();
-        subject.clearAllWorkflows();
     }
 
     @Test
@@ -313,7 +314,7 @@ public class CoreWorkflowExecutionTest {
                 () ->  new TestWorkflowCtx())
                 .next((s, c) -> {
                     asserts.info("wait");
-                    c.delayNextStepBy(Duration.ofSeconds(1));
+                    c.delayNextStepBy(Duration.ofMillis(500));
                     timeFirstStep.set(System.currentTimeMillis());
                 })
                 .next((s) -> {
@@ -329,7 +330,7 @@ public class CoreWorkflowExecutionTest {
         // THEN
         Awaitility.await().until(() -> subject.status(workflowId) == WorkflowStatus.SLEEPING);
         asserts.awaitOrdered("wait", "done");
-        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(999L);
+        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(499L);
     }
 
     @Test
