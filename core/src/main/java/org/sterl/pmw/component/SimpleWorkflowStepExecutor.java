@@ -64,14 +64,14 @@ public class SimpleWorkflowStepExecutor {
         log.info("workflow={} success durationMs={} at={}.",
                 runningWorkflowState.workflow().getName(),
                 runningWorkflowState.internalState().workflowRunDuration().toMillis(),
-                runningWorkflowState.internalState().getWorkflowEndTime());
+                runningWorkflowState.internalState().getEndTime());
     }
 
     private <C extends WorkflowState> void logWorkflowStart(RunningWorkflowState<C> runningWorkflowState) {
         if (runningWorkflowState.internalState().isFirstWorkflowStep()) {
             log.info("Starting workflow={} at={}",
                     runningWorkflowState.workflow().getName(),
-                    runningWorkflowState.internalState().getWorkflowStartTime());
+                    runningWorkflowState.internalState().getStartTime());
         }
     }
 }

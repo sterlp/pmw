@@ -8,15 +8,27 @@ import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowState;
 import org.sterl.pmw.model.WorkflowStatus;
 
+/**
+ * Manages all workflows and their state. Also allows to trigger a workflow.
+ */
 public interface WorkflowService<RegistryType> {
     WorkflowId execute(String workflowName);
-    WorkflowId execute(String workflowName, WorkflowState state);
     WorkflowId execute(String workflowName, WorkflowState state, Duration delay);
-
-    <T extends WorkflowState> WorkflowId execute(Workflow<T> workflow);
-    <T extends WorkflowState> WorkflowId execute(Workflow<T> workflow, T state);
+    
     <T extends WorkflowState> WorkflowId execute(Workflow<T> workflow, T state, Duration delay);
+    
+    default <T extends WorkflowState> WorkflowId execute(String workflowName, T state) {
+        return execute(workflowName, state, Duration.ZERO);
+    }
 
+    default <T extends WorkflowState>  WorkflowId execute(Workflow<T> w) {
+        return execute(w, w.newEmtyContext());
+    }
+
+    default <T extends WorkflowState>  WorkflowId execute(Workflow<T> w, T c) {
+        return execute(w, c, Duration.ZERO);
+    }
+    
     void runOrQueueNextStep(WorkflowId id, RunningWorkflowState<?> runningWorkflowState);
 
     WorkflowStatus status(WorkflowId workflowId);

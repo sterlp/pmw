@@ -30,11 +30,11 @@ public class InternalWorkflowState implements WorkflowContext {
     private Duration nextStepDelay;
 
     @Getter
-    private WorkflowStatus workflowStatus = WorkflowStatus.PENDING;
+    private WorkflowStatus status = WorkflowStatus.PENDING;
     @Getter
-    private Instant workflowStartTime;
+    private Instant startTime;
     @Getter
-    private Instant workflowEndTime;
+    private Instant endTime;
 
     public InternalWorkflowState(Duration nextStepDelay) {
         this.nextStepDelay = nextStepDelay;
@@ -60,22 +60,22 @@ public class InternalWorkflowState implements WorkflowContext {
     }
 
     Instant workflowStarted() {
-        if (workflowStartTime == null) workflowStartTime = Instant.now();
-        this.workflowStatus = WorkflowStatus.RUNNING;
-        return workflowStartTime;
+        if (startTime == null) startTime = Instant.now();
+        this.status = WorkflowStatus.RUNNING;
+        return startTime;
     }
     Instant workflowEnded() {
-        if (workflowEndTime == null) {
-            workflowEndTime = Instant.now();
-            this.workflowStatus = WorkflowStatus.COMPLETE;
+        if (endTime == null) {
+            endTime = Instant.now();
+            this.status = WorkflowStatus.COMPLETE;
         }
-        return workflowEndTime;
+        return endTime;
     }
     public boolean isFirstWorkflowStep() {
         return currentStepIndex == 0 && workflowRetryCount == 0;
     }
     public Duration workflowRunDuration() {
-        return Duration.between(workflowStartTime, workflowEndTime == null ? Instant.now() : workflowEndTime);
+        return Duration.between(startTime, endTime == null ? Instant.now() : endTime);
     }
 
     @Override
@@ -90,7 +90,7 @@ public class InternalWorkflowState implements WorkflowContext {
     @Override
     public WorkflowContext cancelWorkflow() {
         final Instant then = workflowEnded();
-        workflowStatus = WorkflowStatus.CANCELED;
+        status = WorkflowStatus.CANCELED;
         this.lastError = "Workflow " + WorkflowStatus.CANCELED + " at " + then;
         return this;
     }

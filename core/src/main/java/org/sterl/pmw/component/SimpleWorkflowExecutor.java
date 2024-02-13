@@ -13,22 +13,23 @@ import org.sterl.pmw.model.WorkflowStep;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWorkflowStepExecutor
-    implements Callable<Void> {
+public class SimpleWorkflowExecutor<T extends WorkflowState> extends SimpleWorkflowStepExecutor
+        implements Callable<Void> {
 
     private final WorkflowId workflowId;
     private final RunningWorkflowState<T> runningWorkflowState;
     private final WorkflowService<?> workflowService;
-    
+
     @Override
     public Void call() throws Exception {
-    
+
         boolean hasNextStep = true;
         while (hasNextStep && runningWorkflowState.isNextStepReady()) {
             hasNextStep = executeSingleStepIncludingQueuing();
         }
 
-        if (runningWorkflowState.isCanceled()) workflowService.cancel(workflowId);
+        if (runningWorkflowState.isCanceled())
+            workflowService.cancel(workflowId);
         return null;
     }
 
@@ -51,8 +52,7 @@ public class SimpleWorkflowExecutor <T extends WorkflowState> extends SimpleWork
             workflowService.runOrQueueNextStep(workflowId, new RunningWorkflowState<>(
                     runningWorkflowState.workflow(),
                     SerializationUtil.deserializeWorkflowState(originalState),
-                    runningWorkflowState.internalState())
-                );
+                    runningWorkflowState.internalState()));
         }
         return result;
     }

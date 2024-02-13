@@ -23,26 +23,11 @@ public abstract class AbstractWorkflowService<RegistryType> implements WorkflowS
     }
 
     @Override
-    public WorkflowId execute(String workflowName, WorkflowState state) {
-        return execute(workflowName, state, Duration.ZERO);
-    }
-
-    @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public WorkflowId execute(String workflowName, WorkflowState state, Duration delay) {
         final Workflow w = workflowRepository.getWorkflow(workflowName);
         SerializationUtil.verifyStateType(w, state);
         return execute(w, state, delay);
-    }
-
-    @Override
-    public <T extends WorkflowState>  WorkflowId execute(Workflow<T> w) {
-        return execute(w, w.newEmtyContext());
-    }
-
-    @Override
-    public <T extends WorkflowState>  WorkflowId execute(Workflow<T> w, T c) {
-        return execute(w, c, Duration.ZERO);
     }
 
     @Override

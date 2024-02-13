@@ -54,8 +54,8 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
     }
 
     public void stop() throws InterruptedException {
-        stepExecutor.awaitTermination(30, TimeUnit.SECONDS);
         stepExecutor.shutdown();
+        stepExecutor.awaitTermination(30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
     @SuppressWarnings("unchecked")
     @Override
     public <T extends WorkflowState> String register(Workflow<T> w) {
-        workflowRepository.registerUnique((Workflow<WorkflowState>)w);
+        workflowRepository.registerUnique((Workflow<WorkflowState>) w);
         return w.getName();
     }
 
@@ -82,7 +82,7 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
             if (running == null) {
                 result = WorkflowStatus.COMPLETE;
             } else {
-                result = running.internalState().getWorkflowStatus();
+                result = running.internalState().getStatus();
             }
         }
         return result;

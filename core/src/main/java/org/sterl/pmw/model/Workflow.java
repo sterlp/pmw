@@ -49,6 +49,7 @@ public class Workflow<T extends WorkflowState> {
      * Marks the current step as a success and returns the next step if available
      * @return the next step if available, otherwise <code>null</code>
      */
+    @Deprecated // should be in the service
     public WorkflowStep<T> success(WorkflowStep<T> currentStep, InternalWorkflowState state) {
         state.stepSuccessfullyFinished(currentStep);
         final WorkflowStep<T> nextStep = nextStep(state);
@@ -61,10 +62,11 @@ public class Workflow<T extends WorkflowState> {
      * 
      * @return <code>true</code> retry should be attempted, otherwise <code>false</code>
      */
+    @Deprecated // should be in the service
     public boolean fail(WorkflowStep<T> nextStep, InternalWorkflowState state, Exception e) {
         final int retryCount = state.stepFailed(nextStep, e);
         boolean shouldRetry = retryCount < nextStep.getMaxRetryCount();
-        if (!shouldRetry) state.setWorkflowStatus(WorkflowStatus.FAILED);
+        if (!shouldRetry) state.setStatus(WorkflowStatus.FAILED);
         return shouldRetry;
     }
 

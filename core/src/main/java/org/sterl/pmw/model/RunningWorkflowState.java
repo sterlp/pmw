@@ -13,6 +13,7 @@ public record RunningWorkflowState<T extends WorkflowState>(Workflow<T> workflow
         return workflow.nextStep(internalState);
     }
 
+    @Deprecated // should be in the service
     public WorkflowStep<T> successStep(WorkflowStep<T> step) {
         return workflow.success(step, internalState);
     }
@@ -23,6 +24,7 @@ public record RunningWorkflowState<T extends WorkflowState>(Workflow<T> workflow
      * 
      * @return <code>true</code> retry should be attempted, otherwise <code>false</code>
      */
+    @Deprecated // should be in the service
     public boolean failStep(WorkflowStep<T> step, Exception e) {
         return workflow.fail(step, internalState, e);
     }
@@ -38,14 +40,14 @@ public record RunningWorkflowState<T extends WorkflowState>(Workflow<T> workflow
     }
 
     public boolean isCanceled() {
-        return internalState.getWorkflowStatus() == WorkflowStatus.CANCELED;
+        return internalState.getStatus() == WorkflowStatus.CANCELED;
     }
     public boolean isNotCanceled() {
-        return internalState.getWorkflowStatus() != WorkflowStatus.CANCELED;
+        return internalState.getStatus() != WorkflowStatus.CANCELED;
     }
     
     public boolean isNotFailed() {
-        return internalState.getWorkflowStatus() != WorkflowStatus.FAILED;
+        return internalState.getStatus() != WorkflowStatus.FAILED;
     }
     
     public boolean isNextStepReady() {

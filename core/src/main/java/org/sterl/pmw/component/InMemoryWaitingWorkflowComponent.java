@@ -25,7 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class InMemoryWaitingWorkflowComponent {
 
-    public record WaitingWorkflow<T extends WorkflowState>(Instant until, RunningWorkflowState<T> runningWorkflowState) {}
+    public record WaitingWorkflow<T extends WorkflowState>(Instant until,
+            RunningWorkflowState<T> runningWorkflowState) {
+    }
 
     private Map<WorkflowId, WaitingWorkflow<?>> waitingWorkflows = new ConcurrentHashMap<>();
 
@@ -37,9 +39,9 @@ public class InMemoryWaitingWorkflowComponent {
     public InMemoryWaitingWorkflowComponent(WorkflowService<?> workflowService) {
         this(workflowService, 250, Executors.newFixedThreadPool(1,
                 new BasicThreadFactory.Builder()
-                    .namingPattern("Workflow-Sleep")
-                    .priority(Thread.NORM_PRIORITY - 2)
-                    .build()));
+                        .namingPattern("Workflow-Sleep")
+                        .priority(Thread.NORM_PRIORITY - 2)
+                        .build()));
     }
 
     public boolean isWaiting(WorkflowId workflowId) {
@@ -54,9 +56,11 @@ public class InMemoryWaitingWorkflowComponent {
     /**
      * Queues the given workflow.
      *
-     * @return any {@link Workflow} which is registered with the same {@link WorkflowId}, this shouldn't be possible
+     * @return any {@link Workflow} which is registered with the same
+     *         {@link WorkflowId}, this shouldn't be possible
      */
-    public <T extends WorkflowState> WaitingWorkflow<?> addWaitingWorkflow(WorkflowId id, WaitingWorkflow<T> waitingWorkflow) {
+    public <T extends WorkflowState> WaitingWorkflow<?> addWaitingWorkflow(WorkflowId id,
+            WaitingWorkflow<T> waitingWorkflow) {
         final WaitingWorkflow<?> old = waitingWorkflows.put(id, waitingWorkflow);
         log.debug("Workflow {} is now waiting until {}.", id, waitingWorkflow.until());
         start();
@@ -78,7 +82,8 @@ public class InMemoryWaitingWorkflowComponent {
                     try {
                         Thread.sleep(sleepTimeBetweenLoops);
                     } catch (InterruptedException e) {
-                        if (Thread.interrupted()) break;
+                        if (Thread.interrupted())
+                            break;
                     }
                 }
             } finally {
@@ -100,13 +105,14 @@ public class InMemoryWaitingWorkflowComponent {
             }
         }
     }
-    
+
     public boolean isRunning() {
         return looping.get();
     }
 
     /**
-     * Stops this service, {@link #start()} cannot longer be called. This is the destroy method.
+     * Stops this service, {@link #start()} cannot longer be called. This is the
+     * destroy method.
      */
     public void stop() {
         this.cancelAll();
@@ -126,7 +132,7 @@ public class InMemoryWaitingWorkflowComponent {
     public void remove(WorkflowId workflowId) {
         this.waitingWorkflows.remove(workflowId);
     }
-    
+
     public int waitCount() {
         return this.waitingWorkflows.size();
     }

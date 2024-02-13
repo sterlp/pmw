@@ -17,12 +17,13 @@ public class WorkflowRepository {
         workflows.clear();
     }
 
-    public <T extends WorkflowState> Workflow<? extends WorkflowState> register(Workflow<T> w) {
-        return workflows.put(w.getName(), w);
+    public String register(Workflow<?> w) {
+        workflows.put(w.getName(), w);
+        return w.getName();
     }
 
     public void registerUnique(Workflow<WorkflowState> w) {
-        Workflow<? extends WorkflowState> oldWorkflow = register(w);
+        Workflow<? extends WorkflowState> oldWorkflow = workflows.put(w.getName(), w);
         if (oldWorkflow != null) {
             throw new IllegalArgumentException("Workflow with the name "
                     + w.getName() + " already registered.");
