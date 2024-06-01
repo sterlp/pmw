@@ -3,6 +3,7 @@ package org.sterl.pmw.spring.config;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.quartz.SchedulerFactoryBeanCustomizer;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +16,7 @@ import org.sterl.pmw.component.SimpleWorkflowStepExecutor;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.quartz.boundary.QuartzWorkflowService;
 import org.sterl.pmw.quartz.job.QuartzWorkflowJobFactory;
+import org.sterl.pmw.quartz.job.RetryDelayStrategy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -32,12 +34,18 @@ public class WorkflowConfig {
     WorkflowRepository workflowRepository() {
         return new WorkflowRepository();
     }
+    @Bean
+    @ConditionalOnMissingBean
+    RetryDelayStrategy delayStrategy() {
+        return RetryDelayStrategy.NO_DELAY;
+    }
 
     @Bean
     QuartzWorkflowService quartzWorkflowService(
             ApplicationContext applicationContext,
             Scheduler scheduler,
             ObjectMapper mapper,
+            RetryDelayStrategy delayStrategy,
             TransactionTemplate trx) throws SchedulerException {
 
         final QuartzWorkflowService quartzWorkflowService = new QuartzWorkflowService(scheduler, workflowRepository(), mapper);
@@ -50,7 +58,9 @@ public class WorkflowConfig {
         }
 
         scheduler.setJobFactory(new QuartzWorkflowJobFactory(
-                new SimpleWorkflowStepExecutor(), quartzWorkflowService, mapper, trx, jobFactory));
+                new SimpleWorkflowStepExecutor(), quartzWorkflowService, 
+                mapper, trx, 
+                delayStrategy, jobFactory));
 
         return quartzWorkflowService;
     }

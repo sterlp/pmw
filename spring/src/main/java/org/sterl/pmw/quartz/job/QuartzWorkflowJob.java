@@ -29,6 +29,10 @@ public class QuartzWorkflowJob implements Job {
     private final Workflow<?> workflow;
     @NonNull
     private final TransactionTemplate trx;
+    /**
+     * In case of an error this strategy is applied if no delay is already set
+     */
+    private final RetryDelayStrategy defaultDelayStrategy;
     @NonNull
     private final WorkflowStateParserComponent workflowStateParser;
 
@@ -65,6 +69,12 @@ public class QuartzWorkflowJob implements Job {
             else throw new JobExecutionException(cause, true);
 
         } catch (WorkflowException.WorkflowFailedDoRetryException retryE) {
+            // apply a default delay, if non was already set
+            if (!runningWorkflowState.internalState().hasDelay()) {
+                final var newDelay = defaultDelayStrategy.retryAt(
+                        runningWorkflowState.internalState().getStepRetryCount(), retryE);
+                runningWorkflowState.internalState().delayNextStepBy(newDelay);
+            }
 
             workflowService.rescheduleTrigger(context.getTrigger(),
                     runningWorkflowState.internalState(),
