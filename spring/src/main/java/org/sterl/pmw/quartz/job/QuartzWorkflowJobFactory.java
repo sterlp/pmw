@@ -16,6 +16,7 @@ import org.sterl.pmw.quartz.component.WorkflowStateParserComponent;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.Nullable;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,11 @@ public class QuartzWorkflowJobFactory implements JobFactory {
     private final ObjectMapper mapper;
     @NonNull
     private final TransactionTemplate trx;
-
+    /**
+     * In case of an error this strategy is applied if no delay is already set
+     */
+    private final RetryDelayStrategy defaultDelayStrategy;
+    @Nullable
     private final JobFactory delegate;
 
     @Override
@@ -47,6 +52,8 @@ public class QuartzWorkflowJobFactory implements JobFactory {
             return delegate.newJob(bundle, scheduler);
         }
 
-        return new QuartzWorkflowJob(strategy, workflowService, w.get(), trx, new WorkflowStateParserComponent(mapper));
+        return new QuartzWorkflowJob(strategy, workflowService, w.get(), trx, 
+                defaultDelayStrategy,
+                new WorkflowStateParserComponent(mapper));
     }
 }
