@@ -9,9 +9,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowStatus;
-import org.sterl.pmw.spring.model.PersistentWorkflowState;
+import org.sterl.pmw.spring.model.TaskEntity;
 
-public interface PersistentWorkflowStateRepository extends JpaRepository<PersistentWorkflowState, WorkflowId> {
+public interface TaskRepository extends JpaRepository<TaskEntity, WorkflowId> {
 
     @Modifying
     @Query("""

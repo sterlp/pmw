@@ -32,7 +32,7 @@ class RunInsTransactionTest {
     @Autowired
     private ItemRepository itemRepository;
     @Autowired
-    private WorkflowService<JobDetail> workflowService;
+    private WorkflowService workflowService;
 
     protected final AsyncAsserts asserts = new AsyncAsserts();
 

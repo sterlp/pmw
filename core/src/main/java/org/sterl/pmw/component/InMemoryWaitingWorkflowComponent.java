@@ -125,12 +125,14 @@ public class InMemoryWaitingWorkflowComponent {
         }
     }
 
-    public void cancelAll() {
+    public int cancelAll() {
+        final int result = this.waitingWorkflows.size();
         this.waitingWorkflows.clear();
+        return result;
     }
 
-    public void remove(WorkflowId workflowId) {
-        this.waitingWorkflows.remove(workflowId);
+    public boolean remove(WorkflowId workflowId) {
+        return this.waitingWorkflows.remove(workflowId) != null;
     }
 
     public int waitCount() {

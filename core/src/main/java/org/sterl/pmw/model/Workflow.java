@@ -45,31 +45,6 @@ public class Workflow<T extends WorkflowState> {
         return workflowSteps.get(currentStepIndex);
     }
 
-    /**
-     * Marks the current step as a success and returns the next step if available
-     * @return the next step if available, otherwise <code>null</code>
-     */
-    @Deprecated // should be in the service
-    public WorkflowStep<T> success(WorkflowStep<T> currentStep, InternalWorkflowState state) {
-        state.stepSuccessfullyFinished(currentStep);
-        final WorkflowStep<T> nextStep = nextStep(state);
-        return nextStep;
-    }
-
-    /**
-     * Increments the fail counter for the given step and set the {@link WorkflowStatus} to {@link WorkflowStatus#FAILED}
-     * if the max retry count is exceeded.
-     * 
-     * @return <code>true</code> retry should be attempted, otherwise <code>false</code>
-     */
-    @Deprecated // should be in the service
-    public boolean fail(WorkflowStep<T> nextStep, InternalWorkflowState state, Exception e) {
-        final int retryCount = state.stepFailed(nextStep, e);
-        boolean shouldRetry = retryCount < nextStep.getMaxRetryCount();
-        if (!shouldRetry) state.setStatus(WorkflowStatus.FAILED);
-        return shouldRetry;
-    }
-
     void setWorkflowSteps(Collection<WorkflowStep<T>> workflowSteps) {
         this.workflowSteps.clear();
         this.workflowSteps.addAll(workflowSteps);
@@ -87,6 +62,5 @@ public class Workflow<T extends WorkflowState> {
     public WorkflowStep<T> getStepByPosition(int pos) {
         if (pos > workflowSteps.size()) return null;
         else return workflowSteps.get(pos);
-
     }
 }

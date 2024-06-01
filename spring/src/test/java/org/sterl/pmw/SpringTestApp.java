@@ -1,4 +1,4 @@
-package org.sterl.pmw.testapp;
+package org.sterl.pmw;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

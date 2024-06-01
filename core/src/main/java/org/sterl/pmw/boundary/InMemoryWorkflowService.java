@@ -60,9 +60,7 @@ public class InMemoryWorkflowService extends AbstractWorkflowService<String> {
 
     @Override
     public int cancelAll() {
-        final var result = this.waitingWorkflowComponent.waitCount();
-        this.waitingWorkflowComponent.cancelAll();
-        return result;
+        return this.waitingWorkflowComponent.cancelAll();
     }
 
     @SuppressWarnings("unchecked")

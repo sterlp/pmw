@@ -1,18 +1,17 @@
 package org.sterl.pmw.model;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public record WorkflowId(String value) {
     public static WorkflowId newWorkflowId(Workflow<?> w) {
-        return new WorkflowId(w.getName() + ":" + UUID.randomUUID().getMostSignificantBits());
+        return new WorkflowId(w.getName());
     }
     public WorkflowId {
         if (value == null) throw new NullPointerException("WorkflowId value can't be null");
         else if(value.trim().length() == 0) throw new IllegalArgumentException("WorkflowId can't be an empty string.");
     }
-    public static WorkflowId newWorkflowId(OffsetDateTime date) {
+    private static WorkflowId newWorkflowId(OffsetDateTime date, String name) {
         final var result = new StringBuilder();
         result.append(date.getYear())
             .append(padZero(date.getMonthValue()))
@@ -26,9 +25,8 @@ public record WorkflowId(String value) {
             .append('-')
             .append(ThreadLocalRandom.current().nextInt(1, 99_999));
         
-        return new WorkflowId(result.toString());        
+        return new WorkflowId(result.toString());
     }
-    
     static String padZero(int value) {
         if (value < 10) return "0" + value;
         return Integer.toString(value);

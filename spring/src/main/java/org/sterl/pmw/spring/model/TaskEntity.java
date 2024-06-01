@@ -2,16 +2,13 @@ package org.sterl.pmw.spring.model;
 
 import java.time.OffsetDateTime;
 
-import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowStatus;
 
-import jakarta.persistence.AttributeOverride;
-import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -22,19 +19,20 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "PMW_WORKFLOW_STATE")
+@Table(name = "PMW_TASK_STATE")
 @Data
 @EqualsAndHashCode
 @NoArgsConstructor @AllArgsConstructor
 @Builder
-public class PersistentWorkflowState {
+public class TaskEntity {
 
-    @EmbeddedId
-    @AttributeOverrides(
-        @AttributeOverride(name = "value", column = @Column(name = "id", length = 50, updatable = false))
-    )
-    private WorkflowId id;
-    private String name;
+    @Id
+    private String id;
+    @Id
+    private String workflowName;
+    @Id
+    private String stepName;
+
     @Default
     @Column(updatable = false, name = "created_time")
     private OffsetDateTime created = OffsetDateTime.now();
@@ -42,18 +40,28 @@ public class PersistentWorkflowState {
     private OffsetDateTime start;
     @Column(name = "end_time")
     private OffsetDateTime end;
+    
+    @Default
+    private int executionCount = 0;
+    
+    /** priority, the higher a more priority it will get */
+    @Default
+    private int priority = 4;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     @Default
     private WorkflowStatus status = WorkflowStatus.PENDING;
     
+    private String runningOn;
+    
     @Lob
-    private String userState;
+    private String state;
     
     @Column(columnDefinition = "TEXT")
     private String lastError;
 
-    public PersistentWorkflowState cancel() {
+    public TaskEntity cancel() {
         if (WorkflowStatus.ACTIVE_STATE.contains(this.status)) {
             end = OffsetDateTime.now();
             status = WorkflowStatus.CANCELED;

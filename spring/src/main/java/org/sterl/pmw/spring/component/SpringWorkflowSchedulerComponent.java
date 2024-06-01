@@ -13,7 +13,7 @@ import org.hibernate.jpa.SpecHints;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.sterl.pmw.model.WorkflowStatus;
-import org.sterl.pmw.spring.model.PersistentWorkflowState;
+import org.sterl.pmw.spring.model.TaskEntity;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -69,12 +69,12 @@ public class SpringWorkflowSchedulerComponent {
     
     public int runPendingWorkflows() {
         return trx.execute((t) -> {
-            List<PersistentWorkflowState> pendingWorkflows = entityManager.createQuery(
+            List<TaskEntity> pendingWorkflows = entityManager.createQuery(
                 """
                 SELECT e FROM PersistentWorkflowState
                 WHERE e.state = :state
                 ORDER BY ID ASC
-                """, PersistentWorkflowState.class)
+                """, TaskEntity.class)
                     .setParameter("status", WorkflowStatus.PENDING)
                     .setMaxResults(5)
                     .setLockMode(LockModeType.PESSIMISTIC_WRITE)
