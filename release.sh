@@ -30,10 +30,7 @@ echo "Next development version: $NEXT_VERSION"
 # Set the next snapshot version and commit it in Git
 mvn versions:set -DnewVersion="$NEXT_VERSION" -DgenerateBackupPoms=false
 git add '**/pom.xml'
-git commit -am "$NEXT_VERSION release"
+git commit -am "Next development version $NEXT_VERSION"
 
 git push
 git push --tags
-
-# Echo the increment version command
-echo "Next command to run: mvn versions:set -DnewVersion=$NEXT_VERSION -DgenerateBackupPoms=false"
