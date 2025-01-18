@@ -55,13 +55,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <plantuml.version>1.2024.1</plantuml.version>
-        <spring.version>3.2.2</spring.version>
-        <lombok.version>1.18.30</lombok.version>
-        <h2.version>2.2.224</h2.version>
-        <jackson.version>2.16.1</jackson.version>
+        <plantuml.version>1.2025.0</plantuml.version>
+        <spring.version>3.3.7</spring.version>
+        <lombok.version>1.18.36</lombok.version>
+        <h2.version>2.3.232</h2.version>
+        <jackson.version>2.18.2</jackson.version>
 
-        <pmd.version>6.49.0</pmd.version>
+        <pmd.version>7.2.0</pmd.version>
     </properties>
 
     <modules>
@@ -99,7 +99,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.14.0</version>
+                <version>3.17.0</version>
             </dependency>
 
             <dependency>
@@ -153,7 +153,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.26.0</version>
             </plugin>
         </plugins>
     </reporting>
@@ -164,12 +164,12 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.0.0-M7</version>
+                    <version>3.5.2</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-pmd-plugin</artifactId>
-                    <version>3.13.0</version>
+                    <version>3.26.0</version>
                     <configuration>
                         <failOnViolation>true</failOnViolation>
                         <printFailingErrors>true</printFailingErrors>
@@ -200,7 +200,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.4.1</version>
+                    <version>3.11.2</version>
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
@@ -213,7 +213,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>3.2.1</version>
+                    <version>3.3.1</version>
                     <executions>
                         <execution>
                             <id>attach-sources</id>
@@ -226,7 +226,7 @@
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.13</version>
+                    <version>1.7.0</version>
                     <extensions>true</extensions>
                     <configuration>
                         <serverId>ossrh</serverId>
@@ -246,7 +246,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.0.1</version>
+                        <version>3.2.7</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -260,7 +260,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>3.4.1</version>
+                        <version>3.11.2</version>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -273,7 +273,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.2.1</version>
+                        <version>3.3.1</version>
                         <executions>
                             <execution>
                                 <id>attach-sources</id>
