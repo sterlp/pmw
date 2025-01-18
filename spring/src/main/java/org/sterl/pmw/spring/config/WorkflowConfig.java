@@ -50,8 +50,9 @@ public class WorkflowConfig {
 
         final QuartzWorkflowService quartzWorkflowService = new QuartzWorkflowService(scheduler, workflowRepository(), mapper);
 
-        final SpringBeanJobFactory jobFactory = enableSpringBeanJobFactory ? new SpringBeanJobFactory() : null;
+        SpringBeanJobFactory jobFactory = null;
         if (enableSpringBeanJobFactory) {
+            jobFactory = new SpringBeanJobFactory();
             jobFactory.setApplicationContext(applicationContext);
         } else {
             log.info("SpringBeanJobFactory disabled!");
