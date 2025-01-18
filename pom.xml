@@ -5,7 +5,7 @@
 
     <groupId>org.sterl.pmw</groupId>
     <artifactId>pmw-root</artifactId>
-    <version>1.2.2-SNAPSHOT</version>
+    <version>1.2.2</version>
     <packaging>pom</packaging>
 
     <inceptionYear>2022</inceptionYear>
