@@ -1,29 +1,30 @@
 package org.sterl.pmw.model;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-import org.sterl.pmw.boundary.WorkflowService;
+import org.sterl.pmw.WorkflowService;
 
 import lombok.Getter;
 
 @Getter
-public class SequentialStep<StateType extends WorkflowState> extends AbstractStep<StateType> {
-    private final WorkflowFunction<StateType> fn;
+public class SequentialStep<T extends Serializable, R extends Serializable> extends AbstractStep<T, R> {
+    private final WorkflowFunction<T, R> fn;
 
-    SequentialStep(String name, WorkflowFunction<StateType> fn) {
+    SequentialStep(String name, WorkflowFunction<T, R> fn) {
         this(name, null, fn);
     }
 
-    SequentialStep(String name, String connectorLabel, WorkflowFunction<StateType> fn) {
+    SequentialStep(String name, String connectorLabel, WorkflowFunction<T, R> fn) {
         super(name, connectorLabel);
         Objects.requireNonNull(fn, "WorkflowFunction cannot be null.");
         this.fn = fn;
     }
 
     @Override
-    public void apply(StateType state, WorkflowContext context, WorkflowService<?> workflowService) {
+    public R apply(T state, WorkflowContext context, WorkflowService<?> workflowService) {
         Objects.requireNonNull(state, "WorkflowState cannot be null.");
         Objects.requireNonNull(context, "WorkflowContext cannot be null.");
-        fn.accept(state, context);
+        return fn.accept(state, context);
     }
 }

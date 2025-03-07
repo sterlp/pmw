@@ -1,17 +1,18 @@
 package org.sterl.pmw.model;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.function.Function;
 
-import org.sterl.pmw.boundary.WorkflowService;
+import org.sterl.pmw.WorkflowService;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TriggerWorkflowStep<StateType extends WorkflowState,
-    TriggerWorkflowStateType extends WorkflowState>
-    extends AbstractStep<StateType> {
+public class TriggerWorkflowStep<StateType extends Serializable,
+    TriggerWorkflowStateType extends Serializable>
+    extends AbstractStep<StateType, StateType> {
 
     @Getter
     private final Workflow<TriggerWorkflowStateType> toTrigger;
@@ -27,9 +28,10 @@ public class TriggerWorkflowStep<StateType extends WorkflowState,
     }
 
     @Override
-    public void apply(StateType state, WorkflowContext context, WorkflowService<?> workflowService) {
+    public StateType apply(StateType state, WorkflowContext context, WorkflowService<?> workflowService) {
         TriggerWorkflowStateType toStriggerState = this.fn.apply(state);
         workflowService.execute(toTrigger, toStriggerState, delay);
         log.debug("Triggered sub-workflow={}", toTrigger.getName());
+        return state;
     }
 }

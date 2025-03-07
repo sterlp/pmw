@@ -2,23 +2,22 @@ package org.sterl.pmw.testapp;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.quartz.JobDetail;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.sterl.pmw.AsyncAsserts;
-import org.sterl.pmw.boundary.WorkflowService;
+import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.model.WorkflowId;
-import org.sterl.pmw.model.WorkflowState;
-import org.sterl.pmw.model.WorkflowStatus;
+import org.sterl.pmw.sping_tasks.PersistentWorkflowService;
 import org.sterl.pmw.testapp.item.boundary.ItemService;
 import org.sterl.pmw.testapp.item.repository.ItemRepository;
+import org.sterl.spring.persistent_tasks.api.TriggerStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -32,12 +31,12 @@ class RunInsTransactionTest {
     @Autowired
     private ItemRepository itemRepository;
     @Autowired
-    private WorkflowService<JobDetail> workflowService;
+    private PersistentWorkflowService workflowService;
 
     protected final AsyncAsserts asserts = new AsyncAsserts();
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
-    static class TestWorkflowState implements WorkflowState {
+    static class TestWorkflowState implements Serializable {
         private static final long serialVersionUID = 1L;
         private String itemName;
         private Long itemId;
@@ -56,9 +55,9 @@ class RunInsTransactionTest {
     @Test
     void testHappy() {
         // GIVEN
-        Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
+        Workflow<TestWorkflowState> w = Workflow.builder("create-item", TestWorkflowState::new)
                 .next(c -> {
-                    Long itemId = itemService.newItem(c.getItemName()).getId();
+                    var itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
                 })
                 .next(c -> {
@@ -79,27 +78,27 @@ class RunInsTransactionTest {
     void testRollbackTransaction() {
         // GIVEN
         final AtomicInteger retries = new AtomicInteger(0);
-        Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
+        Workflow<TestWorkflowState> w = Workflow.builder("create-item", TestWorkflowState::new)
                 .next(c -> c.setItemId(itemService.newItem(c.getItemName()).getId()))
                 .next( (c, s) -> {
                     assertThat(c.getItemId()).isNotNull();
                     itemService.updateStock(c.getItemId(), c.getStock());
                     retries.incrementAndGet();
                     // we to a rollback
-                    throw new RuntimeException("Nope for item " + c.getItemId() + " times " + (s.getStepRetryCount() + 1));
+                    throw new RuntimeException("Nope for item " + c.getItemId());
                 })
                 .build();
         workflowService.register(w);
 
         // WHEN
-        final WorkflowId w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
-        final WorkflowId w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(99).build());
-        final WorkflowId w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(99).build());
+        final RunningWorkflowId w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
+        final RunningWorkflowId w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(99).build());
+        final RunningWorkflowId w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(99).build());
 
         // THEN
-        Awaitility.await().until(() -> workflowService.status(w1) == WorkflowStatus.COMPLETE);
-        Awaitility.await().until(() -> workflowService.status(w2) == WorkflowStatus.COMPLETE);
-        Awaitility.await().until(() -> workflowService.status(w3) == WorkflowStatus.COMPLETE);
+        Awaitility.await().until(() -> workflowService.status(w1) == TriggerStatus.SUCCESS);
+        Awaitility.await().until(() -> workflowService.status(w2) == TriggerStatus.SUCCESS);
+        Awaitility.await().until(() -> workflowService.status(w3) == TriggerStatus.SUCCESS);
         assertThat(itemRepository.findByName("MyName1").getInStock()).isZero();
         assertThat(itemRepository.findByName("MyName2").getInStock()).isZero();
         assertThat(itemRepository.findByName("MyName3").getInStock()).isZero();
@@ -110,7 +109,7 @@ class RunInsTransactionTest {
     void testRollbackOutsideRetry() {
 
         // GIVEN
-        Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
+        Workflow<TestWorkflowState> w = Workflow.builder("create-item", TestWorkflowState::new)
                 .next(c -> {
                     Long itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
@@ -125,10 +124,10 @@ class RunInsTransactionTest {
         workflowService.register(w);
 
         // WHEN
-        WorkflowId wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
+        RunningWorkflowId wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
 
         // THEN
-        Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
+        Awaitility.await().until(() -> workflowService.status(wid) == TriggerStatus.SUCCESS);
         Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);
         assertThat(itemRepository.findByName("MyName").getInStock()).isEqualTo(99);
         assertThat(asserts.getCount("error")).isEqualTo(2);
@@ -140,7 +139,7 @@ class RunInsTransactionTest {
     @Test
     void testRollbackInsideRetry() {
         // GIVEN
-        Workflow<TestWorkflowState> w = Workflow.builder("create-item", () -> new TestWorkflowState())
+        Workflow<TestWorkflowState> w = Workflow.builder("create-item", TestWorkflowState::new)
                 .next(c -> {
                     Long itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
@@ -156,10 +155,10 @@ class RunInsTransactionTest {
         workflowService.register(w);
 
         // WHEN
-        WorkflowId wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
+        RunningWorkflowId wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
 
         // THEN
-        Awaitility.await().until(() -> workflowService.status(wid) == WorkflowStatus.COMPLETE);
+        Awaitility.await().until(() -> workflowService.status(wid) == TriggerStatus.SUCCESS);
         Awaitility.await().until(() -> itemRepository.findByName("MyName") != null);
         assertThat(itemRepository.findByName("MyName").getInStock()).isEqualTo(99);
         assertThat(asserts.getCount("error")).isEqualTo(2);

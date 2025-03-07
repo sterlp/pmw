@@ -1,13 +1,9 @@
 package org.sterl.pmw.model;
 
-import java.util.function.Consumer;
+import java.io.Serializable;
 
 @FunctionalInterface
-public interface WorkflowFunction<StateType extends WorkflowState> {
+public interface WorkflowFunction<T extends Serializable, R extends Serializable> {
 
-    static <StateType extends WorkflowState> WorkflowFunction<StateType> of(Consumer<StateType> consumer) {
-        return (s, c) -> consumer.accept(s);
-    }
-
-    void accept(StateType state, WorkflowContext context);
+    R accept(T state, WorkflowContext context);
 }

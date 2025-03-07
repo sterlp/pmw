@@ -1,32 +1,46 @@
 package org.sterl.pmw.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.sterl.spring.persistent_tasks.api.RetryStrategy;
+
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 
-public class Workflow<T extends WorkflowState> {
-
-    public static <T extends WorkflowState> WorkflowFactory<T> builder(
-            final String name, final Supplier<T> newContextCreator) {
-        return new WorkflowFactory<>(name, newContextCreator);
+public class Workflow<T extends Serializable> {
+    
+    public static <T extends Serializable> WorkflowFactory<T, T> builder(
+            String name, Supplier<T> contextBuilder) {
+        Workflow<T> workflow = new Workflow<>(name, contextBuilder);
+        return new WorkflowFactory<T, T>(contextBuilder, workflow);
     }
 
     @Getter
     private final String name;
-    private final Supplier<T> newContextCreator;
-    private final List<WorkflowStep<T>> workflowSteps = new ArrayList<>();
+    @Getter
+    @Setter
+    @NonNull
+    private RetryStrategy retryStrategy = RetryStrategy.THREE_RETRIES;
+    private final Supplier<T> contextBuilder;
+    private final List<WorkflowStep<?, ?>> workflowSteps = new ArrayList<>();
 
-    public Workflow(String name, Supplier<T> newContextCreator) {
+    public Workflow(String name, Supplier<T> contextBuilder) {
         super();
         this.name = name;
-        this.newContextCreator = newContextCreator;
+        this.contextBuilder = contextBuilder;
+    }
+    
+    public T newContext() {
+        return contextBuilder.get();
     }
 
-    public List<WorkflowStep<T>> getSteps() {
+    public List<WorkflowStep<?, ?>> getSteps() {
         return Collections.unmodifiableList(this.workflowSteps);
     }
 
@@ -34,47 +48,9 @@ public class Workflow<T extends WorkflowState> {
         return workflowSteps.size();
     }
 
-    public WorkflowStep<T> nextStep(InternalWorkflowState state) {
-        var currentStepIndex = state.getCurrentStepIndex();
-        if (currentStepIndex == 0) {
-            state.workflowStarted();
-        } else if (currentStepIndex + 1 > workflowSteps.size()) {
-            state.workflowEnded();
-            return null;
-        }
-        return workflowSteps.get(currentStepIndex);
-    }
-
-    /**
-     * Marks the current step as a success and returns the next step if available
-     * @return the next step if available, otherwise <code>null</code>
-     */
-    public WorkflowStep<T> success(WorkflowStep<T> currentStep, InternalWorkflowState state) {
-        state.stepSuccessfullyFinished(currentStep);
-        final WorkflowStep<T> nextStep = nextStep(state);
-        return nextStep;
-    }
-
-    /**
-     * Increments the fail counter for the given step and set the {@link WorkflowStatus} to {@link WorkflowStatus#FAILED}
-     * if the max retry count is exceeded.
-     * 
-     * @return <code>true</code> retry should be attempted, otherwise <code>false</code>
-     */
-    public boolean fail(WorkflowStep<T> nextStep, InternalWorkflowState state, Exception e) {
-        final int retryCount = state.stepFailed(nextStep, e);
-        boolean shouldRetry = retryCount < nextStep.getMaxRetryCount();
-        if (!shouldRetry) state.setWorkflowStatus(WorkflowStatus.FAILED);
-        return shouldRetry;
-    }
-
-    void setWorkflowSteps(Collection<WorkflowStep<T>> workflowSteps) {
+    void setWorkflowSteps(Collection<WorkflowStep<?, ?>> workflowSteps) {
         this.workflowSteps.clear();
         this.workflowSteps.addAll(workflowSteps);
-    }
-
-    public T newEmtyContext() {
-        return this.newContextCreator.get();
     }
 
     @Override
@@ -82,9 +58,12 @@ public class Workflow<T extends WorkflowState> {
         return "Workflow [name=" + name + ", workflowSteps=" + workflowSteps.size() + "]";
     }
 
-    public WorkflowStep<T> getStepByPosition(int pos) {
-        if (pos > workflowSteps.size()) return null;
-        else return workflowSteps.get(pos);
+    public WorkflowStep<?, ?> getNextStep(WorkflowStep<?, ?> current) {
+        return getStepByPosition(workflowSteps.indexOf(current) + 1);
+    }
 
+    public WorkflowStep<?, ?> getStepByPosition(int pos) {
+        if (pos >= workflowSteps.size()) return null;
+        else return workflowSteps.get(pos);
     }
 }

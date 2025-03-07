@@ -1,14 +1,14 @@
 package org.sterl.pmw.model;
 
+import java.io.Serializable;
 import java.util.LinkedHashMap;
 
-public abstract class AbstractWorkflowFactory<FactoryType
-    extends AbstractWorkflowFactory<FactoryType, StateType>, StateType extends WorkflowState> {
+public abstract class AbstractWorkflowFactory<FactoryType> {
 
-    protected final LinkedHashMap<String, WorkflowStep<StateType>> workflowSteps = new LinkedHashMap<>();
+    protected final LinkedHashMap<String, WorkflowStep<?, ?>> workflowSteps = new LinkedHashMap<>();
 
     @SuppressWarnings("unchecked")
-    public FactoryType addStep(WorkflowStep<StateType> s) {
+    public <T extends Serializable, R extends Serializable> FactoryType addStep(WorkflowStep<T, R> s) {
         var old = workflowSteps.put(s.getName(), s);
         if (old != null) throw new IllegalArgumentException("WorkflowStep with name "
                 + s.getName() + " already exists.");

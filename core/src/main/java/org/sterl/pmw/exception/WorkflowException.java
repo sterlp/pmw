@@ -10,16 +10,16 @@ public abstract class WorkflowException extends RuntimeException {
     @Getter
     private final Workflow<?> workflow;
     @Getter
-    private final WorkflowStep<?> failedStep;
+    private final WorkflowStep<?, ?> failedStep;
 
-    static final String buildDefaultErrorMessage(Workflow<?> workflow, WorkflowStep<?> failedStep, Exception cause) {
+    static final String buildDefaultErrorMessage(Workflow<?> workflow, WorkflowStep<?, ?> failedStep, Exception cause) {
         return "Workflow=" + workflow.getName()
             + " failed in step=" + failedStep.getName()
             + " message=" + cause.getMessage();
 
     }
 
-    public WorkflowException(Workflow<?> workflow, WorkflowStep<?> failedStep, Exception cause) {
+    public WorkflowException(Workflow<?> workflow, WorkflowStep<?, ?> failedStep, Exception cause) {
         super(buildDefaultErrorMessage(workflow, failedStep, cause), cause);
         this.workflow = workflow;
         this.failedStep = failedStep;
@@ -30,7 +30,7 @@ public abstract class WorkflowException extends RuntimeException {
         @Getter
         private final int tryCount;
 
-        public WorkflowFailedNoRetryException(Workflow<?> workflow, WorkflowStep<?> failedStep, Exception cause, int tryCount) {
+        public WorkflowFailedNoRetryException(Workflow<?> workflow, WorkflowStep<?, ?> failedStep, Exception cause, int tryCount) {
             super(workflow, failedStep, cause);
             this.tryCount = tryCount;
         }
@@ -40,7 +40,7 @@ public abstract class WorkflowException extends RuntimeException {
         @Getter
         private final int tryCount;
 
-        public WorkflowFailedDoRetryException(Workflow<?> workflow, WorkflowStep<?> failedStep, Exception cause, int tryCount) {
+        public WorkflowFailedDoRetryException(Workflow<?> workflow, WorkflowStep<?, ?> failedStep, Exception cause, int tryCount) {
             super(workflow, failedStep, cause);
             this.tryCount = tryCount;
         }

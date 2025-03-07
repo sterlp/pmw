@@ -1,12 +1,13 @@
-package org.sterl.pmw.model;
+package org.sterl.pmw;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 import lombok.Data;
 
 @Data
-public class SimpleWorkflowState implements WorkflowState {
+public class SimpleWorkflowState implements Serializable {
     private static final long serialVersionUID = 1L;
     private Map<String, Object> state = new HashMap<>();
 }
