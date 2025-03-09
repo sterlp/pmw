@@ -5,26 +5,19 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.Serializable;
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.sterl.pmw.AsyncAsserts;
 import org.sterl.pmw.SimpleWorkflowState;
 import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.sping_tasks.PersistentWorkflowService;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
-import org.sterl.spring.persistent_tasks.task.repository.TaskRepository;
-import org.sterl.spring.persistent_tasks.trigger.TriggerService;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,46 +25,37 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @SpringBootTest
-public class SpringCoreTests {
+public class SpringCoreTests extends AbstractSpringTest {
 
-    @Autowired
-    private TriggerService triggerService;
-    @Autowired
-    private TaskRepository taskRepository;
     @Autowired
     private PersistentWorkflowService subject;
     
-    private final AsyncAsserts asserts = new AsyncAsserts();
-
-    @BeforeEach
-    protected void setUp() throws Exception {
-        taskRepository.clear();
-        triggerService.deleteAll();
-        subject.clearAllWorkflows();
-        asserts.clear();
-    }
-
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor
     protected static class TestWorkflowCtx implements Serializable {
         private static final long serialVersionUID = 1L;
         private int anyValue = 0;
     }
 
-    @AfterEach
-    protected void tearDown() throws Exception {
-        asserts.clear();
-        subject.clearAllWorkflows();
-    }
-
     @Test
     public void testWorkflowServiceIsCreated() {
         assertThat(subject).isNotNull();
+    }
+    
+    @Test
+    public void testRegisterWorkflowNoSteps() {
+        // GIVEN
+        Workflow<TestWorkflowCtx> w = Workflow.builder("bad-workflow", TestWorkflowCtx::new).build();
+
+        // WHEN / THEN
+        assertThrows(IllegalArgumentException.class, () -> subject.register(w));
     }
 
     @Test
     public void testRegisterWorkflow() {
         // GIVEN
+        subject.clearAllWorkflows();
         Workflow<TestWorkflowCtx> w = Workflow.builder("any-workflow", TestWorkflowCtx::new)
+                .sleep(Duration.ofHours(1))
                 .build();
         assertThat(subject.workflowCount()).isZero();
 
@@ -105,7 +89,7 @@ public class SpringCoreTests {
     }
 
     @Test
-    public void testWorkflowStatus() {
+    public void testWorkflowStatus() throws InterruptedException {
         // GIVEN
         Workflow<Duration> w = Workflow.builder("any-workflow", () -> Duration.ZERO)
                 .next((s, c) -> {
@@ -120,19 +104,25 @@ public class SpringCoreTests {
                     } catch (InterruptedException e) {}
                     return null;
                 })
-                .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
         subject.register(w);
 
         // WHEN
-        final RunningWorkflowId id = subject.execute(w, Duration.ofMillis(50), Duration.ofMillis(250));
+        final RunningWorkflowId id = subject.execute(w, Duration.ofMillis(250), Duration.ofMillis(50));
+        assertThat(subject.status(id)).isEqualTo(TriggerStatus.WAITING);
+        
+        // AND wait for the start delay
+        Thread.sleep(51);
+        var triggered = subject.queueAllWorkflows();
 
         // THEN
-        assertThat(subject.status(id)).isEqualTo(TriggerStatus.WAITING);
+        assertThat(triggered).hasSize(1);
+        Awaitility.await().atMost(Duration.ofMillis(500)).until(() -> subject.status(id) == TriggerStatus.RUNNING);
         // AND
-        Awaitility.await().pollInterval(Duration.ofMillis(25)) .until(() -> subject.status(id) == TriggerStatus.RUNNING);
-        // AND
-        Awaitility.await().until(() -> subject.status(id) == TriggerStatus.SUCCESS);
+        Awaitility.await().atMost(Duration.ofMillis(1500)).until(() -> {
+            waitForAllWorkflows();
+            return subject.status(id) == TriggerStatus.SUCCESS;
+        });
     }
     
     @Test
@@ -153,7 +143,8 @@ public class SpringCoreTests {
         // WHEN
         subject.cancel(id);
         // THEN
-        assertThat(subject.status(id)).isEqualTo(TriggerStatus.SUCCESS);
+        waitForAllWorkflows();
+        assertThat(subject.status(id)).isEqualTo(TriggerStatus.CANCELED);
     }
 
     @Test
@@ -167,10 +158,11 @@ public class SpringCoreTests {
         subject.register(w);
 
         // WHEN
-        final RunningWorkflowId id = subject.execute(w, new TestWorkflowCtx(1));
-        Awaitility.await().until(() -> subject.status(id) == TriggerStatus.SUCCESS);
+        final var runningWorkflowId = subject.execute(w, new TestWorkflowCtx(1));
 
         // THEN
+        waitForAllWorkflows();
+        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.SUCCESS);
         assertThat(state.get()).isEqualTo(2);
     }
 
@@ -193,12 +185,12 @@ public class SpringCoreTests {
         subject.register(w);
 
         // WHEN
-        final RunningWorkflowId runningWorkflowId = subject.execute(w);
+        final RunningWorkflowId runningWorkflowId = subject.execute(w, new TestWorkflowCtx(77));
 
         // THEN
-        Awaitility.await().until(() -> subject.status(runningWorkflowId) == TriggerStatus.SUCCESS);
+        waitForAllWorkflows();
+        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.SUCCESS);
         assertThat(state.get()).isEqualTo(77);
-
     }
 
     @Test
@@ -232,8 +224,8 @@ public class SpringCoreTests {
         subject.execute(w);
 
         // THEN
+        waitForAllWorkflows();
         asserts.awaitOrdered("do-first", "do-second", "choose", "  going left", "finally");
-
     }
 
     @Test
@@ -278,6 +270,7 @@ public class SpringCoreTests {
         subject.execute(w);
 
         // THEN
+        waitForAllWorkflows();
         asserts.awaitOrdered("choose 1", "  going right", "choose 2", "  going mid", "finally");
     }
 
@@ -288,19 +281,21 @@ public class SpringCoreTests {
                 TestWorkflowCtx::new)
                 .next("failing step", (s, c) -> {
                     asserts.info("failing " + c.getExecutionCount());
-                    if (c.getExecutionCount() < 2) {
+                    if (c.getExecutionCount() < 3) {
                         throw new IllegalStateException("Not now " + c.getExecutionCount());
                     }
                     return s;
                 }).next((s, c) -> asserts.info("done"))
+                .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
         subject.register(w);
 
         // WHEN
-        subject.execute(w);
+        var runningWorkflowId = subject.execute(w);
 
         // THEN
-        asserts.awaitOrdered("failing 0", "failing 1", "failing 2", "done");
+        asserts.awaitOrdered(() -> waitForAllWorkflows(), "failing 1", "failing 2", "failing 3", "done");
+        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.SUCCESS);
     }
 
     @Test
@@ -313,28 +308,32 @@ public class SpringCoreTests {
                     asserts.info("failing " + failCount.incrementAndGet());
                     throw new IllegalStateException("Not now " + failCount.get());
                 }).next((s, c) -> asserts.info("done"))
+                .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
         subject.register(w);
 
         // WHEN
-        subject.execute(w);
+        var runningWorkflowId = subject.execute(w);
 
         // THEN we should use the default 3 times retry
-        asserts.awaitOrdered("failing 1", "failing 2", "failing 3");
-        assertThat(failCount.get()).isEqualTo(3);
+        waitForAllWorkflows();
+        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.FAILED);
+        asserts.awaitOrdered("failing 1", "failing 2", "failing 3", "failing 4");
+        asserts.assertMissing("failing 5");
+        assertThat(failCount.get()).isEqualTo(4);
     }
 
     @Test
-    public void testWaitForNextStep() {
+    public void testWaitForNextStep() throws Exception {
         // GIVEN
         final AtomicLong timeFirstStep = new AtomicLong(0);
         final AtomicLong timeSecondStep = new AtomicLong(0);
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
                 TestWorkflowCtx::new)
                 .next((s, c) -> {
-                    asserts.info("wait");
-                    c.delayNextStepBy(Duration.ofSeconds(1));
                     timeFirstStep.set(System.currentTimeMillis());
+                    asserts.info("wait");
+                    c.delayNextStepBy(Duration.ofMillis(500));
                     return s;
                 })
                 .next(s -> {
@@ -346,11 +345,23 @@ public class SpringCoreTests {
 
         // WHEN
         final RunningWorkflowId runningWorkflowId = subject.execute(w);
+        asserts.awaitOrdered("wait");
+        // AND the next one should be delayed!
+        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.WAITING);
 
+        // WHEN - should still be waiting, as we delayed by 500ms
+        Thread.sleep(250);
+        waitForAllWorkflows();
         // THEN
-        Awaitility.await().until(() -> subject.status(runningWorkflowId) == TriggerStatus.WAITING);
+        asserts.assertMissing("done");
+        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.WAITING);
+
+        // WHEN we wait a bit more
+        Thread.sleep(250);
+        waitForAllWorkflows();
+        // THEN the last task should be done too
         asserts.awaitOrdered("wait", "done");
-        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(999L);
+        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(500L);
     }
 
     @Test
@@ -364,7 +375,7 @@ public class SpringCoreTests {
                     asserts.info("wait");
                     timeFirstStep.set(System.currentTimeMillis());
                 })
-                .sleep(Duration.ofSeconds(1))
+                .sleep(Duration.ofMillis(500))
                 .next((s) -> {
                     timeSecondStep.set(System.currentTimeMillis());
                     asserts.info("done");
@@ -373,12 +384,11 @@ public class SpringCoreTests {
         subject.register(w);
 
         // WHEN
-        final RunningWorkflowId runningWorkflowId = subject.execute(w);
+        subject.execute(w);
 
         // THEN
-        Awaitility.await().until(() -> subject.status(runningWorkflowId) == TriggerStatus.WAITING);
-        asserts.awaitOrdered("wait", "done");
-        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(1000L);
+        asserts.awaitOrdered(() -> waitForAllWorkflows(), "wait", "done");
+        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(500L);
     }
 
     @Test
@@ -400,23 +410,22 @@ public class SpringCoreTests {
         final RunningWorkflowId runningWorkflowId = subject.execute(w);
 
         // THEN
-        Awaitility.await().until(() -> subject.status(runningWorkflowId) == TriggerStatus.SUCCESS);
+        waitForAllWorkflows();
+        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.SUCCESS);
         asserts.awaitOrdered("step 1", "step 2");
         asserts.assertMissing("cancel");
     }
 
     @Test
-    public void testTriggerWorkflow() throws InterruptedException {
+    public void testTriggerSubWorkflow() throws InterruptedException {
         // GIVEN
         final AtomicInteger stateValue = new AtomicInteger(0);
-        final CountDownLatch latch = new CountDownLatch(1);
         Workflow<TestWorkflowCtx> subW = Workflow.builder("subW", TestWorkflowCtx::new)
-                .next(s -> stateValue.set(s.getAnyValue()))
-                .next(s -> latch.countDown())
+                .next(s -> stateValue.set(s.getAnyValue() + 1))
                 .build();
 
         Workflow<TestWorkflowCtx> w = Workflow.builder("w", TestWorkflowCtx::new)
-                .next(s -> s.setAnyValue(2))
+                .next(s -> s.setAnyValue(1))
                 .trigger(subW, s -> s)
                 .build();
 
@@ -426,7 +435,7 @@ public class SpringCoreTests {
         subject.execute(w);
 
         // THEN
-        assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+        waitForAllWorkflows();
         assertThat(stateValue.get()).isEqualTo(2);
     }
 }

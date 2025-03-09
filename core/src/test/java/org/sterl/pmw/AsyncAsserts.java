@@ -36,27 +36,47 @@ public class AsyncAsserts {
         return counts.getOrDefault(value, 0);
     }
     public void awaitValue(String value) {
-        Instant now = Instant.now();
+        awaitValue(null, value);
+    }
+    /**
+     * Wait for the given value, if not found call the given method
+     * @param fn the optional function to call after each wait
+     * @param value the value to wait for
+     */
+    public void awaitValue(Runnable fn, String value) {
+        final var now = Instant.now();
         while (!values.contains(value)
-                && (System.currentTimeMillis() - now.toEpochMilli() <= 30_000)) {
+                && (System.currentTimeMillis() - now.toEpochMilli() <= 5_000)) {
             try {
                 Thread.sleep(50);
             } catch (InterruptedException e) {
                 if (Thread.interrupted()) break;
             }
+            if (fn != null) fn.run();
         }
         assertThat(new ArrayList<>(values)).contains(value);
     }
-    public void awaitValue(String value, String... values) {
-        awaitValue(value);
+    /**
+     * Wait for the given value, if not found call the given method
+     * @param fn the optional function to call after each wait
+     * @param value the value to wait for
+     */
+    public void awaitValue(Runnable fn, String value, String... values) {
+        awaitValue(fn, value);
         if (values != null && values.length > 0) {
             for (String v : values) {
-                awaitValue(v);
+                awaitValue(fn, v);
             }
         }
     }
+    public void awaitValue(String value, String... values) {
+        awaitValue(null, value, values);
+    }
     public void awaitOrdered(String value, String... values) {
-        awaitValue(value, values);
+        awaitOrdered(null, value, values);
+    }
+    public void awaitOrdered(Runnable fn, String value, String... values) {
+        awaitValue(fn, value, values);
 
         assertThat(this.values.indexOf(value)).isEqualTo(0);
         if (values != null && values.length > 0) {

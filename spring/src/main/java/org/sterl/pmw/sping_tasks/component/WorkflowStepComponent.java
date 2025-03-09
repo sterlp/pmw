@@ -2,54 +2,52 @@ package org.sterl.pmw.sping_tasks.component;
 
 import java.io.Serializable;
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Collections;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.sterl.pmw.WorkflowService;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowContext;
 import org.sterl.pmw.model.WorkflowStep;
-import org.sterl.spring.persistent_tasks.api.AddTriggerRequest;
+import org.sterl.spring.persistent_tasks.PersistentTaskService;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 import org.sterl.spring.persistent_tasks.api.TaskId.TriggerBuilder;
-import org.sterl.spring.persistent_tasks.api.task.ComplexPersistentTask;
+import org.sterl.spring.persistent_tasks.api.event.TriggerTaskCommand;
 import org.sterl.spring.persistent_tasks.api.task.RunningTrigger;
+import org.sterl.spring.persistent_tasks.api.task.RunningTriggerContextHolder;
+import org.sterl.spring.persistent_tasks.api.task.TransactionalTask;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class WorkflowStepComponent<T extends Serializable, R extends Serializable> implements ComplexPersistentTask<T, R> {
+public class WorkflowStepComponent<T extends Serializable, R extends Serializable> implements TransactionalTask<T> {
 
     private final WorkflowService<?> workflowService;
+    private final PersistentTaskService taskService;
     private final Workflow<?> workflow;
     private final WorkflowStep<T, R> step;
 
     @Override
-    public Collection<AddTriggerRequest<R>> accept(RunningTrigger<T> state) {
-        var context = new SimpleWorkflowContext(state);
-        R nextState = step.apply(state.getData(), context, workflowService);
+    public void accept(T state) {
+        var context = new SimpleWorkflowContext(RunningTriggerContextHolder.getContext());
+        R nextState = step.apply(state, context, workflowService);
         
         var nextStep = workflow.getNextStep(step);
-        AddTriggerRequest<R> result = null;
+        
         if (!context.canceled && nextStep != null) {
-            result = TriggerBuilder.newTrigger(
-                    workflow.getName() + "::" + nextStep.getName(), nextState)
-                .runAfter(context.nextDelay)
-                .correlationId(state.getCorrelationId())
-                .build();
+            taskService.runOrQueue(
+                TriggerBuilder.newTrigger(
+                        workflow.getName() + "::" + nextStep.getName(), nextState)
+                    .runAfter(context.nextDelay)
+                    .correlationId(RunningTriggerContextHolder.getCorrelationId())
+                    .build()
+            );
         }
-        return result == null ? Collections.emptyList() : result.toList();
     }
     
     @Override
     public RetryStrategy retryStrategy() {
         return workflow.getRetryStrategy();
-    }
-    
-    @Override
-    public boolean isTransactional() {
-        return true;
     }
 
     @RequiredArgsConstructor
