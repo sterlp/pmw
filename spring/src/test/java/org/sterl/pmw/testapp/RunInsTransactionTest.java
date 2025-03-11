@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.sterl.pmw.AsyncAsserts;
 import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.sping_tasks.PersistentWorkflowService;
@@ -16,6 +15,7 @@ import org.sterl.pmw.testapp.item.boundary.ItemService;
 import org.sterl.pmw.testapp.item.repository.ItemRepository;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
+import org.sterl.spring.persistent_tasks.test.AsyncAsserts;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

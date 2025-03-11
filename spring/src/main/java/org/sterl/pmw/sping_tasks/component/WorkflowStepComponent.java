@@ -3,7 +3,6 @@ package org.sterl.pmw.sping_tasks.component;
 import java.io.Serializable;
 import java.time.Duration;
 
-import org.springframework.context.ApplicationEventPublisher;
 import org.sterl.pmw.WorkflowService;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowContext;
@@ -11,7 +10,6 @@ import org.sterl.pmw.model.WorkflowStep;
 import org.sterl.spring.persistent_tasks.PersistentTaskService;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 import org.sterl.spring.persistent_tasks.api.TaskId.TriggerBuilder;
-import org.sterl.spring.persistent_tasks.api.event.TriggerTaskCommand;
 import org.sterl.spring.persistent_tasks.api.task.RunningTrigger;
 import org.sterl.spring.persistent_tasks.api.task.RunningTriggerContextHolder;
 import org.sterl.spring.persistent_tasks.api.task.TransactionalTask;

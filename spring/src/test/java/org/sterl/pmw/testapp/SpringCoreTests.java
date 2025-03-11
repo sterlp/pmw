@@ -113,7 +113,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         
         // AND wait for the start delay
         Thread.sleep(51);
-        var triggered = subject.queueAllWorkflows();
+        var triggered = persistentTaskTestService.scheduleNextTriggers();
 
         // THEN
         assertThat(triggered).hasSize(1);
@@ -317,9 +317,9 @@ public class SpringCoreTests extends AbstractSpringTest {
 
         // THEN we should use the default 3 times retry
         waitForAllWorkflows();
-        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.FAILED);
         asserts.awaitOrdered("failing 1", "failing 2", "failing 3", "failing 4");
         asserts.assertMissing("failing 5");
+        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.FAILED);
         assertThat(failCount.get()).isEqualTo(4);
     }
 

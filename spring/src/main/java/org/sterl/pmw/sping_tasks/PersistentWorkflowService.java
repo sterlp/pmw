@@ -2,10 +2,8 @@ package org.sterl.pmw.sping_tasks;
 
 import java.io.Serializable;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 
 import org.springframework.stereotype.Service;
 import org.sterl.pmw.AbstractWorkflowService;
@@ -16,7 +14,6 @@ import org.sterl.pmw.model.WorkflowStep;
 import org.sterl.pmw.sping_tasks.component.WorkflowStepComponent;
 import org.sterl.spring.persistent_tasks.PersistentTaskService;
 import org.sterl.spring.persistent_tasks.api.TaskId;
-import org.sterl.spring.persistent_tasks.api.TriggerKey;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
 import org.sterl.spring.persistent_tasks.task.TaskService;
 import org.sterl.spring.persistent_tasks.trigger.TriggerService;
@@ -101,13 +98,5 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
     public void clearAllWorkflows() {
         super.clearAllWorkflows();
         this.firstTaskRef.clear();
-    }
-    
-    public List<Future<TriggerKey>> queueAllWorkflows() {
-        return persistentTaskService.executeTriggers();
-    }
-    
-    public List<TriggerKey> queueAllWorkflowsAndWait() {
-        return persistentTaskService.executeTriggersAndWait();
     }
 }

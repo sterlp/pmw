@@ -44,7 +44,7 @@
         <dependency>
             <groupId>org.sterl.spring</groupId>
             <artifactId>spring-persistent-tasks-core</artifactId>
-            <version>1.6.0-SNAPSHOT</version>
+            <version>${spring.persistent.tasks.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -82,6 +82,13 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.sterl.spring</groupId>
+            <artifactId>spring-persistent-tasks-test</artifactId>
+            <version>${spring.persistent.tasks.version}</version>
+            <scope>test</scope>
+        </dependency>
+        
         
         <dependency>
             <groupId>ch.qos.logback</groupId>

@@ -1,6 +1,7 @@
 package org.sterl.pmw.testapp;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,16 +9,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.sterl.pmw.AsyncAsserts;
 import org.sterl.pmw.sping_tasks.PersistentWorkflowService;
 import org.sterl.pmw.testapp.item.repository.ItemRepository;
+import org.sterl.spring.persistent_tasks.api.TriggerKey;
 import org.sterl.spring.persistent_tasks.history.HistoryService;
 import org.sterl.spring.persistent_tasks.scheduler.SchedulerService;
 import org.sterl.spring.persistent_tasks.scheduler.component.EditSchedulerStatusComponent;
 import org.sterl.spring.persistent_tasks.scheduler.component.TaskExecutorComponent;
 import org.sterl.spring.persistent_tasks.task.repository.TaskRepository;
+import org.sterl.spring.persistent_tasks.test.AsyncAsserts;
+import org.sterl.spring.persistent_tasks.test.PersistentTaskTestService;
 import org.sterl.spring.persistent_tasks.trigger.TriggerService;
-import org.sterl.spring.persistent_tasks.trigger.model.TriggerEntity;
 
 @SpringBootTest
 public abstract class AbstractSpringTest {
@@ -34,6 +36,9 @@ public abstract class AbstractSpringTest {
     protected SchedulerService schedulerService;
     @Autowired
     protected HistoryService historyService;
+    
+    @Autowired
+    protected PersistentTaskTestService persistentTaskTestService;
 
     protected final AsyncAsserts asserts = new AsyncAsserts();
 
@@ -53,6 +58,11 @@ public abstract class AbstractSpringTest {
     @Configuration
     public static class TestConfig {
         @Bean
+        PersistentTaskTestService persistentTaskTestService(List<SchedulerService> schedulers, TriggerService triggerService) {
+            return new PersistentTaskTestService(schedulers, triggerService);
+        }
+        
+        @Bean
         SchedulerService schedulerService(
                 TriggerService triggerService, 
                 EditSchedulerStatusComponent editSchedulerStatus,
@@ -64,7 +74,7 @@ public abstract class AbstractSpringTest {
         }
     }
 
-    protected void waitForAllWorkflows() {
-      workflowService.queueAllWorkflowsAndWait();
+    protected List<TriggerKey> waitForAllWorkflows() {
+        return persistentTaskTestService.scheduleNextTriggersAndWait(Duration.ofSeconds(3));
     }
 }
