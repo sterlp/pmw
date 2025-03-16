@@ -2,6 +2,7 @@ package org.sterl.pmw.testapp;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,7 @@ import org.sterl.spring.persistent_tasks.api.TriggerKey;
 import org.sterl.spring.persistent_tasks.history.HistoryService;
 import org.sterl.spring.persistent_tasks.scheduler.SchedulerService;
 import org.sterl.spring.persistent_tasks.scheduler.component.EditSchedulerStatusComponent;
-import org.sterl.spring.persistent_tasks.scheduler.component.TaskExecutorComponent;
+import org.sterl.spring.persistent_tasks.scheduler.config.SchedulerConfig;
 import org.sterl.spring.persistent_tasks.task.repository.TaskRepository;
 import org.sterl.spring.persistent_tasks.test.AsyncAsserts;
 import org.sterl.spring.persistent_tasks.test.PersistentTaskTestService;
@@ -68,13 +69,16 @@ public abstract class AbstractSpringTest {
                 EditSchedulerStatusComponent editSchedulerStatus,
                 TransactionTemplate trx) {
 
-            final var taskExecutor = new TaskExecutorComponent(triggerService, 10);
-            taskExecutor.setMaxShutdownWaitTime(Duration.ofSeconds(0));
-            return new SchedulerService("testScheduler", triggerService, taskExecutor, editSchedulerStatus, trx);
+            return SchedulerConfig.newSchedulerService("testScheduler", 
+                    triggerService, 
+                    editSchedulerStatus, 
+                    5, 
+                    Duration.ofSeconds(0), 
+                    trx); 
         }
     }
 
-    protected List<TriggerKey> waitForAllWorkflows() {
+    protected Set<TriggerKey> waitForAllWorkflows() {
         return persistentTaskTestService.scheduleNextTriggersAndWait(Duration.ofSeconds(3));
     }
 }

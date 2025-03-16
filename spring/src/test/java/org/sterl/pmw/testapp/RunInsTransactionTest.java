@@ -43,7 +43,7 @@ class RunInsTransactionTest extends AbstractSpringTest {
     @Test
     void testHappy() {
         // GIVEN
-        Workflow<TestWorkflowState> w = Workflow.builder("create-item1", TestWorkflowState::new)
+        Workflow<TestWorkflowState> w = Workflow.builder("testHappy", TestWorkflowState::new)
                 .next(c -> {
                     var itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
@@ -64,12 +64,12 @@ class RunInsTransactionTest extends AbstractSpringTest {
     }
 
     @Test
-    void testRollbackTransaction() {
+    void testRollbackTransaction() throws Exception {
         // GIVEN
         final AtomicInteger retries = new AtomicInteger(0);
-        Workflow<TestWorkflowState> w = Workflow.builder("create-item2", TestWorkflowState::new)
+        Workflow<TestWorkflowState> w = Workflow.builder("testRollbackTransaction", TestWorkflowState::new)
                 .next(c -> c.setItemId(itemService.newItem(c.getItemName()).getId()))
-                .next( (c, s) -> {
+                .next("fail-step", (c, s) -> {
                     assertThat(c.getItemId()).isNotNull();
                     itemService.updateStock(c.getItemId(), c.getStock());
                     retries.incrementAndGet();
@@ -82,12 +82,11 @@ class RunInsTransactionTest extends AbstractSpringTest {
 
         // WHEN
         final RunningWorkflowId w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
-        final RunningWorkflowId w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(99).build());
-        final RunningWorkflowId w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(99).build());
-        // AND
-        waitForAllWorkflows();
+        final RunningWorkflowId w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(77).build());
+        final RunningWorkflowId w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(55).build());
 
         // THEN
+        waitForAllWorkflows();
         assertThat(workflowService.status(w1)).isEqualTo(TriggerStatus.FAILED);
         assertThat(workflowService.status(w2)).isEqualTo(TriggerStatus.FAILED);
         assertThat(workflowService.status(w3)).isEqualTo(TriggerStatus.FAILED);
@@ -101,10 +100,9 @@ class RunInsTransactionTest extends AbstractSpringTest {
 
     @Test
     void testRollbackOutsideRetry() {
-
         // GIVEN
         final var name = UUID.randomUUID().toString();
-        Workflow<TestWorkflowState> w = Workflow.builder("create-item3", TestWorkflowState::new)
+        Workflow<TestWorkflowState> w = Workflow.builder("testRollbackOutsideRetry", TestWorkflowState::new)
                 .next(c -> {
                     Long itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
@@ -124,6 +122,8 @@ class RunInsTransactionTest extends AbstractSpringTest {
 
         // THEN
         waitForAllWorkflows();
+        //persistentTaskTestService.runAllDueTrigger(OffsetDateTime.now().plusDays(1));
+
         assertThat(workflowService.status(wid)).isEqualTo(TriggerStatus.SUCCESS);
         assertThat(itemRepository.findByName(name)).isNotNull();
         assertThat(itemRepository.findByName(name).getInStock()).isEqualTo(99);
@@ -136,7 +136,7 @@ class RunInsTransactionTest extends AbstractSpringTest {
     @Test
     void testRollbackInsideRetry() {
         // GIVEN
-        Workflow<TestWorkflowState> w = Workflow.builder("create-item4", TestWorkflowState::new)
+        Workflow<TestWorkflowState> w = Workflow.builder("testRollbackInsideRetry", TestWorkflowState::new)
                 .next(c -> {
                     Long itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
@@ -157,6 +157,8 @@ class RunInsTransactionTest extends AbstractSpringTest {
 
         // THEN
         waitForAllWorkflows();
+        //persistentTaskTestService.runAllDueTrigger(OffsetDateTime.now().plusDays(1));
+
         assertThat(workflowService.status(wid)).isEqualTo(TriggerStatus.SUCCESS);
         assertThat(itemRepository.findByName("MyName").getInStock()).isEqualTo(99);
         assertThat(asserts.getCount("error")).isEqualTo(2);

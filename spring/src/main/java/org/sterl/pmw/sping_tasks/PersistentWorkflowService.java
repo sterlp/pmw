@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.sterl.pmw.AbstractWorkflowService;
 import org.sterl.pmw.component.WorkflowRepository;
@@ -63,15 +64,14 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
     @Override
     public TriggerStatus status(RunningWorkflowId workflowId) {
         // TODO just load one and not all!!!
-        var states = persistentTaskService.findAllTriggerByCorrelationId(workflowId.value());
-        if (states.isEmpty()) return null;
-        //states.forEach(System.err::println);
-        return states.get(states.size() - 1).getStatus();
+        var status = persistentTaskService.findLastTriggerByCorrelationId(workflowId.value());
+        if (status.isEmpty()) return TriggerStatus.SUCCESS;
+        return status.get().getStatus();
     }
 
     @Override
     public void cancel(RunningWorkflowId workflowId) {
-        var running = triggerService.findTriggerByCorrelationId(workflowId.value())
+        var running = triggerService.findTriggerByCorrelationId(workflowId.value(), Pageable.ofSize(100))
                 .stream()
                 .filter(TriggerEntity::isWaiting)
                 .map(TriggerEntity::key)
