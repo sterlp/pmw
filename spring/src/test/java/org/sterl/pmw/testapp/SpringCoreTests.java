@@ -8,7 +8,7 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.awaitility.Awaitility;
+import static org.awaitility.Awaitility.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -82,7 +82,7 @@ public class SpringCoreTests extends AbstractSpringTest {
 
         // WHEN
         final RunningWorkflowId id = subject.execute(workflow, Integer.valueOf(10));
-        Awaitility.await().until(() -> subject.status(id) == TriggerStatus.SUCCESS);
+        await().until(() -> subject.status(id) == TriggerStatus.SUCCESS);
 
         // THEN
         assertThat(state.get()).isEqualTo(11);
@@ -117,9 +117,9 @@ public class SpringCoreTests extends AbstractSpringTest {
 
         // THEN
         assertThat(triggered).hasSize(1);
-        Awaitility.await().atMost(Duration.ofMillis(500)).until(() -> subject.status(id) == TriggerStatus.RUNNING);
+        await().atMost(Duration.ofMillis(500)).until(() -> subject.status(id) == TriggerStatus.RUNNING);
         // AND
-        Awaitility.await().atMost(Duration.ofMillis(1500)).until(() -> {
+        await().atMost(Duration.ofMillis(1500)).until(() -> {
             waitForAllWorkflows();
             return subject.status(id) == TriggerStatus.SUCCESS;
         });
@@ -345,20 +345,17 @@ public class SpringCoreTests extends AbstractSpringTest {
 
         // WHEN
         final RunningWorkflowId runningWorkflowId = subject.execute(w);
-        asserts.awaitOrdered("wait");
+        schedulerService.triggerNextTasks();
+
         // AND the next one should be delayed!
-        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.WAITING);
-
-        // WHEN - should still be waiting, as we delayed by 500ms
-        Thread.sleep(250);
-        waitForAllWorkflows();
-        // THEN
+        await().atMost(Duration.ofMillis(500)).until(() -> subject.status(runningWorkflowId) == TriggerStatus.WAITING);
+        asserts.assertValue("wait");
         asserts.assertMissing("done");
-        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.WAITING);
 
-        // WHEN we wait a bit more
-        Thread.sleep(250);
-        waitForAllWorkflows();
+        // WHEN we wait a bit more, for the task to be due
+        Thread.sleep(501);
+        schedulerService.triggerNextTasks();
+        
         // THEN the last task should be done too
         asserts.awaitOrdered("wait", "done");
         assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(500L);
@@ -387,7 +384,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         subject.execute(w);
 
         // THEN
-        asserts.awaitOrdered(() -> waitForAllWorkflows(), "wait", "done");
+        asserts.awaitOrdered(() -> schedulerService.triggerNextTasks(), "wait", "done");
         assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(500L);
     }
 

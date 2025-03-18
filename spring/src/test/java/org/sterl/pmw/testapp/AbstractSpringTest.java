@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Set;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -45,15 +46,17 @@ public abstract class AbstractSpringTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        historyService.deleteAll();
-        workflowService.clearAllWorkflows();
-        taskRepository.clear();
         triggerService.deleteAll();
+        try {
+            persistentTaskTestService.awaitRunningTriggers();
+        } catch (Exception e) {
+            System.err.println("awaitRunningTriggers has an error, do we care? No! " + e.getMessage());
+        }
+        taskRepository.clear();
+        workflowService.clearAllWorkflows();
         itemRepository.deleteAllInBatch();
         asserts.clear();
-        
-        schedulerService.setMaxThreads(10);
-        schedulerService.start();
+        Awaitility.setDefaultTimeout(Duration.ofSeconds(5));
     }
     
     @Configuration

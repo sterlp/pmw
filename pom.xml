@@ -63,7 +63,7 @@
 
         <pmd.version>7.2.0</pmd.version>
         
-        <spring.persistent.tasks.version>1.6.1-SNAPSHOT</spring.persistent.tasks.version>
+        <spring.persistent.tasks.version>1.6.5-SNAPSHOT</spring.persistent.tasks.version>
     </properties>
 
     <modules>

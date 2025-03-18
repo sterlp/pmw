@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.sterl.pmw.model.RunningWorkflowId;
@@ -64,7 +65,7 @@ class RunInsTransactionTest extends AbstractSpringTest {
     }
 
     @Test
-    void testRollbackTransaction() throws Exception {
+    void testRollbackTransaction() {
         // GIVEN
         final AtomicInteger retries = new AtomicInteger(0);
         Workflow<TestWorkflowState> w = Workflow.builder("testRollbackTransaction", TestWorkflowState::new)
@@ -87,6 +88,9 @@ class RunInsTransactionTest extends AbstractSpringTest {
 
         // THEN
         waitForAllWorkflows();
+        assertThat(schedulerService.getRunning()).isEmpty();
+        assertThat(schedulerService.hasRunningTriggers()).isFalse();
+        // AND
         assertThat(workflowService.status(w1)).isEqualTo(TriggerStatus.FAILED);
         assertThat(workflowService.status(w2)).isEqualTo(TriggerStatus.FAILED);
         assertThat(workflowService.status(w3)).isEqualTo(TriggerStatus.FAILED);
@@ -122,7 +126,8 @@ class RunInsTransactionTest extends AbstractSpringTest {
 
         // THEN
         waitForAllWorkflows();
-        //persistentTaskTestService.runAllDueTrigger(OffsetDateTime.now().plusDays(1));
+        assertThat(schedulerService.getRunning().size()).isZero();
+        assertThat(schedulerService.hasRunningTriggers()).isFalse();
 
         assertThat(workflowService.status(wid)).isEqualTo(TriggerStatus.SUCCESS);
         assertThat(itemRepository.findByName(name)).isNotNull();
@@ -133,18 +138,20 @@ class RunInsTransactionTest extends AbstractSpringTest {
     /**
      * Same as outside, but with the transaction set to rollback only by the service
      */
-    @Test
-    void testRollbackInsideRetry() {
+    @RepeatedTest(3)
+    void testRollbackInsideRetry() throws InterruptedException {
         // GIVEN
         Workflow<TestWorkflowState> w = Workflow.builder("testRollbackInsideRetry", TestWorkflowState::new)
                 .next(c -> {
                     Long itemId = itemService.newItem(c.getItemName()).getId();
                     c.setItemId(itemId);
+                    asserts.add("testRollbackInsideRetry->createdItem");
                 })
                 .next(c -> {
-                    if (asserts.info("error") < 2) {
+                    if (asserts.info("testRollbackInsideRetry->error") < 2) {
                         itemService.updateStock(c.getItemId(), -1);
                     } else {
+                        asserts.add("testRollbackInsideRetry->success");
                         itemService.updateStock(c.getItemId(), c.getStock());
                     }
                 })
@@ -157,10 +164,12 @@ class RunInsTransactionTest extends AbstractSpringTest {
 
         // THEN
         waitForAllWorkflows();
-        //persistentTaskTestService.runAllDueTrigger(OffsetDateTime.now().plusDays(1));
+
+        assertThat(schedulerService.getRunning()).isEmpty();
+        assertThat(schedulerService.hasRunningTriggers()).isFalse();
 
         assertThat(workflowService.status(wid)).isEqualTo(TriggerStatus.SUCCESS);
         assertThat(itemRepository.findByName("MyName").getInStock()).isEqualTo(99);
-        assertThat(asserts.getCount("error")).isEqualTo(2);
+        assertThat(asserts.getCount("testRollbackInsideRetry->error")).isEqualTo(2);
     }
 }

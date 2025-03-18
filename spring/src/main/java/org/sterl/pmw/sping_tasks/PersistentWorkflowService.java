@@ -65,7 +65,7 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
     public TriggerStatus status(RunningWorkflowId workflowId) {
         // TODO just load one and not all!!!
         var status = persistentTaskService.findLastTriggerByCorrelationId(workflowId.value());
-        if (status.isEmpty()) return TriggerStatus.SUCCESS;
+        if (status.isEmpty()) return null;
         return status.get().getStatus();
     }
 
