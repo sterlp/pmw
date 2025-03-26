@@ -23,6 +23,8 @@ import org.sterl.spring.persistent_tasks.test.AsyncAsserts;
 import org.sterl.spring.persistent_tasks.test.PersistentTaskTestService;
 import org.sterl.spring.persistent_tasks.trigger.TriggerService;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 @SpringBootTest
 public abstract class AbstractSpringTest {
 
@@ -68,11 +70,12 @@ public abstract class AbstractSpringTest {
         
         @Bean
         SchedulerService schedulerService(
+                MeterRegistry meterRegistry,
                 TriggerService triggerService, 
                 EditSchedulerStatusComponent editSchedulerStatus,
                 TransactionTemplate trx) {
 
-            return SchedulerConfig.newSchedulerService("testScheduler", 
+            return SchedulerConfig.newSchedulerService("testScheduler", meterRegistry,
                     triggerService, 
                     editSchedulerStatus, 
                     5, 
