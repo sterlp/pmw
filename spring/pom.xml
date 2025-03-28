@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>pmw-spring</artifactId>
-    <description>Poor mans workflow Spring integration code</description>
+    <description>Poor mans workflow for Spring</description>
 
     <inceptionYear>2022</inceptionYear>
 

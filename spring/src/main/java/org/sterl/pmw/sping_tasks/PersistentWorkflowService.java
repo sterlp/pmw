@@ -63,7 +63,6 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
 
     @Override
     public TriggerStatus status(RunningWorkflowId workflowId) {
-        // TODO just load one and not all!!!
         var status = persistentTaskService.findLastTriggerByCorrelationId(workflowId.value());
         if (status.isEmpty()) return null;
         return status.get().getStatus();
@@ -84,7 +83,7 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
         TaskId<T> firstWorkflowTask = null;
         this.workflowRepository.registerUnique(workflow);
         final var name = workflow.getName();
-        for (WorkflowStep step : workflow.getSteps()) {
+        for (WorkflowStep<T> step : workflow.getSteps()) {
             var id = taskService.register(name + "::" + step.getName(), 
                     new WorkflowStepComponent<>(this, persistentTaskService, workflow, step));
             if (firstWorkflowTask == null) firstWorkflowTask = id;

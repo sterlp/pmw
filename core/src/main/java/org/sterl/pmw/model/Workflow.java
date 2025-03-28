@@ -15,10 +15,10 @@ import lombok.Setter;
 
 public class Workflow<T extends Serializable> {
     
-    public static <T extends Serializable> WorkflowFactory<T, T> builder(
+    public static <T extends Serializable> WorkflowFactory<T> builder(
             String name, Supplier<T> contextBuilder) {
         Workflow<T> workflow = new Workflow<>(name, contextBuilder);
-        return new WorkflowFactory<T, T>(contextBuilder, workflow);
+        return new WorkflowFactory<T>(contextBuilder, workflow);
     }
 
     @Getter
@@ -28,7 +28,7 @@ public class Workflow<T extends Serializable> {
     @NonNull
     private RetryStrategy retryStrategy = RetryStrategy.THREE_RETRIES;
     private final Supplier<T> contextBuilder;
-    private final List<WorkflowStep<?, ?>> workflowSteps = new ArrayList<>();
+    private final List<WorkflowStep<T>> workflowSteps = new ArrayList<>();
 
     public Workflow(String name, Supplier<T> contextBuilder) {
         super();
@@ -40,7 +40,7 @@ public class Workflow<T extends Serializable> {
         return contextBuilder.get();
     }
 
-    public List<WorkflowStep<?, ?>> getSteps() {
+    public List<WorkflowStep<T>> getSteps() {
         return Collections.unmodifiableList(this.workflowSteps);
     }
 
@@ -48,7 +48,7 @@ public class Workflow<T extends Serializable> {
         return workflowSteps.size();
     }
 
-    void setWorkflowSteps(Collection<WorkflowStep<?, ?>> workflowSteps) {
+    void setWorkflowSteps(Collection<WorkflowStep<T>> workflowSteps) {
         this.workflowSteps.clear();
         this.workflowSteps.addAll(workflowSteps);
     }
@@ -58,11 +58,11 @@ public class Workflow<T extends Serializable> {
         return "Workflow [name=" + name + ", workflowSteps=" + workflowSteps.size() + "]";
     }
 
-    public WorkflowStep<?, ?> getNextStep(WorkflowStep<?, ?> current) {
+    public WorkflowStep<T> getNextStep(WorkflowStep<T> current) {
         return getStepByPosition(workflowSteps.indexOf(current) + 1);
     }
 
-    public WorkflowStep<?, ?> getStepByPosition(int pos) {
+    public WorkflowStep<T> getStepByPosition(int pos) {
         if (pos >= workflowSteps.size()) return null;
         else return workflowSteps.get(pos);
     }

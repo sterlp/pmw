@@ -9,5 +9,5 @@ import lombok.Data;
 @Data
 public class SimpleWorkflowState implements Serializable {
     private static final long serialVersionUID = 1L;
-    private Map<String, Object> state = new HashMap<>();
+    private Map<String, Serializable> state = new HashMap<>();
 }

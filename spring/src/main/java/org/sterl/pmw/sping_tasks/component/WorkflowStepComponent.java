@@ -2,8 +2,12 @@ package org.sterl.pmw.sping_tasks.component;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.sterl.pmw.WorkflowService;
+import org.sterl.pmw.command.TriggerWorkflowCommand;
+import org.sterl.pmw.model.WaitStep;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowContext;
 import org.sterl.pmw.model.WorkflowStep;
@@ -16,31 +20,57 @@ import org.sterl.spring.persistent_tasks.api.task.TransactionalTask;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
-public class WorkflowStepComponent<T extends Serializable, R extends Serializable> implements TransactionalTask<T> {
+public class WorkflowStepComponent<T extends Serializable> implements TransactionalTask<T> {
 
     private final WorkflowService<?> workflowService;
     private final PersistentTaskService taskService;
-    private final Workflow<?> workflow;
-    private final WorkflowStep<T, R> step;
+    private final Workflow<T> workflow;
+    private final WorkflowStep<T> step;
 
     @Override
     public void accept(T state) {
         var context = new SimpleWorkflowContext(RunningTriggerContextHolder.getContext());
-        R nextState = step.apply(state, context, workflowService);
+        step.apply(context);
         
-        var nextStep = workflow.getNextStep(step);
-        
-        if (!context.canceled && nextStep != null) {
-            taskService.runOrQueue(
-                TriggerBuilder.newTrigger(
-                        workflow.getName() + "::" + nextStep.getName(), nextState)
-                    .runAfter(context.nextDelay)
+        var nextStep = selectNextStep(context, step);
+
+        triggerCommands(context.commands);
+
+        if (nextStep == null) return; // done
+
+
+        if (!context.canceled) {
+            var nextTrigger = TriggerBuilder.newTrigger(
+                    workflow.getName() + "::" + nextStep.getName(), context.state())
+                    .runAfter(context.getNextDelay())
                     .correlationId(RunningTriggerContextHolder.getCorrelationId())
-                    .build()
-            );
+                    .build();
+            taskService.runOrQueue(nextTrigger);
+        } else {
+            //var key = taskService.queue(nextTrigger);
+            //taskService.cancel
         }
+    }
+    
+    void triggerCommands(List<TriggerWorkflowCommand<Serializable>> commands) {
+        for (TriggerWorkflowCommand<Serializable> t : commands) {
+            log.debug("Workflow={} triggers sub-workflow={} in={}", workflow.getName(), t.workflow().getName(), t.delay());
+            workflowService.execute(t.workflow().getName(), t.state(), t.delay());
+        }
+    }
+    
+    WorkflowStep<T> selectNextStep(SimpleWorkflowContext<T> c, WorkflowStep<T> currentStep) {
+        var nextStep = workflow.getNextStep(currentStep);
+
+        if (nextStep instanceof WaitStep<T> waitFor) {
+            waitFor.apply(c);
+            nextStep = selectNextStep(c, waitFor);
+        }
+        return nextStep;
     }
     
     @Override
@@ -50,25 +80,34 @@ public class WorkflowStepComponent<T extends Serializable, R extends Serializabl
 
     @RequiredArgsConstructor
     @Getter
-    static class SimpleWorkflowContext implements WorkflowContext {
-        private final RunningTrigger<? extends Serializable> state;
+    static class SimpleWorkflowContext<T extends Serializable> implements WorkflowContext<T> {
+        private final RunningTrigger<T> state;
         private Duration nextDelay = Duration.ZERO;
         private boolean canceled = false;
+        private List<TriggerWorkflowCommand<? extends Serializable>> commands = new ArrayList<>();
 
         @Override
-        public WorkflowContext delayNextStepBy(Duration duration) {
+        public void delayNextStepBy(Duration duration) {
             nextDelay = duration;
-            return this;
         }
 
         @Override
-        public WorkflowContext cancelWorkflow() {
+        public void cancelWorkflow() {
             canceled = true;
-            return this;
         }
 
-        public int getExecutionCount() {
+        public int executionCount() {
             return state.getExecutionCount();
+        }
+
+        @Override
+        public T state() {
+            return state.getData();
+        }
+
+        @Override
+        public <R extends Serializable> void addCommand(TriggerWorkflowCommand<R> command) {
+            commands.add(command);
         }
     }
 }

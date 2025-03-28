@@ -2,9 +2,7 @@ package org.sterl.pmw.model;
 
 import java.io.Serializable;
 
-import org.sterl.pmw.WorkflowService;
-
-public interface WorkflowStep<T extends Serializable, R extends Serializable> {
+public interface WorkflowStep<T extends Serializable> {
     /**
      * Name of the step itself, should be unique.
      */
@@ -14,5 +12,5 @@ public interface WorkflowStep<T extends Serializable, R extends Serializable> {
      */
     String getConnectorLabel();
 
-    R apply(T state, WorkflowContext context, WorkflowService<?> workflowService);
+    void apply(WorkflowContext<T> context);
 }

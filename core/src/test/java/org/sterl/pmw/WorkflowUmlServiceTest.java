@@ -47,9 +47,11 @@ class WorkflowUmlServiceTest {
     }
 
     @Test
-    void testOneStep() {
+    void testSimpleSteps() {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", () ->  new SimpleWorkflowState())
+                .next(s -> {})
+                .next(s -> {})
                 .next(s -> {})
                 .build();
 
@@ -59,6 +61,8 @@ class WorkflowUmlServiceTest {
                 @startuml "test-workflow"
                 start
                 :0. Step;
+                :1. Step;
+                :2. Step;
                 stop
                 @enduml
                 """);

@@ -11,7 +11,7 @@ import lombok.ToString;
 @ToString(of = "name")
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public abstract class AbstractStep<T extends Serializable, R extends Serializable> implements WorkflowStep<T, R> {
+public abstract class AbstractStep<T extends Serializable> implements WorkflowStep<T> {
     @NonNull
     protected final String name;
     protected final String connectorLabel;

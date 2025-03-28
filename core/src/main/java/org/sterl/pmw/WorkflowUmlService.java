@@ -2,7 +2,6 @@ package org.sterl.pmw;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.sterl.pmw.component.PlanUmlDiagram;
@@ -50,20 +49,20 @@ public class WorkflowUmlService {
     void addWorkflow(final Workflow<?> workflow, final PlanUmlDiagram diagram) {
         diagram.start();
 
-        for (WorkflowStep<?, ?> step : workflow.getSteps()) {
+        for (WorkflowStep<?> step : workflow.getSteps()) {
             addWorkflowStepToDiagramByType(diagram, step);
         }
 
         diagram.stop();
     }
     private void addWorkflowStepToDiagramByType(final PlanUmlDiagram diagram,
-            WorkflowStep<?, ?> step) {
-        if (step instanceof ChooseStep<?, ?> ifStep) {
+            WorkflowStep<?> step) {
+        if (step instanceof ChooseStep<?> ifStep) {
             addCooseStep(ifStep, diagram);
         } else if (step instanceof WaitStep<?>) {
             diagram.appendWaitState(step.getName());
         } else if (step instanceof TriggerWorkflowStep<?, ?> subW) {
-            addSubWorkflow(subW.getToTrigger(), diagram);
+            addSubWorkflow(subW.getSubWorkflow(), diagram);
         } else if (hasSubworkflow(step.getName()).isPresent()) {
             addSubWorkflow(hasSubworkflow(step.getName()).get(), diagram);
         } else {
@@ -89,17 +88,17 @@ public class WorkflowUmlService {
         diagram.appendLine("}");
         diagram.appendLine("endfork");
     }
-    private void addCooseStep(ChooseStep<?, ?> ifStep, PlanUmlDiagram diagram) {
+    private void addCooseStep(ChooseStep<?> ifStep, PlanUmlDiagram diagram) {
         addSwitch(ifStep, diagram);
-        for (Entry<String, WorkflowStep<?, ?>> e : ifStep.getSubSteps().entrySet()) {
-            diagram.appendCase(e.getValue().getConnectorLabel());
+        for (WorkflowStep e : ifStep.getSubSteps().values()) {
+            diagram.appendCase(e.getConnectorLabel());
 
-            addWorkflowStepToDiagramByType(diagram, e.getValue());
+            addWorkflowStepToDiagramByType(diagram, e);
         }
         diagram.appendLine("endswitch");
     }
 
-    private void addSwitch(ChooseStep<?, ?> step, PlanUmlDiagram diagram) {
+    private void addSwitch(ChooseStep<?> step, PlanUmlDiagram diagram) {
         diagram.append("switch (");
         if (!step.getName().endsWith(" Step")) {
             diagram.append(step.getName());
@@ -107,7 +106,7 @@ public class WorkflowUmlService {
         diagram.appendLine(")");
     }
 
-    private void addStepName(WorkflowStep<?, ?> step, PlanUmlDiagram diagram) {
+    private void addStepName(WorkflowStep<?> step, PlanUmlDiagram diagram) {
         diagram.appendState(step.getName());
     }
 }

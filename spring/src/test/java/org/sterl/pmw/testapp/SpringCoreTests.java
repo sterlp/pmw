@@ -34,6 +34,9 @@ public class SpringCoreTests extends AbstractSpringTest {
     protected static class TestWorkflowCtx implements Serializable {
         private static final long serialVersionUID = 1L;
         private int anyValue = 0;
+        public void increment() {
+            ++anyValue;
+        }
     }
 
     @Test
@@ -74,14 +77,14 @@ public class SpringCoreTests extends AbstractSpringTest {
         // GIVEN
         final AtomicInteger state = new AtomicInteger(0);
 
-        final Workflow<Integer> workflow = Workflow.builder("test-workflow", () -> Integer.valueOf(0))
-            .next((s, c) -> { return s + 1; })
-            .next((s) -> state.set(s))
+        final Workflow<TestWorkflowCtx> workflow = Workflow.builder("test-workflow", TestWorkflowCtx::new)
+            .next(c -> c.state().increment())
+            .next(c -> state.set(c.state().getAnyValue()))
             .build();
         subject.register(workflow);
 
         // WHEN
-        final RunningWorkflowId id = subject.execute(workflow, Integer.valueOf(10));
+        final RunningWorkflowId id = subject.execute(workflow, new TestWorkflowCtx(10));
         await().until(() -> subject.status(id) == TriggerStatus.SUCCESS);
 
         // THEN
@@ -91,28 +94,27 @@ public class SpringCoreTests extends AbstractSpringTest {
     @Test
     public void testWorkflowStatus() throws InterruptedException {
         // GIVEN
-        Workflow<Duration> w = Workflow.builder("any-workflow", () -> Duration.ZERO)
-                .next((s, c) -> {
+        Workflow<TestWorkflowCtx> w = Workflow.builder("any-workflow", TestWorkflowCtx::new)
+                .next(c -> {
                     try {
-                        Thread.sleep(s.toMillis());
+                        Thread.sleep(c.state().getAnyValue());
                     } catch (InterruptedException e) {}
-                    return 50;
+                    c.state().setAnyValue(50);
                 })
-                .next((s, c) -> {
+                .next(c -> {
                     try {
-                        Thread.sleep(s);
+                        Thread.sleep(c.state().getAnyValue());
                     } catch (InterruptedException e) {}
-                    return null;
                 })
                 .build();
         subject.register(w);
 
         // WHEN
-        final RunningWorkflowId id = subject.execute(w, Duration.ofMillis(250), Duration.ofMillis(50));
+        final RunningWorkflowId id = subject.execute(w, new TestWorkflowCtx(250), Duration.ofMillis(100));
         assertThat(subject.status(id)).isEqualTo(TriggerStatus.WAITING);
         
         // AND wait for the start delay
-        Thread.sleep(51);
+        Thread.sleep(101);
         var triggered = persistentTaskTestService.scheduleNextTriggers();
 
         // THEN
@@ -129,7 +131,7 @@ public class SpringCoreTests extends AbstractSpringTest {
     public void testCancelWorkflowByService() {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("cancel-workflow", SimpleWorkflowState::new)
-                .next((s, c) -> { return null; })
+                .next(c -> asserts.add("foo"))
                 .build();
         
         subject.register(w);
@@ -145,6 +147,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         // THEN
         waitForAllWorkflows();
         assertThat(subject.status(id)).isEqualTo(TriggerStatus.CANCELED);
+        asserts.assertMissing("foo");
     }
 
     @Test
@@ -152,8 +155,8 @@ public class SpringCoreTests extends AbstractSpringTest {
         // GIVEN
         final AtomicInteger state = new AtomicInteger(0);
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", TestWorkflowCtx::new)
-            .next((s) -> s.setAnyValue(s.getAnyValue() + 1))
-            .next((s) -> state.set(s.getAnyValue()))
+            .next((s) -> s.state().increment())
+            .next((s) -> state.set(s.state().getAnyValue()))
             .build();
         subject.register(w);
 
@@ -175,11 +178,10 @@ public class SpringCoreTests extends AbstractSpringTest {
         final AtomicLong state = new AtomicLong(0);
 
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", TestWorkflowCtx::new)
-                .next((s, c) -> {
-                    state.set(s.getAnyValue());
-                    s.setAnyValue(99);
-                    if (c.getExecutionCount() == 0) throw new RuntimeException("Not now");
-                    return s;
+                .next(c -> {
+                    state.set(c.state().getAnyValue());
+                    c.state().setAnyValue(99);
+                    if (c.executionCount() == 0) throw new RuntimeException("Not now");
                 })
                 .build();
         subject.register(w);
@@ -206,16 +208,14 @@ public class SpringCoreTests extends AbstractSpringTest {
             .choose(s -> {
                 asserts.info("choose");
                 return "left";
-            }).ifSelected("left", (s, c) -> {
+            }).ifSelected("left", c -> {
                 asserts.info("  going left");
-                return s;
             }).ifSelected("right", s -> {
                 asserts.info("  going right");
             })
             .build()
-            .next((s, c) -> {
+            .next(c -> {
                 asserts.info("finally");
-                return null;
             })
             .build();
         subject.register(w);
@@ -279,13 +279,12 @@ public class SpringCoreTests extends AbstractSpringTest {
         // GIVEN
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
                 TestWorkflowCtx::new)
-                .next("failing step", (s, c) -> {
-                    asserts.info("failing " + c.getExecutionCount());
-                    if (c.getExecutionCount() < 3) {
-                        throw new IllegalStateException("Not now " + c.getExecutionCount());
+                .next("failing step", c -> {
+                    asserts.info("failing " + c.executionCount());
+                    if (c.executionCount() < 3) {
+                        throw new IllegalStateException("Not now " + c.executionCount());
                     }
-                    return s;
-                }).next((s, c) -> asserts.info("done"))
+                }).next(c -> asserts.info("done"))
                 .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
         subject.register(w);
@@ -304,10 +303,10 @@ public class SpringCoreTests extends AbstractSpringTest {
         final AtomicInteger failCount = new AtomicInteger(0);
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
                 TestWorkflowCtx::new)
-                .next("failing step", (s, c) -> {
+                .next("failing step", c -> {
                     asserts.info("failing " + failCount.incrementAndGet());
                     throw new IllegalStateException("Not now " + failCount.get());
-                }).next((s, c) -> asserts.info("done"))
+                }).next(c -> asserts.info("done"))
                 .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
         subject.register(w);
@@ -330,11 +329,10 @@ public class SpringCoreTests extends AbstractSpringTest {
         final AtomicLong timeSecondStep = new AtomicLong(0);
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
                 TestWorkflowCtx::new)
-                .next((s, c) -> {
+                .next(c -> {
                     timeFirstStep.set(System.currentTimeMillis());
                     asserts.info("wait");
                     c.delayNextStepBy(Duration.ofMillis(500));
-                    return s;
                 })
                 .next(s -> {
                     timeSecondStep.set(System.currentTimeMillis());
@@ -394,10 +392,9 @@ public class SpringCoreTests extends AbstractSpringTest {
         Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
                 TestWorkflowCtx::new)
                 .next(s -> asserts.info("step 1"))
-                .next((s, c) -> {
+                .next(c -> {
                     asserts.info("step 2");
                     c.cancelWorkflow();
-                    return s;
                 })
                 .next(s -> asserts.info("cancel"))
                 .build();
@@ -418,21 +415,21 @@ public class SpringCoreTests extends AbstractSpringTest {
         // GIVEN
         final AtomicInteger stateValue = new AtomicInteger(0);
         Workflow<TestWorkflowCtx> subW = Workflow.builder("subW", TestWorkflowCtx::new)
-                .next(s -> stateValue.set(s.getAnyValue() + 1))
+                .next(s -> stateValue.set(s.state().getAnyValue() + 1))
                 .build();
+        subject.register(subW);
 
         Workflow<TestWorkflowCtx> w = Workflow.builder("w", TestWorkflowCtx::new)
-                .next(s -> s.setAnyValue(1))
+                .next(s -> s.state().setAnyValue(1))
                 .trigger(subW, s -> s)
                 .build();
+        subject.register(w);
 
         // WHEN
-        subject.register(w);
-        subject.register(subW);
         subject.execute(w);
+        waitForAllWorkflows();
 
         // THEN
-        waitForAllWorkflows();
         assertThat(stateValue.get()).isEqualTo(2);
     }
 }
