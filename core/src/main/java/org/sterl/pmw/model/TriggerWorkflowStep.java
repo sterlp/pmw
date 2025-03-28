@@ -1,35 +1,34 @@
 package org.sterl.pmw.model;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.function.Function;
 
-import org.sterl.pmw.boundary.WorkflowService;
+import org.sterl.pmw.command.TriggerWorkflowCommand;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class TriggerWorkflowStep<StateType extends WorkflowState,
-    TriggerWorkflowStateType extends WorkflowState>
-    extends AbstractStep<StateType> {
+public class TriggerWorkflowStep<T extends Serializable,
+    SubWorkflowState extends Serializable> extends AbstractStep<T> {
 
     @Getter
-    private final Workflow<TriggerWorkflowStateType> toTrigger;
-    private final Function<StateType, TriggerWorkflowStateType> fn;
+    private final Workflow<SubWorkflowState> subWorkflow;
+    private final Function<T, SubWorkflowState> fn;
     private final Duration delay;
 
-    TriggerWorkflowStep(String name, String connectorLabel, Workflow<TriggerWorkflowStateType> toTrigger,
-        Function<StateType, TriggerWorkflowStateType> fn, Duration delay) {
+    TriggerWorkflowStep(String name, String connectorLabel, Workflow<SubWorkflowState> subWorkflow,
+        Function<T, SubWorkflowState> fn, Duration delay) {
         super(name, connectorLabel);
         this.fn = fn;
-        this.toTrigger = toTrigger;
+        this.subWorkflow = subWorkflow;
         this.delay = delay;
     }
 
     @Override
-    public void apply(StateType state, WorkflowContext context, WorkflowService<?> workflowService) {
-        TriggerWorkflowStateType toStriggerState = this.fn.apply(state);
-        workflowService.execute(toTrigger, toStriggerState, delay);
-        log.debug("Triggered sub-workflow={}", toTrigger.getName());
+    public void apply(WorkflowContext<T> context) {
+        SubWorkflowState toStriggerState = this.fn.apply(context.state());
+        context.addCommand(new TriggerWorkflowCommand<SubWorkflowState>(subWorkflow, toStriggerState, delay));
     }
 }

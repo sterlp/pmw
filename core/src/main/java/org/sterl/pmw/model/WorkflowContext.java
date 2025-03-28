@@ -1,32 +1,30 @@
 package org.sterl.pmw.model;
 
+import java.io.Serializable;
 import java.time.Duration;
+
+import org.sterl.pmw.command.TriggerWorkflowCommand;
 
 /**
  * Context of the given workflow, which allows e.g.
- *
- * <ul>
- * <li> select execution time of the next step</li>
- * <li> cancel the workflow</li>
- * </ul>
  */
-public interface WorkflowContext {
+public interface WorkflowContext<T extends Serializable> {
 
+    T state();
     /**
-     * @return the current retry count of the given step
+     * Complete and commit the current step but cancel any other steps.
      */
-    int getStepRetryCount();
-
+    void cancelWorkflow();
+    
+    int executionCount();
+    
     /**
      * This method shouldn't be directly called, use the <b>sleep</b> factory method of the workflow builder.
      */
-    WorkflowContext delayNextStepBy(Duration duration);
+    void delayNextStepBy(Duration duration);
+    
     /**
-     * @return the current set delay and clears it, never <code>null</code>
+     * This method shouldn't be directly called, use the <b>trigger</b> factory method of the workflow builder.
      */
-    Duration consumeDelay();
-    boolean hasDelay();
-
-    WorkflowContext cancelWorkflow();
-
+    <R extends Serializable> void addCommand(TriggerWorkflowCommand<R> command);
 }

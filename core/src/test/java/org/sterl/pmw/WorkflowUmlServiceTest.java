@@ -1,4 +1,4 @@
-package org.sterl.pmw.boundary;
+package org.sterl.pmw;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,7 +11,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sterl.pmw.component.PlanUmlDiagram;
 import org.sterl.pmw.component.WorkflowRepository;
-import org.sterl.pmw.model.SimpleWorkflowState;
 import org.sterl.pmw.model.Workflow;
 
 class WorkflowUmlServiceTest {
@@ -27,7 +26,7 @@ class WorkflowUmlServiceTest {
     @Test
     void testPlanUmlDiagram() throws Exception {
         // GIVEN
-        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", () ->  new SimpleWorkflowState())
+        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", SimpleWorkflowState::new)
                 .next(s -> {})
                 .next(s -> {})
                 .next(s -> {})
@@ -48,18 +47,22 @@ class WorkflowUmlServiceTest {
     }
 
     @Test
-    void testOneStep() {
+    void testSimpleSteps() {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", () ->  new SimpleWorkflowState())
+                .next(s -> {})
+                .next(s -> {})
                 .next(s -> {})
                 .build();
 
         // WHEN
-        assertWorkflolw(w,
+        assertWorkflow(w,
                 """
                 @startuml "test-workflow"
                 start
                 :0. Step;
+                :1. Step;
+                :2. Step;
                 stop
                 @enduml
                 """);
@@ -73,7 +76,7 @@ class WorkflowUmlServiceTest {
                 .build();
 
         // THEN
-        assertWorkflolw(w,
+        assertWorkflow(w,
                 """
                 @startuml "test-workflow"
                 start
@@ -94,7 +97,7 @@ class WorkflowUmlServiceTest {
                 .next(s -> {})
                 .build();
 
-        assertWorkflolw(w,
+        assertWorkflow(w,
                 """
                 @startuml "test-workflow"
                 start
@@ -113,14 +116,14 @@ class WorkflowUmlServiceTest {
 
     @Test
     void testChooseWithName() {
-        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", () ->  new SimpleWorkflowState())
+        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", SimpleWorkflowState::new)
                 .choose("if any", s -> "a")
                     .ifSelected("left", s -> {})
                     .ifSelected("right", s -> {})
                     .build()
                 .build();
 
-        assertWorkflolw(w,
+        assertWorkflow(w,
                 """
                 @startuml "test-workflow"
                 start
@@ -143,7 +146,7 @@ class WorkflowUmlServiceTest {
                 .next(s -> {})
                 .build();
 
-        assertWorkflolw(w,
+        assertWorkflow(w,
                 """
                 @startuml "test-workflow"
                 start
@@ -170,7 +173,7 @@ class WorkflowUmlServiceTest {
                 .build();
 
         // THEN
-        assertWorkflolw(parent,
+        assertWorkflow(parent,
                 """
                 @startuml "parent"
                 start
@@ -228,7 +231,7 @@ class WorkflowUmlServiceTest {
                 """);
     }
 
-    public void assertWorkflolw(Workflow<?> w, String expected) {
+    public void assertWorkflow(Workflow<?> w, String expected) {
         final PlanUmlDiagram result = new PlanUmlDiagram(w.getName(), null);
         subject.addWorkflow(w, result);
         final String diagram = result.build();

@@ -1,63 +1,69 @@
 package org.sterl.pmw.model;
 
+import java.io.Serializable;
 import java.time.Duration;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class WorkflowFactory<StateType extends WorkflowState> extends AbstractWorkflowFactory<WorkflowFactory<StateType>, StateType> {
+import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 
-    private final Workflow<StateType> workflow;
-
-    public WorkflowFactory(String name, Supplier<StateType> newContextCreator) {
-        this.workflow = new Workflow<>(name, newContextCreator);
-    }
-
-    public WorkflowFactory<StateType> next(WorkflowFunction<StateType> fn) {
-        return addStep(new SequentialStep<>(defaultStepName(), fn));
-    }
-    public WorkflowFactory<StateType> next(Consumer<StateType> fn) {
-        return addStep(new SequentialStep<>(defaultStepName(), WorkflowFunction.of(fn)));
-    }
-    public WorkflowFactory<StateType> next(String name, WorkflowFunction<StateType> fn) {
-        return addStep(new SequentialStep<>(name, fn));
-    }
-    public WorkflowFactory<StateType> next(String name, Consumer<StateType> fn) {
-        return addStep(new SequentialStep<>(name, WorkflowFunction.of(fn)));
+/**
+ * @param <T> the workflow step type
+ */
+public class WorkflowFactory<T extends Serializable> 
+    extends AbstractWorkflowFactory<WorkflowFactory<T>, T> {
+    
+    private final Workflow<T> workflow;
+    @SuppressWarnings("unused")
+    private final Supplier<T> contextBuilder;
+    private RetryStrategy retryStrategy = RetryStrategy.THREE_RETRIES;
+    
+    WorkflowFactory(Supplier<T> contextBuilder, Workflow<T> workflow) {
+        this.workflow = workflow;
+        this.contextBuilder = contextBuilder;
     }
 
-    public <TriggeredWorkflowStateType extends WorkflowState> WorkflowFactory<StateType> trigger(
-            Workflow<TriggeredWorkflowStateType> toTriger, Function<StateType, TriggeredWorkflowStateType> fn) {
-        addStep(new TriggerWorkflowStep<>(this.defaultStepName("Trigger " + toTriger.getName()), null, toTriger, fn, Duration.ZERO));
+    public WorkflowFactory<T> next(WorkflowFunction<T> fn) {
+        return next(defaultStepName(), fn);
+    }
+    public WorkflowFactory<T> next(String name, WorkflowFunction<T> fn) {
+        return addStep(new SequentialStep<T>(name, fn));
+    }
+
+    public <TriggeredWorkflowStateType extends Serializable> WorkflowFactory<T> trigger(
+            Workflow<TriggeredWorkflowStateType> toTrigger, Function<T, TriggeredWorkflowStateType> fn) {
+        addStep(new TriggerWorkflowStep<>(this.defaultStepName("Trigger " + toTrigger.getName()), null, toTrigger, fn, Duration.ZERO));
         return this;
     }
 
-    public WorkflowFactory<StateType> sleep(Function<StateType, Duration> fn) {
+    public WorkflowFactory<T> sleep(Function<T, Duration> fn) {
         return addStep(new WaitStep<>("Sleep", fn));
     }
-    public WorkflowFactory<StateType> sleep(String name, Function<StateType, Duration> fn) {
+    public WorkflowFactory<T> sleep(String name, Function<T, Duration> fn) {
         return addStep(new WaitStep<>(name, fn));
     }
-    public WorkflowFactory<StateType> sleep(Duration duration) {
+    public WorkflowFactory<T> sleep(Duration duration) {
         return addStep(new WaitStep<>("Sleep for " + duration, (s) -> duration));
     }
-
-    /**
-     * Allows to select multiple different named steps by returning the name of the step to execute.
-     */
-    public ChooseFactory<StateType> choose(WorkflowChooseFunction<StateType> chooseFn) {
-        return new ChooseFactory<>(this, chooseFn);
+    public WorkflowFactory<T> stepRetryStrategy(RetryStrategy retryStrategy) {
+        this.retryStrategy = retryStrategy;
+        return this;
     }
-    /**
-     * Allows to select multiple different named steps by returning the name of the step to execute.
-     * @param name a optional name for better readability and export to UML
-     */
-    public ChooseFactory<StateType> choose(String name, WorkflowChooseFunction<StateType> chooseFn) {
-        return new ChooseFactory<>(this, chooseFn).name(name);
-    }
-
-    public Workflow<StateType> build() {
+    public Workflow<T> build() {
+        workflow.setRetryStrategy(this.retryStrategy);
         workflow.setWorkflowSteps(this.workflowSteps.values());
         return workflow;
+    }
+    /**
+     * Allows to select multiple different named steps by returning the name of the step to execute.
+     */
+    public ChooseFactory<T> choose(WorkflowChooseFunction<T> chooseFn) {
+        return choose(null, chooseFn);
+    }
+    /**
+     * Allows to select multiple different named steps by returning the name of the step to execute.
+     */
+    public ChooseFactory<T> choose(String name, WorkflowChooseFunction<T> chooseFn) {
+        return new ChooseFactory<T>(this, chooseFn).name(name);
     }
 }

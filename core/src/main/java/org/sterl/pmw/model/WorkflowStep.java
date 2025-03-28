@@ -1,8 +1,8 @@
 package org.sterl.pmw.model;
 
-import org.sterl.pmw.boundary.WorkflowService;
+import java.io.Serializable;
 
-public interface WorkflowStep<StateType extends WorkflowState> {
+public interface WorkflowStep<T extends Serializable> {
     /**
      * Name of the step itself, should be unique.
      */
@@ -11,6 +11,6 @@ public interface WorkflowStep<StateType extends WorkflowState> {
      * Optional label for the connector leading to this step, just for readability
      */
     String getConnectorLabel();
-    void apply(StateType state, WorkflowContext context, WorkflowService<?> workflowService);
-    int getMaxRetryCount();
+
+    void apply(WorkflowContext<T> context);
 }

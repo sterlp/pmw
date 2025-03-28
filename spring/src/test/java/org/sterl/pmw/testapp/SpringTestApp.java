@@ -3,7 +3,8 @@ package org.sterl.pmw.testapp;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.sterl.pmw.spring.config.EnableWorkflows;
+import org.sterl.pmw.EnableWorkflows;
+import org.sterl.spring.persistent_tasks.EnableSpringPersistentTasks;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @EnableWorkflows
+@EnableSpringPersistentTasks
 @SpringBootApplication
 public class SpringTestApp {
     public static void main(String[] args) {

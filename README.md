@@ -20,7 +20,6 @@ Build a very basic workflow `engine` which does only really basic stuff and is u
 - [x] Wait as own step
 - [x] Trigger workflows in an own step
 - [x] Link to workflows in repository using `trigger->`
-- [ ] Standalone flow version using a single thread
 - [ ] Support multiple sub steps if choose
 
 ## Spring setup
@@ -46,8 +45,9 @@ Select latest version: https://search.maven.org/search?q=a:pmw-spring
     <artifactId>pmw-spring</artifactId>
     <version>1.x.x</version>
 </dependency>
-
 ```
+
+### v2.x is currently in development!
 
 ### Define a workflow
 

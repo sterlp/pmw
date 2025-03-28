@@ -1,25 +1,17 @@
 spring:
-  pmw:
-    spring-bean-job-factory:
-      enabled: false
+  persistent-tasks:
+    scheduler-enabled: false
   jpa:
     hibernate:
       ddl-auto: update
     open-in-view: false
 
-  quartz:
-    job-store-type: jdbc
-    wait-for-jobs-to-complete-on-shutdown: false
-    overwrite-existing-jobs: true
-    jdbc:
-      initialize-schema: always
-    properties:
-      org.quartz.jobStore.isClustered: true
-      org.quartz.scheduler.instanceId: AUTO
-      org.quartz.scheduler.skipUpdateCheck: true
-      org.quartz.scheduler.idleWaitTime: 5000
-
   datasource:
     url: jdbc:h2:mem:testdb
     username: sa
     password: 
+
+logging:
+  level:
+    org.sterl.spring.persistent_tasks: info
+    org.sterl.pmw: debug

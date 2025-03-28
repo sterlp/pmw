@@ -1,22 +1,20 @@
 package org.sterl.pmw.model;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.function.Function;
 
-import org.sterl.pmw.boundary.WorkflowService;
+public class WaitStep<T extends Serializable> extends AbstractStep<T> {
 
-public class WaitStep<StateType extends WorkflowState> extends AbstractStep<StateType> {
+    private final Function<T, Duration> fn;
 
-    private final Function<StateType, Duration> fn;
-
-    WaitStep(String name, Function<StateType, Duration> fn) {
+    WaitStep(String name, Function<T, Duration> fn) {
         super(name, null);
         this.fn = fn;
-        this.maxRetryCount = 0;
     }
 
     @Override
-    public void apply(StateType state, WorkflowContext context, WorkflowService<?> workflowService) {
-        context.delayNextStepBy(fn.apply(state));
+    public void apply(WorkflowContext<T> context) {
+        context.delayNextStepBy(fn.apply(context.state()));
     }
 }

@@ -1,10 +1,9 @@
-package org.sterl.pmw.boundary;
+package org.sterl.pmw;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.sterl.pmw.model.ChooseStep;
-import org.sterl.pmw.model.SimpleWorkflowState;
 import org.sterl.pmw.model.Workflow;
 
 public class WorkflowFactoryTest {
@@ -13,13 +12,13 @@ public class WorkflowFactoryTest {
     void testDefaultName() {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow",
-                () ->  new SimpleWorkflowState())
+                SimpleWorkflowState::new)
             .choose(s -> "right")
-                .ifSelected("left", (s, c) -> {})
-                .ifSelected("right", (s, c) -> {})
+                .ifSelected("left", s -> {})
+                .ifSelected("right", s -> {})
                 .build()
-            .next((s, c) -> {})
-            .next("foo", (s, c) -> {})
+            .next(s -> {})
+            .next("foo", s -> {})
             .build();
 
         // THEN
