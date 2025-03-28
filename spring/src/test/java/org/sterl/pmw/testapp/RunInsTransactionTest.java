@@ -124,6 +124,7 @@ class RunInsTransactionTest extends AbstractSpringTest {
         // WHEN
         RunningWorkflowId wid = workflowService.execute(w, TestWorkflowState.builder().itemName(name).stock(99).build());
         waitForAllWorkflows();
+        waitForAllWorkflows(); // TODO
 
         // THEN
         assertThat(schedulerService.getRunning().size()).isZero();
