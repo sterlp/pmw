@@ -1,4 +1,4 @@
-package org.sterl.pmw.sping_tasks;
+package org.sterl.pmw.spring;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -12,7 +12,7 @@ import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowStep;
-import org.sterl.pmw.sping_tasks.component.WorkflowStepComponent;
+import org.sterl.pmw.spring.component.WorkflowStepComponent;
 import org.sterl.spring.persistent_tasks.PersistentTaskService;
 import org.sterl.spring.persistent_tasks.api.TaskId;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;

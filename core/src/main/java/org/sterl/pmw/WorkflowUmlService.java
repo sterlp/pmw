@@ -90,7 +90,7 @@ public class WorkflowUmlService {
     }
     private void addCooseStep(ChooseStep<?> ifStep, PlanUmlDiagram diagram) {
         addSwitch(ifStep, diagram);
-        for (WorkflowStep e : ifStep.getSubSteps().values()) {
+        for (WorkflowStep<?> e : ifStep.getSubSteps().values()) {
             diagram.appendCase(e.getConnectorLabel());
 
             addWorkflowStepToDiagramByType(diagram, e);

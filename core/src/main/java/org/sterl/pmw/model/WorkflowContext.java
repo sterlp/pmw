@@ -10,7 +10,7 @@ import org.sterl.pmw.command.TriggerWorkflowCommand;
  */
 public interface WorkflowContext<T extends Serializable> {
 
-    T state();
+    T data();
     /**
      * Complete and commit the current step but cancel any other steps.
      */

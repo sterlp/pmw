@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.sping_tasks.PersistentWorkflowService;
+import org.sterl.pmw.spring.PersistentWorkflowService;
 import org.sterl.pmw.testapp.item.boundary.ItemService;
 import org.sterl.pmw.testapp.item.repository.ItemRepository;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
@@ -46,11 +46,11 @@ class RunInsTransactionTest extends AbstractSpringTest {
         // GIVEN
         Workflow<TestWorkflowState> w = Workflow.builder("testHappy", TestWorkflowState::new)
                 .next(c -> {
-                    var itemId = itemService.newItem(c.state().getItemName()).getId();
-                    c.state().setItemId(itemId);
+                    var itemId = itemService.newItem(c.data().getItemName()).getId();
+                    c.data().setItemId(itemId);
                 })
                 .next(c -> {
-                    itemService.updateStock(c.state().getItemId(), c.state().getStock());
+                    itemService.updateStock(c.data().getItemId(), c.data().getStock());
                 })
                 .build();
         workflowService.register(w);
@@ -69,13 +69,13 @@ class RunInsTransactionTest extends AbstractSpringTest {
         // GIVEN
         final AtomicInteger retries = new AtomicInteger(0);
         Workflow<TestWorkflowState> w = Workflow.builder("testRollbackTransaction", TestWorkflowState::new)
-                .next(c -> c.state().setItemId(itemService.newItem(c.state().getItemName()).getId()))
+                .next(c -> c.data().setItemId(itemService.newItem(c.data().getItemName()).getId()))
                 .next("fail-step", c -> {
-                    assertThat(c.state().getItemId()).isNotNull();
-                    itemService.updateStock(c.state().getItemId(), c.state().getStock());
+                    assertThat(c.data().getItemId()).isNotNull();
+                    itemService.updateStock(c.data().getItemId(), c.data().getStock());
                     retries.incrementAndGet();
                     // we to a rollback
-                    throw new RuntimeException("Nope for item " + c.state().getItemId() + " retry: " + c.executionCount());
+                    throw new RuntimeException("Nope for item " + c.data().getItemId() + " retry: " + c.executionCount());
                 })
                 .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
@@ -108,11 +108,11 @@ class RunInsTransactionTest extends AbstractSpringTest {
         final var name = UUID.randomUUID().toString();
         Workflow<TestWorkflowState> w = Workflow.builder("testRollbackOutsideRetry", TestWorkflowState::new)
                 .next(c -> {
-                    Long itemId = itemService.newItem(c.state().getItemName()).getId();
-                    c.state().setItemId(itemId);
+                    Long itemId = itemService.newItem(c.data().getItemName()).getId();
+                    c.data().setItemId(itemId);
                 })
                 .next(c -> {
-                    itemService.updateStock(c.state().getItemId(), c.state().getStock());
+                    itemService.updateStock(c.data().getItemId(), c.data().getStock());
                     if (asserts.info("error") < 2) {
                         throw new RuntimeException("Nope! " + asserts.getCount("error"));
                     }
@@ -122,9 +122,8 @@ class RunInsTransactionTest extends AbstractSpringTest {
         workflowService.register(w);
 
         // WHEN
-        RunningWorkflowId wid = workflowService.execute(w, TestWorkflowState.builder().itemName(name).stock(99).build());
+        var wid = workflowService.execute(w, TestWorkflowState.builder().itemName(name).stock(99).build());
         waitForAllWorkflows();
-        waitForAllWorkflows(); // TODO
 
         // THEN
         assertThat(schedulerService.getRunning().size()).isZero();
@@ -145,16 +144,16 @@ class RunInsTransactionTest extends AbstractSpringTest {
         asserts.clear();
         Workflow<TestWorkflowState> w = Workflow.builder("testRollbackInsideRetry", TestWorkflowState::new)
                 .next(c -> {
-                    Long itemId = itemService.newItem(c.state().getItemName()).getId();
-                    c.state().setItemId(itemId);
+                    Long itemId = itemService.newItem(c.data().getItemName()).getId();
+                    c.data().setItemId(itemId);
                     asserts.add("testRollbackInsideRetry->createdItem");
                 })
                 .next(c -> {
                     if (asserts.info("testRollbackInsideRetry->error") < 2) {
-                        itemService.updateStock(c.state().getItemId(), -1);
+                        itemService.updateStock(c.data().getItemId(), -1);
                     } else {
                         asserts.add("testRollbackInsideRetry->success");
-                        itemService.updateStock(c.state().getItemId(), c.state().getStock());
+                        itemService.updateStock(c.data().getItemId(), c.data().getStock());
                     }
                 })
                 .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
@@ -162,9 +161,8 @@ class RunInsTransactionTest extends AbstractSpringTest {
         workflowService.register(w);
 
         // WHEN
-        RunningWorkflowId wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
+        var wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
         waitForAllWorkflows();
-        waitForAllWorkflows(); // TODO
 
         // THEN
 

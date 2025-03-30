@@ -1,4 +1,4 @@
-package org.sterl.pmw.sping_tasks.component;
+package org.sterl.pmw.spring.component;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -33,7 +33,9 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
     @Override
     public void accept(T state) {
-        var context = new SimpleWorkflowContext(RunningTriggerContextHolder.getContext());
+        var context = new SimpleWorkflowContext<T>(
+            (RunningTrigger<T>)RunningTriggerContextHolder.getContext()
+        );
         step.apply(context);
         
         var nextStep = selectNextStep(context, step);
@@ -45,7 +47,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
         if (!context.canceled) {
             var nextTrigger = TriggerBuilder.newTrigger(
-                    workflow.getName() + "::" + nextStep.getName(), context.state())
+                    workflow.getName() + "::" + nextStep.getName(), context.data())
                     .runAfter(context.getNextDelay())
                     .correlationId(RunningTriggerContextHolder.getCorrelationId())
                     .build();
@@ -56,8 +58,8 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
         }
     }
     
-    void triggerCommands(List<TriggerWorkflowCommand<Serializable>> commands) {
-        for (TriggerWorkflowCommand<Serializable> t : commands) {
+    void triggerCommands(List<TriggerWorkflowCommand<? extends Serializable>> commands) {
+        for (TriggerWorkflowCommand<? extends Serializable> t : commands) {
             log.debug("Workflow={} triggers sub-workflow={} in={}", workflow.getName(), t.workflow().getName(), t.delay());
             workflowService.execute(t.workflow().getName(), t.state(), t.delay());
         }
@@ -101,7 +103,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
         }
 
         @Override
-        public T state() {
+        public T data() {
             return state.getData();
         }
 

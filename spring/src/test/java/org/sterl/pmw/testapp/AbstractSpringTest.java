@@ -11,7 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.sterl.pmw.sping_tasks.PersistentWorkflowService;
+import org.sterl.pmw.spring.PersistentWorkflowService;
 import org.sterl.pmw.testapp.item.repository.ItemRepository;
 import org.sterl.spring.persistent_tasks.api.TriggerKey;
 import org.sterl.spring.persistent_tasks.history.HistoryService;

@@ -28,7 +28,7 @@ public class TriggerWorkflowStep<T extends Serializable,
 
     @Override
     public void apply(WorkflowContext<T> context) {
-        SubWorkflowState toStriggerState = this.fn.apply(context.state());
+        SubWorkflowState toStriggerState = this.fn.apply(context.data());
         context.addCommand(new TriggerWorkflowCommand<SubWorkflowState>(subWorkflow, toStriggerState, delay));
     }
 }
