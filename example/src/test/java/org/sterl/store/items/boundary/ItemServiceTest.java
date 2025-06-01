@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.sterl.spring.persistent_tasks.scheduler.SchedulerService;
 import org.sterl.spring.persistent_tasks.test.PersistentTaskTestService;
 import org.sterl.spring.persistent_tasks.trigger.TriggerService;
+import org.sterl.store.items.ItemService;
 import org.sterl.store.items.entity.Item;
 
 @SpringBootTest

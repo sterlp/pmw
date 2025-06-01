@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.sterl.store.items.boundary.ItemService;
+import org.sterl.store.items.ItemService;
 import org.sterl.store.items.entity.Item;
 
 import jakarta.validation.Valid;

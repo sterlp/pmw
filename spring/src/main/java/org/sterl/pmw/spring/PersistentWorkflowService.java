@@ -72,7 +72,6 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
     public void cancel(RunningWorkflowId workflowId) {
         var running = triggerService.findTriggerByCorrelationId(workflowId.value(), Pageable.ofSize(100))
                 .stream()
-                .filter(TriggerEntity::isWaiting)
                 .map(TriggerEntity::key)
                 .toList();
         triggerService.cancel(running);

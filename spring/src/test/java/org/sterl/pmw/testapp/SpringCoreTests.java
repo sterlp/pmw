@@ -404,8 +404,8 @@ public class SpringCoreTests extends AbstractSpringTest {
 
         // THEN
         waitForAllWorkflows();
-        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.SUCCESS);
         asserts.awaitOrdered("step 1", "step 2");
+        assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.CANCELED);
         asserts.assertMissing("cancel");
     }
 

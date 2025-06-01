@@ -43,7 +43,6 @@ public class NewItemArrivedWorkflow {
                     final var s = c.data();
                     final long stockCount = warehouseService.countStock(s.getItemId());
                     updateStock.updateInStockCount(s.getItemId(), stockCount);
-
                     s.setWarehouseStockCount(stockCount);
                 })
                 .sleep("Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)

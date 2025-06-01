@@ -1,4 +1,4 @@
-package org.sterl.store.items.boundary;
+package org.sterl.store.items;
 
 import java.util.Optional;
 

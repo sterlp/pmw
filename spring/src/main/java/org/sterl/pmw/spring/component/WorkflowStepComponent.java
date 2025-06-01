@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.sterl.pmw.WorkflowService;
 import org.sterl.pmw.command.TriggerWorkflowCommand;
+import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.WaitStep;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowContext;
@@ -46,15 +47,14 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
 
         if (!context.canceled) {
-            var nextTrigger = TriggerBuilder.newTrigger(
-                    workflow.getName() + "::" + nextStep.getName(), context.data())
+            var nextTrigger = TriggerBuilder.newTrigger(workflow.getName() + "::" + nextStep.getName(), context.data())
                     .runAfter(context.getNextDelay())
                     .correlationId(RunningTriggerContextHolder.getCorrelationId())
                     .build();
             taskService.runOrQueue(nextTrigger);
         } else {
-            //var key = taskService.queue(nextTrigger);
-            //taskService.cancel
+            log.info("Canel Workflow={} {} requested in step={}.", workflow.getName(), context.state.getKey(), step.getName());
+            workflowService.cancel(new RunningWorkflowId(RunningTriggerContextHolder.getCorrelationId()));
         }
     }
     
