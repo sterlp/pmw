@@ -8,32 +8,16 @@ Build a very basic workflow `engine` which does only really basic stuff and is u
 
 - one simple jar to get it running
 - no own deployment of a workflow server or any stuff
-- reuse of a scheduler framework
-- be compatible to other frameworks
 - Spring integration
 
 ## ToDo
 
-- [x] First Quartz integration
 - [x] First Spring integration
 - [x] First PlantUML integration
 - [x] Wait as own step
 - [x] Trigger workflows in an own step
 - [x] Link to workflows in repository using `trigger->`
 - [ ] Support multiple sub steps if choose
-
-## Spring setup
-
-### Ensure quartz uses the spring transaction manager
-
-By default this will be configured by spring using the `jdbc` store:
-
-```yml
-spring:
-  quartz:
-    job-store-type: jdbc
-    overwrite-existing-jobs: true
-```
 
 ### Maven
 
@@ -43,11 +27,9 @@ Select latest version: https://search.maven.org/search?q=a:pmw-spring
 <dependency>
     <groupId>org.sterl.pmw</groupId>
     <artifactId>pmw-spring</artifactId>
-    <version>1.x.x</version>
+    <version>2.x.x</version>
 </dependency>
 ```
-
-### v2.x is currently in development!
 
 ### Define a workflow
 
