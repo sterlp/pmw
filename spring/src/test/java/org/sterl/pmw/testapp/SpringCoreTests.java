@@ -12,9 +12,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.sterl.pmw.model.RunningWorkflowId;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.spring.PersistentWorkflowService;
+import org.sterl.pmw.spring.component.WorkflowStepComponent.SimpleWorkflowContext;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
 
@@ -83,7 +84,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         subject.register(workflow);
 
         // WHEN
-        final RunningWorkflowId id = subject.execute(workflow, new TestWorkflowCtx(10));
+        final WorkflowId id = subject.execute(workflow, new TestWorkflowCtx(10));
         await().until(() -> subject.status(id) == TriggerStatus.SUCCESS);
 
         // THEN
@@ -109,7 +110,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         subject.register(w);
 
         // WHEN
-        final RunningWorkflowId id = subject.execute(w, new TestWorkflowCtx(250), Duration.ofMillis(100));
+        final WorkflowId id = subject.execute(w, new TestWorkflowCtx(250), Duration.ofMillis(100));
         assertThat(subject.status(id)).isEqualTo(TriggerStatus.WAITING);
         
         // AND wait for the start delay
@@ -136,7 +137,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         subject.register(w);
         
         // WHEN
-        final RunningWorkflowId id = subject.execute("cancel-workflow", new SimpleWorkflowState(), Duration.ofSeconds(1));
+        final WorkflowId id = subject.execute("cancel-workflow", new SimpleWorkflowState(), Duration.ofSeconds(1));
         
         // THEN
         assertThat(subject.status(id)).isEqualTo(TriggerStatus.WAITING);
@@ -186,7 +187,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         subject.register(w);
 
         // WHEN
-        final RunningWorkflowId runningWorkflowId = subject.execute(w, new TestWorkflowCtx(77));
+        final WorkflowId runningWorkflowId = subject.execute(w, new TestWorkflowCtx(77));
 
         // THEN
         waitForAllWorkflows();
@@ -341,7 +342,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         subject.register(w);
 
         // WHEN
-        final RunningWorkflowId runningWorkflowId = subject.execute(w);
+        final WorkflowId runningWorkflowId = subject.execute(w);
         schedulerService.triggerNextTasks();
 
         // AND the next one should be delayed!
@@ -400,7 +401,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         subject.register(w);
 
         // WHEN
-        final RunningWorkflowId runningWorkflowId = subject.execute(w);
+        final WorkflowId runningWorkflowId = subject.execute(w);
 
         // THEN
         waitForAllWorkflows();

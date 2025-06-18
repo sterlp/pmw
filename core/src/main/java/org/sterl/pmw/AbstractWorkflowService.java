@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.time.Duration;
 
 import org.sterl.pmw.component.WorkflowRepository;
-import org.sterl.pmw.model.RunningWorkflowId;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.Workflow;
 
 import lombok.NonNull;
@@ -17,29 +17,29 @@ public abstract class AbstractWorkflowService<RegistryType> implements WorkflowS
     protected final WorkflowRepository workflowRepository;
 
     @Override
-    public RunningWorkflowId execute(String workflowName) {
+    public WorkflowId execute(String workflowName) {
         return execute(workflowRepository.getWorkflow(workflowName));
     }
 
     @Override
-    public RunningWorkflowId execute(String workflowName, Serializable state) {
+    public WorkflowId execute(String workflowName, Serializable state) {
         return execute(workflowName, state, Duration.ZERO);
     }
 
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public RunningWorkflowId execute(String workflowName, Serializable state, Duration delay) {
+    public WorkflowId execute(String workflowName, Serializable state, Duration delay) {
         final Workflow w = workflowRepository.getWorkflow(workflowName);
         return execute(w, state, delay);
     }
 
     @Override
-    public <T extends Serializable>  RunningWorkflowId execute(Workflow<T> w) {
+    public <T extends Serializable>  WorkflowId execute(Workflow<T> w) {
         return execute(w, w.newContext());
     }
 
     @Override
-    public <T extends Serializable>  RunningWorkflowId execute(Workflow<T> w, T c) {
+    public <T extends Serializable>  WorkflowId execute(Workflow<T> w, T c) {
         return execute(w, c, Duration.ZERO);
     }
 

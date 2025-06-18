@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.sterl.pmw.model.RunningWorkflowId;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.spring.PersistentWorkflowService;
 import org.sterl.pmw.testapp.item.boundary.ItemService;
@@ -82,9 +82,9 @@ class RunInsTransactionTest extends AbstractSpringTest {
         workflowService.register(w);
 
         // WHEN
-        final RunningWorkflowId w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
-        final RunningWorkflowId w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(77).build());
-        final RunningWorkflowId w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(55).build());
+        final WorkflowId w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
+        final WorkflowId w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(77).build());
+        final WorkflowId w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(55).build());
         waitForAllWorkflows();
 
         // THEN

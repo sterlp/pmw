@@ -7,10 +7,10 @@ import java.util.List;
 
 import org.sterl.pmw.WorkflowService;
 import org.sterl.pmw.command.TriggerWorkflowCommand;
-import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.WaitStep;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowContext;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowStep;
 import org.sterl.spring.persistent_tasks.PersistentTaskService;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
@@ -47,14 +47,16 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
 
         if (!context.canceled) {
-            var nextTrigger = TriggerBuilder.newTrigger(workflow.getName() + "::" + nextStep.getName(), context.data())
+            var nextTrigger = TriggerBuilder.newTrigger(WorkflowHelper.stepName(workflow, nextStep), context.data())
                     .runAfter(context.getNextDelay())
+                    .tag(workflow.getName())
                     .correlationId(RunningTriggerContextHolder.getCorrelationId())
+                    .id(null)
                     .build();
             taskService.runOrQueue(nextTrigger);
         } else {
             log.info("Canel Workflow={} {} requested in step={}.", workflow.getName(), context.state.getKey(), step.getName());
-            workflowService.cancel(new RunningWorkflowId(RunningTriggerContextHolder.getCorrelationId()));
+            workflowService.cancel(new WorkflowId(RunningTriggerContextHolder.getCorrelationId()));
         }
     }
     
@@ -82,13 +84,13 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
     @RequiredArgsConstructor
     @Getter
-    static class SimpleWorkflowContext<T extends Serializable> implements WorkflowContext<T> {
+    public static class SimpleWorkflowContext<T extends Serializable> implements WorkflowContext<T> {
         private final RunningTrigger<T> state;
         private Duration nextDelay = Duration.ZERO;
         private boolean canceled = false;
         private List<TriggerWorkflowCommand<? extends Serializable>> commands = new ArrayList<>();
 
-        @Override
+        //@Override
         public void delayNextStepBy(Duration duration) {
             nextDelay = duration;
         }

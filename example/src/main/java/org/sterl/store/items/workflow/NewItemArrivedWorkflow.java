@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.sterl.pmw.WorkflowService;
-import org.sterl.pmw.model.RunningWorkflowId;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.spring.persistent_tasks.api.TaskId;
 import org.sterl.store.items.component.DiscountComponent;
@@ -71,7 +71,7 @@ public class NewItemArrivedWorkflow {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public RunningWorkflowId execute(long itemId) {
+    public WorkflowId execute(long itemId) {
         return workflowService.execute(
                 checkWarehouse, 
                 NewItemArrivedWorkflowState.builder().itemId(itemId).build()
