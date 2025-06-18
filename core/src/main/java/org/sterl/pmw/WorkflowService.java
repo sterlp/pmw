@@ -3,21 +3,21 @@ package org.sterl.pmw;
 import java.io.Serializable;
 import java.time.Duration;
 
-import org.sterl.pmw.model.RunningWorkflowId;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
 
 public interface WorkflowService<RegistryType> {
-    RunningWorkflowId execute(String workflowName);
-    RunningWorkflowId execute(String workflowName, Serializable state);
-    RunningWorkflowId execute(String workflowName, Serializable state, Duration delay);
+    WorkflowId execute(String workflowName);
+    WorkflowId execute(String workflowName, Serializable state);
+    WorkflowId execute(String workflowName, Serializable state, Duration delay);
 
-    <T extends Serializable> RunningWorkflowId execute(Workflow<T> workflow);
-    <T extends Serializable> RunningWorkflowId execute(Workflow<T> workflow, T state);
-    <T extends Serializable> RunningWorkflowId execute(Workflow<T> workflow, T state, Duration delay);
+    <T extends Serializable> WorkflowId execute(Workflow<T> workflow);
+    <T extends Serializable> WorkflowId execute(Workflow<T> workflow, T state);
+    <T extends Serializable> WorkflowId execute(Workflow<T> workflow, T state, Duration delay);
 
-    TriggerStatus status(RunningWorkflowId runningWorkflowId);
-    void cancel(RunningWorkflowId runningWorkflowId);
+    TriggerStatus status(WorkflowId runningWorkflowId);
+    void cancel(WorkflowId runningWorkflowId);
 
     /**
      * Clear all running and registered workflows, mainly used in tests

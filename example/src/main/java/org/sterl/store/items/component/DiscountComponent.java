@@ -25,7 +25,7 @@ public class DiscountComponent {
         final Optional<Item> item = itemRepository.findById(id);
         if (item.isPresent()) {
 
-            final BigDecimal discount = new BigDecimal(  Math.min(60, stockCount) / 100.0, new MathContext(3));
+            final BigDecimal discount = new BigDecimal( Math.min(60, stockCount) / 100.0, new MathContext(3) );
             var oldPrice = item.get().applyDiscount(discount);
             log.info("new discount for {} of {}%, oldPrice={} newPrice={}", id, discount, oldPrice, item.get().getPrice());
             return oldPrice;

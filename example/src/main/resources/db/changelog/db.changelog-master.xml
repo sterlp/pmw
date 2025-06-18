@@ -1,0 +1,29 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xmlns:pro="http://www.liquibase.org/xml/ns/pro"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+                        http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet author="sterlp" id="2025-03-29-initial-test-db">
+        <createTable tableName="item">
+            <column computed="false" name="id" type="bigint">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_item_id" />
+            </column>
+            <column computed="false" name="name" type="varchar(255)">
+                <constraints nullable="false" />
+            </column>
+            <column computed="false" name="price" type="DECIMAL"  defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+            <column computed="false" name="in_stock" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createSequence cycle="false" incrementBy="50" sequenceName="item_seq" startValue="1" />
+    </changeSet>
+
+    <include file="spring-persistent-tasks/db.changelog-master.xml" />
+</databaseChangeLog>

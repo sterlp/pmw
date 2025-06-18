@@ -1,4 +1,4 @@
-package org.sterl.store.items.boundary;
+package org.sterl.store.items;
 
 import java.util.Optional;
 
@@ -30,10 +30,7 @@ public class ItemService {
 
     public Item createNewItem(Item item) {
         itemRepository.save(item);
-        itemRepository.flush();
-
         newItemArrivedWorkflow.execute(item.getId());
-
         return item;
     }
 }

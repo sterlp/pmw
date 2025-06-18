@@ -1,16 +1,18 @@
 package org.sterl.store.items.workflow;
 
+import java.io.Serializable;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.quartz.JobDetail;
-import org.sterl.pmw.boundary.WorkflowService;
-import org.sterl.pmw.boundary.WorkflowUmlService;
+import org.sterl.pmw.WorkflowService;
+import org.sterl.pmw.WorkflowUmlService;
 import org.sterl.pmw.component.SerializationUtil;
 import org.sterl.pmw.component.WorkflowRepository;
+import org.sterl.spring.persistent_tasks.api.TaskId;
 import org.sterl.store.items.component.DiscountComponent;
 import org.sterl.store.items.component.UpdateInStockCountComponent;
 import org.sterl.store.items.component.WarehouseStockComponent;
@@ -23,7 +25,7 @@ class NewItemArrivedWorkflowMockTest {
     @Mock DiscountComponent discountComponent;
     @Mock WarehouseStockComponent createStock;
     @Mock UpdateInStockCountComponent updateStock;
-    @Mock WorkflowService<JobDetail> workflowService;
+    @Mock WorkflowService<TaskId<? extends Serializable>> workflowService;
 
     @InjectMocks NewItemArrivedWorkflow subject;
 

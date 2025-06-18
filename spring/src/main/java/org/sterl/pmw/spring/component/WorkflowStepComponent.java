@@ -1,4 +1,4 @@
-package org.sterl.pmw.sping_tasks.component;
+package org.sterl.pmw.spring.component;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -10,6 +10,7 @@ import org.sterl.pmw.command.TriggerWorkflowCommand;
 import org.sterl.pmw.model.WaitStep;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowContext;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowStep;
 import org.sterl.spring.persistent_tasks.PersistentTaskService;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
@@ -33,7 +34,9 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
     @Override
     public void accept(T state) {
-        var context = new SimpleWorkflowContext(RunningTriggerContextHolder.getContext());
+        var context = new SimpleWorkflowContext<T>(
+            (RunningTrigger<T>)RunningTriggerContextHolder.getContext()
+        );
         step.apply(context);
         
         var nextStep = selectNextStep(context, step);
@@ -44,20 +47,21 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
 
         if (!context.canceled) {
-            var nextTrigger = TriggerBuilder.newTrigger(
-                    workflow.getName() + "::" + nextStep.getName(), context.state())
+            var nextTrigger = TriggerBuilder.newTrigger(WorkflowHelper.stepName(workflow, nextStep), context.data())
                     .runAfter(context.getNextDelay())
+                    .tag(workflow.getName())
                     .correlationId(RunningTriggerContextHolder.getCorrelationId())
+                    .id(null)
                     .build();
             taskService.runOrQueue(nextTrigger);
         } else {
-            //var key = taskService.queue(nextTrigger);
-            //taskService.cancel
+            log.info("Canel Workflow={} {} requested in step={}.", workflow.getName(), context.state.getKey(), step.getName());
+            workflowService.cancel(new WorkflowId(RunningTriggerContextHolder.getCorrelationId()));
         }
     }
     
-    void triggerCommands(List<TriggerWorkflowCommand<Serializable>> commands) {
-        for (TriggerWorkflowCommand<Serializable> t : commands) {
+    void triggerCommands(List<TriggerWorkflowCommand<? extends Serializable>> commands) {
+        for (TriggerWorkflowCommand<? extends Serializable> t : commands) {
             log.debug("Workflow={} triggers sub-workflow={} in={}", workflow.getName(), t.workflow().getName(), t.delay());
             workflowService.execute(t.workflow().getName(), t.state(), t.delay());
         }
@@ -80,13 +84,13 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
     @RequiredArgsConstructor
     @Getter
-    static class SimpleWorkflowContext<T extends Serializable> implements WorkflowContext<T> {
+    public static class SimpleWorkflowContext<T extends Serializable> implements WorkflowContext<T> {
         private final RunningTrigger<T> state;
         private Duration nextDelay = Duration.ZERO;
         private boolean canceled = false;
         private List<TriggerWorkflowCommand<? extends Serializable>> commands = new ArrayList<>();
 
-        @Override
+        //@Override
         public void delayNextStepBy(Duration duration) {
             nextDelay = duration;
         }
@@ -101,7 +105,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
         }
 
         @Override
-        public T state() {
+        public T data() {
             return state.getData();
         }
 

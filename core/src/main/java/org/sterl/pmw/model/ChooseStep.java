@@ -20,7 +20,7 @@ public class ChooseStep<T extends Serializable> extends AbstractStep<T> {
 
     @Override
     public void apply(WorkflowContext<T> context) {
-        final String stepName = chooseFn.apply(context.state());
+        final String stepName = chooseFn.apply(context.data());
         WorkflowStep<T> selectedStep = subSteps.get(stepName);
 
         if (selectedStep == null) {

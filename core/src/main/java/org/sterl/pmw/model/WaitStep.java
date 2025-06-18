@@ -15,6 +15,6 @@ public class WaitStep<T extends Serializable> extends AbstractStep<T> {
 
     @Override
     public void apply(WorkflowContext<T> context) {
-        context.delayNextStepBy(fn.apply(context.state()));
+        context.delayNextStepBy(fn.apply(context.data()));
     }
 }
