@@ -20,7 +20,7 @@ import org.sterl.spring.persistent_tasks.api.TriggerSearch;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
 import org.sterl.spring.persistent_tasks.task.TaskService;
 import org.sterl.spring.persistent_tasks.trigger.TriggerService;
-import org.sterl.spring.persistent_tasks.trigger.model.TriggerEntity;
+import org.sterl.spring.persistent_tasks.trigger.model.RunningTriggerEntity;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -76,7 +76,7 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
         var search = TriggerSearch.byCorrelationId(workflowId.value());
         var running = triggerService.searchTriggers(search, Pageable.ofSize(100))
                 .stream()
-                .map(TriggerEntity::key)
+                .map(RunningTriggerEntity::key)
                 .toList();
         triggerService.cancel(running);
     }
