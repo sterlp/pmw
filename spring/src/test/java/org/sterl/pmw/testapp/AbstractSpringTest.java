@@ -18,6 +18,7 @@ import org.sterl.spring.persistent_tasks.history.HistoryService;
 import org.sterl.spring.persistent_tasks.scheduler.SchedulerService;
 import org.sterl.spring.persistent_tasks.scheduler.component.EditSchedulerStatusComponent;
 import org.sterl.spring.persistent_tasks.scheduler.config.SchedulerConfig;
+import org.sterl.spring.persistent_tasks.scheduler.config.SchedulerThreadFactory;
 import org.sterl.spring.persistent_tasks.task.repository.TaskRepository;
 import org.sterl.spring.persistent_tasks.test.AsyncAsserts;
 import org.sterl.spring.persistent_tasks.test.PersistentTaskTestService;
@@ -71,13 +72,16 @@ public abstract class AbstractSpringTest {
         @Bean
         SchedulerService schedulerService(
                 MeterRegistry meterRegistry,
-                TriggerService triggerService, 
+                TriggerService triggerService,
+                SchedulerThreadFactory threadFactory,
                 EditSchedulerStatusComponent editSchedulerStatus,
                 TransactionTemplate trx) {
 
-            return SchedulerConfig.newSchedulerService("testScheduler", meterRegistry,
+            return SchedulerConfig.newSchedulerService("testScheduler", 
+                    meterRegistry,
                     triggerService, 
                     editSchedulerStatus, 
+                    threadFactory,
                     5, 
                     Duration.ofSeconds(0), 
                     trx); 

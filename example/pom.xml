@@ -19,7 +19,7 @@
         <java.version>21</java.version>
         <spt.version></spt.version>
         <pmw.version>2.0.0-SNAPSHOT</pmw.version>
-        <spt.version>1.7.1-SNAPSHOT</spt.version>
+        <spt.version>2.0.0</spt.version>
     </properties>
 
     <dependencies>

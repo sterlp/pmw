@@ -44,6 +44,12 @@
         <dependency>
             <groupId>org.sterl.spring</groupId>
             <artifactId>spring-persistent-tasks-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.liquibase</groupId>
+                    <artifactId>liquibase-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

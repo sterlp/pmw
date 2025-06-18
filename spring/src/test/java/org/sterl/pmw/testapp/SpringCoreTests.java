@@ -12,10 +12,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.spring.PersistentWorkflowService;
-import org.sterl.pmw.spring.component.WorkflowStepComponent.SimpleWorkflowContext;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
 
