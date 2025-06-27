@@ -3,18 +3,13 @@ import { useEffect } from "react";
 import { Col, Container, ListGroup, Nav, Navbar, Row } from "react-bootstrap";
 import "./App.css";
 import { useServerObject } from "./shared/http-request";
+import WorkflowPage from "./workflow/workflow-page";
 const BASE = "/pmw-ui";
 
 const HomePage = () => (
     <main>
         <h2>Main Content</h2>
         <p>Welcome to the admin dashboard!</p>
-    </main>
-);
-const WorkflowPage = ({ id }: { id: string }) => (
-    <main>
-        <h2>Workflow Page</h2>
-        <p>{id}</p>
     </main>
 );
 
