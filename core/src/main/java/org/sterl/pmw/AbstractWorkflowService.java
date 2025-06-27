@@ -2,6 +2,7 @@ package org.sterl.pmw;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.Collection;
 
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.WorkflowId;
@@ -51,5 +52,10 @@ public abstract class AbstractWorkflowService<RegistryType> implements WorkflowS
     @Override
     public int workflowCount() {
         return this.workflowRepository.workflowCount();
+    }
+    
+    @Override
+    public Collection<String> listWorkflows() {
+        return workflowRepository.getWorkflowNames();
     }
 }

@@ -2,12 +2,15 @@ package org.sterl.pmw;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.Collection;
 
-import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.model.WorkflowId;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
 
 public interface WorkflowService<RegistryType> {
+    Collection<String> listWorkflows();
+    
     WorkflowId execute(String workflowName);
     WorkflowId execute(String workflowName, Serializable state);
     WorkflowId execute(String workflowName, Serializable state, Duration delay);

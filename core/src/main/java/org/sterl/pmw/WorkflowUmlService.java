@@ -32,7 +32,7 @@ public class WorkflowUmlService {
     }
 
     public DiagramDescription convertAsPlantUmlSvg(String diagram, OutputStream out) throws IOException {
-        SourceStringReader reader = new SourceStringReader(diagram);
+        var reader = new SourceStringReader(diagram);
         return reader.outputImage(out, 0, new FileFormatOption(FileFormat.SVG));
     }
 
@@ -41,7 +41,7 @@ public class WorkflowUmlService {
     }
 
     public String printWorkflow(Workflow<?> workflow) {
-        PlanUmlDiagram diagram = new PlanUmlDiagram(workflow.getName());
+        var diagram = new PlanUmlDiagram(workflow.getName());
         addWorkflow(workflow, diagram);
         return diagram.build();
     }

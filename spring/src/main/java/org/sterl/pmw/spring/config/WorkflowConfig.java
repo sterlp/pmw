@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.sterl.pmw.EnableWorkflows;
+import org.sterl.pmw.WorkflowUmlService;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.spring.persistent_tasks.EnableSpringPersistentTasks;
 
@@ -18,5 +19,10 @@ public class WorkflowConfig {
     @Bean
     WorkflowRepository workflowRepository() {
         return new WorkflowRepository();
+    }
+    
+    @Bean
+    WorkflowUmlService workflowUmlService() {
+        return new WorkflowUmlService(workflowRepository());
     }
 }
