@@ -3,9 +3,9 @@ import { useServerObject } from "../shared/http-request";
 import { Spinner } from "react-bootstrap";
 
 const WorkflowPage = ({ id }: { id: string }) => {
-    const workflow = useServerObject<any>("/pmw-api/workflows/" + id);
+    const workflow = useServerObject<any>("/pmw-api/workflows/");
 
-    useEffect(workflow.doGet, [id]);
+    useEffect(() => workflow.doGet(id, { cache: true }), [id]);
 
     return (
         <main>
