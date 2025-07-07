@@ -19,19 +19,19 @@
         <java.version>21</java.version>
         <spt.version></spt.version>
         <pmw.version>2.0.0-SNAPSHOT</pmw.version>
-        <spt.version>2.0.0</spt.version>
+        <spt.version>2.1.0</spt.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.sterl.pmw</groupId>
-            <artifactId>pmw-spring</artifactId>
+            <artifactId>spring-pmw-core</artifactId>
             <version>${pmw.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.sterl.spring</groupId>
-            <artifactId>spring-persistent-tasks-ui</artifactId>
-            <version>${spt.version}</version>
+            <groupId>org.sterl.pmw</groupId>
+            <artifactId>spring-pmw-ui</artifactId>
+            <version>${pmw.version}</version>
         </dependency>
         <dependency>
             <groupId>org.sterl.spring</groupId>

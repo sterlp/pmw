@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.sterl.pmw</groupId>
+        <artifactId>pmw-root</artifactId>
+        <version>2.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>spring-pmw-core</artifactId>
+    <name>Poor Man Workflow Backend</name>
+    <description>Backend project of the PMW projects contains the JAVA and Spring classes</description>
+
+    <inceptionYear>2022</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/sterlp/pmw/blob/main/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/sterlp/pmw</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <id>paul_sterl</id>
+            <name>Paul Sterl</name>
+            <email>paul@sterl.org</email>
+        </developer>
+    </developers>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.sterl.spring</groupId>
+            <artifactId>spring-persistent-tasks-core</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        
+        <dependency>
+            <groupId>net.sourceforge.plantuml</groupId>
+            <artifactId>plantuml</artifactId>
+            <version>${plantuml.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.sterl.spring</groupId>
+            <artifactId>spring-persistent-tasks-test</artifactId>
+            <version>${spring.persistent.tasks.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>cz.habarta.typescript-generator</groupId>
+                <artifactId>typescript-generator-maven-plugin</artifactId>
+                <version>3.2.1263</version>
+                <executions>
+                    <execution>
+                        <id>generate</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>process-classes</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <jsonLibrary>jackson2</jsonLibrary>
+                    <noFileComment>true</noFileComment>
+                    <customTypeMappings>
+                        <mapping>java.time.OffsetDateTime:string</mapping>
+                    </customTypeMappings>
+                    <classPatterns>
+                        <pattern>org.sterl.pmw.api.*</pattern>
+                    </classPatterns>
+                    <outputFile>../ui/src/server-pwm-api.ts</outputFile>
+                    <outputKind>module</outputKind>
+                    <outputFileType>implementationFile</outputFileType>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

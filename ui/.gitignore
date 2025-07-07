@@ -1,5 +1,7 @@
 HELP.md
 target/
+dist/
+node_modules/
 .qodo/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -14,17 +16,6 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### React & Vite & Node ###
-ui/dist/
-ui/node_modules/
 
 ### VS Code ###
 .vscode/
-/quartz-db.mv.db
-/quartz-db.trace.db
