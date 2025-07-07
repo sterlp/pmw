@@ -20,9 +20,9 @@ export default tseslint.config(
             ecmaVersion: 2020,
             globals: globals.browser,
         },
+        settings: { react: { version: "19.1" } },
         plugins: {
             "react-x": reactX,
-            "react-dom": reactDom,
             "react-dom": reactDom,
             "react-hooks": reactHooks,
             "react-refresh": reactRefresh,

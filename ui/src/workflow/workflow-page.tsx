@@ -1,33 +1,81 @@
 import { useEffect } from "react";
-import { useServerObject } from "../shared/http-request";
-import { Spinner } from "react-bootstrap";
+import { Tab, Tabs } from "react-bootstrap";
+import {
+    HttpErrorView,
+    LoadingView,
+    TriggerGroupListView,
+    useServerObject,
+} from "spt-ui-lib";
+import type { WorkflowDiagram } from "../server-pwm-api";
+import WorkflowUmlView from "./views/workflow-uml.view";
 
 const WorkflowPage = ({ id }: { id: string }) => {
-    const workflow = useServerObject<any>("/pmw-api/workflows/");
-
-    useEffect(() => workflow.doGet(id, { cache: true }), [id]);
+    const active = "active";
+    const history = "history";
+    const workflow = useServerObject<WorkflowDiagram>("/pmw-api/workflows/");
+    useEffect(() => {
+        workflow.doGet(id, { cache: true });
+    }, [id]);
 
     return (
         <main>
             <h2>Workflow {id}</h2>
-            <div className="d-flex flex-column justify-content-center align-items-center">
-                {!workflow.isLoading &&
-                workflow.data &&
-                workflow.data.svgBase64 ? (
-                    <p>
-                        <img
-                            src={`data:image/svg+xml;base64,${workflow.data.svgBase64}`}
-                            alt="My SVG"
-                        />
-                    </p>
-                ) : (
-                    <>
-                        <Spinner animation="border" />
-                        <div className="mt-2">Loading...</div>
-                    </>
-                )}
-            </div>
+            <HttpErrorView error={workflow.error} />
+            {workflow.isLoading ? <LoadingView /> : undefined}
+            {workflow.data ? (
+                <WorkflowUmlView workflow={workflow.data} />
+            ) : undefined}
+
+            <Tabs>
+                <Tab
+                    eventKey={active}
+                    title="Active"
+                    mountOnEnter
+                    unmountOnExit
+                >
+                    <TriggerGroupTabContent
+                        url="/spring-tasks-api/triggers-grouped"
+                        tagId={id}
+                        onPath="triggers"
+                    />
+                </Tab>
+                <Tab
+                    eventKey={history}
+                    title="History"
+                    mountOnEnter
+                    unmountOnExit
+                >
+                    <TriggerGroupTabContent
+                        url="/spring-tasks-api/history-grouped"
+                        tagId={id}
+                        onPath="history"
+                    />
+                </Tab>
+            </Tabs>
         </main>
     );
 };
 export default WorkflowPage;
+
+interface TriggerGroupTabContentProps {
+    url: string;
+    tagId: string;
+    onPath: string;
+}
+
+const TriggerGroupTabContent: React.FC<TriggerGroupTabContentProps> = ({
+    tagId,
+    onPath,
+}) => {
+    return (
+        <div className="p-3" key={`${tagId}-${onPath}`}>
+            <TriggerGroupListView
+                url={`/spring-tasks-api/${onPath}-grouped`}
+                filter={{ tag: tagId }}
+                onGroupClick={(t: string) => {
+                    window.location.href = `/task-ui/${onPath}?search=${t}&tag=${tagId}`;
+                }}
+            />
+        </div>
+    );
+};

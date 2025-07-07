@@ -1,10 +1,11 @@
-import Router, { Route, Switch } from "crossroad";
-import { useEffect } from "react";
+import { Route, Switch, useUrl } from "crossroad";
+import { lazy, useEffect } from "react";
 import { Col, Container, ListGroup, Nav, Navbar, Row } from "react-bootstrap";
 import "./App.css";
-import { useServerObject } from "./shared/http-request";
-import WorkflowPage from "./workflow/workflow-page";
+const WorkflowPage = lazy(() => import("./workflow/workflow-page"));
+import { useServerObject } from "spt-ui-lib";
 const BASE = "/pmw-ui";
+import * as Icon from "react-bootstrap-icons";
 
 const HomePage = () => (
     <main>
@@ -15,18 +16,29 @@ const HomePage = () => (
 
 function App() {
     const workflows = useServerObject<string[]>("/pmw-api/workflows");
+    const [url, _] = useUrl();
     useEffect(workflows.doGet, []);
-
     return (
-        <Router>
+        <>
             <Navbar bg="dark" variant="dark" expand="lg">
                 <Container fluid>
                     <Navbar.Brand href="#">PMW Admin UI</Navbar.Brand>
                     <Navbar.Toggle aria-controls="top-navbar" />
                     <Navbar.Collapse id="top-navbar">
                         <Nav className="ms-auto">
-                            <Nav.Link href="#profile">Profile</Nav.Link>
-                            <Nav.Link href="#logout">Logout</Nav.Link>
+                            <Nav.Link
+                                active={false}
+                                target="_blank"
+                                href="/task-ui"
+                            >
+                                Task UI
+                            </Nav.Link>
+                            <Nav.Link
+                                href="https://github.com/sterlp/pmw"
+                                target="_blank"
+                            >
+                                <Icon.Github />
+                            </Nav.Link>
                         </Nav>
                     </Navbar.Collapse>
                 </Container>
@@ -39,6 +51,9 @@ function App() {
                             {workflows.data?.map((workflow) => (
                                 <ListGroup.Item
                                     action
+                                    active={
+                                        url.path.indexOf(`/${workflow}`) !== -1
+                                    }
                                     key={workflow}
                                     href={`${BASE}/workflows/${workflow}`}
                                 >
@@ -58,7 +73,7 @@ function App() {
                     </Col>
                 </Row>
             </Container>
-        </Router>
+        </>
     );
 }
 

@@ -3,10 +3,10 @@ package org.sterl.store;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.sterl.pmw.EnableWorkflows;
-import org.sterl.spring.persistent_tasks_ui.EnableSpringPersistentTasksUI;
+import org.sterl.spring.pmw.ui.EnableWorkflowsUI;
 
 @EnableWorkflows
-@EnableSpringPersistentTasksUI
+@EnableWorkflowsUI
 @SpringBootApplication
 public class StoreApplication {
 
