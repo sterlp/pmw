@@ -12,6 +12,7 @@
 
     <artifactId>spring-pmw-ui</artifactId>
     <name>Poor Man Workflow Admin UI</name>
+    <description>Dashboard UI which shows the deployed workflows and links to the Spring Task UI</description>
 
     <dependencies>
         <dependency>

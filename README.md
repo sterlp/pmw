@@ -6,27 +6,27 @@
 
 Build a very basic workflow `engine` which does only really basic stuff and is understood in a second.
 
-- one simple jar to get it running
-- no own deployment of a workflow server or any stuff
-- Spring integration
+-   one simple jar to get it running
+-   no own deployment of a workflow server or any stuff
+-   Spring integration
 
 ## ToDo
 
-- [x] First Spring integration
-- [x] First PlantUML integration
-- [x] Wait as own step
-- [x] Trigger workflows in an own step
-- [x] Link to workflows in repository using `trigger->`
-- [ ] Support multiple sub steps if choose
+-   [x] First Spring integration
+-   [x] First PlantUML integration
+-   [x] Wait as own step
+-   [x] Trigger workflows in an own step
+-   [x] Link to workflows in repository using `trigger->`
+-   [ ] Support multiple sub steps if choose
 
 ### Maven
 
-Select latest version: https://search.maven.org/search?q=a:pmw-spring
+Select latest version: https://central.sonatype.com/search?q=g%3Aorg.sterl.pmw
 
 ```xml
 <dependency>
     <groupId>org.sterl.pmw</groupId>
-    <artifactId>pmw-spring</artifactId>
+    <artifactId>spring-pmw-core</artifactId>
     <version>2.x.x</version>
 </dependency>
 ```
@@ -39,7 +39,7 @@ Select latest version: https://search.maven.org/search?q=a:pmw-spring
 @Service
 @RequiredArgsConstructor
 public class NewItemArrivedWorkflow {
-    
+
     private final WarehouseService warehouseService;
     private final DiscountComponent discountComponent;
     private final WarehouseStockComponent createStock;
@@ -50,7 +50,7 @@ public class NewItemArrivedWorkflow {
     private Workflow<NewItemArrivedWorkflowState> checkWarehouse;
     @Getter
     private Workflow<NewItemArrivedWorkflowState> restorePriceSubWorkflow;
-    
+
 
     @PostConstruct
     void createWorkflow() {
@@ -59,7 +59,7 @@ public class NewItemArrivedWorkflow {
                 .next("update item stock", (s, c) -> {
                     final long stockCount = warehouseService.countStock(s.getItemId());
                     updateStock.updateInStockCount(s.getItemId(), stockCount);
-                    
+
                     s.setWarehouseStockCount(stockCount);
                 })
                 .sleep("Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)
@@ -70,7 +70,7 @@ public class NewItemArrivedWorkflow {
                     .ifSelected("discount-price", "> 40", s -> {
                         var originalPrice = discountComponent.applyDiscount(s.getItemId(), s.getWarehouseStockCount());
                         s.setOriginalPrice(originalPrice);
-                        
+
                         workflowService.execute(restorePriceSubWorkflow, s, Duration.ofMinutes(2));
                     })
                     .ifSelected("trigger->restore-item-price", "< 40", s -> this.execute(s.getItemId()))
@@ -78,14 +78,14 @@ public class NewItemArrivedWorkflow {
                 .build();
 
         workflowService.register(checkWarehouse);
-        
+
         restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
                 .next("set price from workflow state", s -> discountComponent.setPrize(s.getItemId(), s.getOriginalPrice()))
                 .build();
-        
+
         workflowService.register(restorePriceSubWorkflow);
     }
-    
+
     @Transactional(propagation = Propagation.MANDATORY)
     public String execute(long itemId) {
         return workflowService.execute(checkWarehouse, NewItemArrivedWorkflowState.builder()
@@ -93,6 +93,7 @@ public class NewItemArrivedWorkflow {
     }
 }
 ```
+
 ### Export Workflow as UML
 
 ```java
@@ -116,12 +117,12 @@ class NewItemArrivedWorkflowMockTest {
     void testPrintSimple() throws Exception {
         SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse());
     }
-    
+
     @Test
     void testPrintWithSubworkflowSupportByName() throws Exception {
         WorkflowRepository repo = new WorkflowRepository();
         WorkflowUmlService umlService = new WorkflowUmlService(repo);
-        
+
         repo.register(subject.getCheckWarehouse());
         repo.register(subject.getRestorePriceSubWorkflow());
 
@@ -130,16 +131,42 @@ class NewItemArrivedWorkflowMockTest {
 }
 ```
 
+## Use the UI
+
+### Maven
+
+```xml
+<dependency>
+    <groupId>org.sterl.pmw</groupId>
+    <artifactId>spring-pmw-core</artifactId>
+    <version>2.x.x</version>
+</dependency>
+```
+
+### Spring
+
+```java
+@EnableWorkflows
+@EnableWorkflowsUI
+@SpringBootApplication
+public class StoreApplication {
+```
+
+### Preview
+
+-   http://localhost:8080/pmw-ui
+
+![PMW Admin Dashboard](/pmw-admin-dashboard-ui.png)
+
 ### IDE
 
-- eclipse plugin https://marketplace.eclipse.org/content/plantuml-plugin
+-   eclipse plugin https://marketplace.eclipse.org/content/plantuml-plugin
 
 ## Looking for a real workflow engine
 
-- https://github.com/quartz-scheduler/quartz
-- https://camunda.com/
-- https://cadenceworkflow.io/
-- https://temporal.io/
+-   https://github.com/quartz-scheduler/quartz
+-   https://camunda.com/
+-   https://cadenceworkflow.io/
+-   https://temporal.io/
 
-
-- https://github.com/meirwah/awesome-workflow-engines
+-   https://github.com/meirwah/awesome-workflow-engines
