@@ -14,6 +14,13 @@
     <name>Poor Man Workflow Admin UI</name>
     <description>Dashboard UI which shows the deployed workflows and links to the Spring Task UI</description>
 
+    <inceptionYear>2022</inceptionYear>
+
+    <url>https://github.com/sterlp/pmw</url>
+    <scm>
+        <url>https://github.com/sterlp/pmw</url>
+    </scm>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>

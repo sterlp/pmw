@@ -17,6 +17,11 @@
 
     <inceptionYear>2022</inceptionYear>
 
+    <url>https://github.com/sterlp/pmw</url>
+    <scm>
+        <url>https://github.com/sterlp/pmw</url>
+    </scm>
+
     <licenses>
         <license>
             <name>MIT License</name>
@@ -42,7 +47,7 @@
             <groupId>org.sterl.spring</groupId>
             <artifactId>spring-persistent-tasks-core</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
@@ -53,7 +58,7 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-        
+
         <dependency>
             <groupId>net.sourceforge.plantuml</groupId>
             <artifactId>plantuml</artifactId>
