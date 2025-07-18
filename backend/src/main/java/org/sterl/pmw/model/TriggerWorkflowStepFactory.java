@@ -30,7 +30,7 @@ public class TriggerWorkflowStepFactory<
     
     public C build() {
         if (id == null) id = context.nextStepId();
-        context.addStep(new TriggerWorkflowStep<>(id,
+        context.next(new TriggerWorkflowStep<>(id,
                                                  description,
                                                  connectorLabel,
                                                  subWorkflow,

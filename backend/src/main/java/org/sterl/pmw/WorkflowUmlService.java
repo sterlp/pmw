@@ -2,6 +2,7 @@ package org.sterl.pmw;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.time.Duration;
 import java.util.Optional;
 
 import org.sterl.pmw.component.PlanUmlDiagram;
@@ -62,9 +63,9 @@ public class WorkflowUmlService {
         } else if (step instanceof WaitStep<?>) {
             diagram.appendWaitState(step.getId(), step.getDescription());
         } else if (step instanceof TriggerWorkflowStep<?, ?> subW) {
-            addSubWorkflow(subW, subW.getSubWorkflow(), diagram);
+            addSubWorkflow(subW, subW.getSubWorkflow(), subW.getDelay(), diagram);
         } else if (hasSubworkflow(step.getId()).isPresent()) {
-            addSubWorkflow(step, hasSubworkflow(step.getId()).get(), diagram);
+            addSubWorkflow(step, hasSubworkflow(step.getId()).get(), null, diagram);
         } else {
             draw(step, diagram);
         }
@@ -80,16 +81,22 @@ public class WorkflowUmlService {
         return result;
     }
 
-    private void addSubWorkflow(WorkflowStep<?> s, Workflow<?> w, final PlanUmlDiagram diagram) {
+    private void addSubWorkflow(WorkflowStep<?> s, Workflow<?> w, Duration delay, final PlanUmlDiagram diagram) {
         draw(s, diagram);
         diagram.line("fork");
         diagram.line("fork again");
         diagram.intend();
+        
+        if (delay != null && delay.getSeconds() > 0) {
+            diagram.appendWaitState(delay.toString(), null);
+        }
 
         diagram.line("partition \"" + w.getName() + "\" {");
+        
         diagram.intend();
         addWorkflow(w, diagram);
         diagram.stopIntend();
+        
         diagram.line("}");
         diagram.stopIntend();
         diagram.line("end fork");

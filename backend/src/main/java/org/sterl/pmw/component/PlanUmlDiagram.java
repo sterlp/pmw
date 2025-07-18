@@ -107,7 +107,9 @@ public class PlanUmlDiagram {
     public StringBuilder build() {
         var result = new StringBuilder(diagram.size() * 8 + 24);
         result.append("@startuml ").append("\"").append(name).append("\"").append(NEW_LINE);
-        result.append(theme == null ? "!theme carbon-gray" : theme).append(NEW_LINE);
+        
+        if (theme != null) result.append(theme).append(NEW_LINE);
+        
         diagram.forEach(l -> result.append(l).append(NEW_LINE));
         result.append("@enduml");
         return result;

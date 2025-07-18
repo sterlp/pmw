@@ -34,14 +34,12 @@ public class WorkflowFactory<T extends Serializable> implements StepHolder<T> {
         return next(nextStepId(), fn);
     }
     public WorkflowFactory<T> next(String name, WorkflowFunction<T> fn) {
-        addStep(new SequentialStep<T>(name, fn));
-        return this;
+        return next(new SequentialStep<T>(name, fn));
     }
 
     public <TS extends Serializable> WorkflowFactory<T> trigger(
             Workflow<TS> toTrigger, Function<T, TS> fn) {
-        addStep(new TriggerWorkflowStep<>(nextStepId(), "Start " + toTrigger.getName(), null, toTrigger, fn, Duration.ZERO));
-        return this;
+        return next(new TriggerWorkflowStep<>(nextStepId(), "Start " + toTrigger.getName(), null, toTrigger, fn, Duration.ZERO));
     }
     
     public <TS extends Serializable> TriggerWorkflowStepFactory<WorkflowFactory<T>, T, TS> trigger(
@@ -52,16 +50,13 @@ public class WorkflowFactory<T extends Serializable> implements StepHolder<T> {
     }
     
     public WorkflowFactory<T> sleep(Function<T, Duration> fn) {
-        addStep(new WaitStep<>(nextStepId(), "Sleep", fn));
-        return this;
+        return next(new WaitStep<>(nextStepId(), "Sleep", fn));
     }
     public WorkflowFactory<T> sleep(String id, Function<T, Duration> fn) {
-        addStep(new WaitStep<>(id, "Sleep", fn));
-        return this;
+        return next(new WaitStep<>(id, "Sleep", fn));
     }
     public WorkflowFactory<T> sleep(Duration duration) {
-        addStep(new WaitStep<>(nextStepId(), "Sleep for " + duration, (s) -> duration));
-        return this;
+        return next(new WaitStep<>(nextStepId(), "Sleep for " + duration, (s) -> duration));
     }
     public WorkflowFactory<T> stepRetryStrategy(RetryStrategy retryStrategy) {
         this.retryStrategy = retryStrategy;
@@ -95,8 +90,9 @@ public class WorkflowFactory<T extends Serializable> implements StepHolder<T> {
         return stepIds.addAndGet(10) + "";
     }
 
-    public void addStep(WorkflowStep<T> s) {
-        this.steps.addStep(s);
+    public WorkflowFactory<T> next(WorkflowStep<T> s) {
+        this.steps.next(s);
+        return this;
     }
     public WorkflowFactory<T> useId(String id) {
         this.steps.useId(id);

@@ -16,6 +16,7 @@ public class TriggerWorkflowStep<T extends Serializable,
     @Getter
     private final Workflow<SubWorkflowState> subWorkflow;
     private final Function<T, SubWorkflowState> fn;
+    @Getter
     private final Duration delay;
 
     TriggerWorkflowStep(String id, String description, String connectorLabel, Workflow<SubWorkflowState> subWorkflow,

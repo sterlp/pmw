@@ -13,14 +13,16 @@ public class StepContainer<T extends Serializable> {
     private final LinkedHashMap<String, WorkflowStep<T>> steps = new LinkedHashMap<>();
     private final Set<String> usedIds = new HashSet<>();
 
-    public void addStep(WorkflowStep<T> s) {
+    public StepContainer<T> next(WorkflowStep<T> s) {
         useId(s.getId());
         steps.put(s.getId(), s);
+        return this;
     }
     
-    public void addStep(String id, WorkflowStep<T> s) {
+    public StepContainer<T> next(String id, WorkflowStep<T> s) {
         useId(id);
         steps.put(id, s);
+        return this;
     }
     
     /**

@@ -24,7 +24,7 @@ public class ChooseFactory<C extends StepHolder<T>, T extends Serializable>
     }
 
     public ChooseFactory<C, T> ifSelected(String stepId, WorkflowFunction<T> fn) {
-        addStep(new SequentialStep<>(stepId, fn));
+        next(new SequentialStep<>(stepId, fn));
         return this;
     }
     
@@ -44,13 +44,14 @@ public class ChooseFactory<C extends StepHolder<T>, T extends Serializable>
     public C build() {
         if (id == null) id = nextStepId();
         if (description == null) description = "Choose from " + steps.getSteps().size();
-        context.addStep(new ChooseStep<>(id, description, connectorLabel, chooseFn, steps.getSteps()));
+        context.next(new ChooseStep<>(id, description, connectorLabel, chooseFn, steps.getSteps()));
         return context;
     }
 
     @Override
-    public void addStep(WorkflowStep<T> s) {
-        steps.addStep(s);
+    public ChooseFactory<C, T> next(WorkflowStep<T> s) {
+        steps.next(s);
+        return this;
     }
 
     @Override

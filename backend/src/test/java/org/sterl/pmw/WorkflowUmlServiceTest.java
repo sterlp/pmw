@@ -59,7 +59,6 @@ class WorkflowUmlServiceTest {
         assertWorkflow(w,
                 """
                 @startuml "test-workflow"
-                !theme carbon-gray
                 start
                   :**10**;
                   :**20**;
@@ -85,7 +84,6 @@ class WorkflowUmlServiceTest {
         assertWorkflow(w,
                 """
                 @startuml "test-workflow"
-                !theme carbon-gray
                 start
                   -> asdad;
                   :--**foo bar**--
@@ -109,7 +107,6 @@ class WorkflowUmlServiceTest {
         assertWorkflow(w,
                 """
                 @startuml "test-workflow"
-                !theme carbon-gray
                 start
                   :**10**;
                   switch ( 20 )
@@ -141,7 +138,6 @@ class WorkflowUmlServiceTest {
         assertWorkflow(w,
                 """
                 @startuml "test-workflow"
-                !theme carbon-gray
                 start
                   switch ( select )
                     case ()
@@ -167,7 +163,6 @@ class WorkflowUmlServiceTest {
         assertWorkflow(w,
                 """
                 @startuml "test-workflow"
-                !theme carbon-gray
                 start
                   :**10**;
                   :--**<&clock> 20**--
@@ -188,7 +183,7 @@ class WorkflowUmlServiceTest {
 
         Workflow<SimpleWorkflowState> parent = Workflow.builder("parent", () ->  new SimpleWorkflowState())
                 .next(s -> {})
-                .trigger(child, s -> s)
+                .trigger(child).function(s -> s).id("cool workflow").delay(Duration.ofMinutes(2)).build()
                 .next(s -> {})
                 .build();
 
@@ -196,13 +191,13 @@ class WorkflowUmlServiceTest {
         assertWorkflow(parent,
                 """
                 @startuml "parent"
-                !theme carbon-gray
                 start
                   :**10**;
-                  :--**20**--
+                  :--**cool workflow**--
                   Start any child;
                   fork
                   fork again
+                    :**<&clock> PT2M**;
                     partition "any child" {
                       start
                         :**10**;
@@ -210,7 +205,7 @@ class WorkflowUmlServiceTest {
                       stop
                     }
                   end fork
-                  :**30**;
+                  :**20**;
                 stop
                 @enduml
                 """);
@@ -236,7 +231,6 @@ class WorkflowUmlServiceTest {
         // THEN
         assertWorkflow(parent, """
                 @startuml "parent"
-                !theme carbon-gray
                 start
                   :**10**;
                   :**trigger->any child**;
