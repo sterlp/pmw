@@ -18,9 +18,9 @@ public class TriggerWorkflowStep<T extends Serializable,
     private final Function<T, SubWorkflowState> fn;
     private final Duration delay;
 
-    TriggerWorkflowStep(String name, String connectorLabel, Workflow<SubWorkflowState> subWorkflow,
+    TriggerWorkflowStep(String id, String description, String connectorLabel, Workflow<SubWorkflowState> subWorkflow,
         Function<T, SubWorkflowState> fn, Duration delay) {
-        super(name, connectorLabel);
+        super(id, description, connectorLabel);
         this.fn = fn;
         this.subWorkflow = subWorkflow;
         this.delay = delay;

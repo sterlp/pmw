@@ -8,6 +8,6 @@ public class WorkflowHelper {
     public static final String SPLIT = "::";
 
     public static String stepName(Workflow<?> w, WorkflowStep<?> s) {
-        return w.getName() + SPLIT + s.getName();
+        return w.getName() + SPLIT + s.getId();
     }
 }

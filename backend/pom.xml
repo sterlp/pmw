@@ -7,12 +7,12 @@
     <parent>
         <groupId>org.sterl.pmw</groupId>
         <artifactId>pmw-root</artifactId>
-        <version>2.0.1-SNAPSHOT</version>
+        <version>2.0.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>spring-pmw-core</artifactId>
-    <name>Poor Man Workflow Backend</name>
+    <name>Spring Poor Mans Workflow Backend</name>
     <description>Backend project of the PMW projects contains the JAVA and Spring classes</description>
 
     <inceptionYear>2022</inceptionYear>

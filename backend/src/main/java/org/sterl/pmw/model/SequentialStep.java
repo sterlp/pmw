@@ -9,12 +9,12 @@ import lombok.Getter;
 public class SequentialStep<T extends Serializable> extends AbstractStep<T> {
     private final WorkflowFunction<T> fn;
 
-    SequentialStep(String name, WorkflowFunction<T> fn) {
-        this(name, null, fn);
+    SequentialStep(String id, WorkflowFunction<T> fn) {
+        this(id, null, null, fn);
     }
 
-    SequentialStep(String name, String connectorLabel, WorkflowFunction<T> fn) {
-        super(name, connectorLabel);
+    SequentialStep(String id, String description, String connectorLabel, WorkflowFunction<T> fn) {
+        super(id, description, connectorLabel);
         Objects.requireNonNull(fn, "WorkflowFunction cannot be null.");
         this.fn = fn;
     }

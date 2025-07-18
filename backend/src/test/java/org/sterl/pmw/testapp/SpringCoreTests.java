@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.sterl.pmw.SimpleWorkflowState;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.spring.PersistentWorkflowService;
@@ -430,5 +431,33 @@ public class SpringCoreTests extends AbstractSpringTest {
 
         // THEN
         assertThat(stateValue.get()).isEqualTo(2);
+    }
+    
+    @Test
+    void testTriggerWorkflow() {
+     // GIVEN
+        Workflow<Integer> child = Workflow.builder("child", () ->  Integer.SIZE)
+                .next(s -> asserts.info("child 1"))
+                .next(s -> asserts.info("child 2"))
+                .build();
+
+        Workflow<SimpleWorkflowState> parent = Workflow.builder("parent", () ->  new SimpleWorkflowState())
+                .next(s -> asserts.info("partent 1"))
+                .trigger(child).function(s -> 1).id("myCoolId").build()
+                .next(s -> asserts.info("partent 2"))
+                .build();
+        
+        subject.register(child);
+        subject.register(parent);
+        
+        // WHEN
+        subject.execute(parent);
+        
+        // THEN 
+        waitForAllWorkflows();
+        asserts.awaitValueOnce("partent 1");
+        asserts.awaitValueOnce("partent 2");
+        asserts.awaitValueOnce("child 1");
+        asserts.awaitValueOnce("child 2");
     }
 }

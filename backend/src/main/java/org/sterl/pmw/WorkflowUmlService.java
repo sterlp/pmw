@@ -43,7 +43,7 @@ public class WorkflowUmlService {
     public String printWorkflow(Workflow<?> workflow) {
         var diagram = new PlanUmlDiagram(workflow.getName());
         addWorkflow(workflow, diagram);
-        return diagram.build();
+        return diagram.build().toString();
     }
 
     void addWorkflow(final Workflow<?> workflow, final PlanUmlDiagram diagram) {
@@ -60,13 +60,13 @@ public class WorkflowUmlService {
         if (step instanceof ChooseStep<?> ifStep) {
             addCooseStep(ifStep, diagram);
         } else if (step instanceof WaitStep<?>) {
-            diagram.appendWaitState(step.getName());
+            diagram.appendWaitState(step.getId(), step.getDescription());
         } else if (step instanceof TriggerWorkflowStep<?, ?> subW) {
-            addSubWorkflow(subW.getSubWorkflow(), diagram);
-        } else if (hasSubworkflow(step.getName()).isPresent()) {
-            addSubWorkflow(hasSubworkflow(step.getName()).get(), diagram);
+            addSubWorkflow(subW, subW.getSubWorkflow(), diagram);
+        } else if (hasSubworkflow(step.getId()).isPresent()) {
+            addSubWorkflow(step, hasSubworkflow(step.getId()).get(), diagram);
         } else {
-            addStepName(step, diagram);
+            draw(step, diagram);
         }
     }
 
@@ -80,33 +80,42 @@ public class WorkflowUmlService {
         return result;
     }
 
-    private void addSubWorkflow(final Workflow<?> workflow, final PlanUmlDiagram diagram) {
-        diagram.appendLine("fork");
-        diagram.appendLine("fork again");
-        diagram.append("partition \"").append(workflow.getName()).appendLine("\"{");
-        addWorkflow(workflow, diagram);
-        diagram.appendLine("}");
-        diagram.appendLine("endfork");
+    private void addSubWorkflow(WorkflowStep<?> s, Workflow<?> w, final PlanUmlDiagram diagram) {
+        draw(s, diagram);
+        diagram.line("fork");
+        diagram.line("fork again");
+        diagram.intend();
+
+        diagram.line("partition \"" + w.getName() + "\" {");
+        diagram.intend();
+        addWorkflow(w, diagram);
+        diagram.stopIntend();
+        diagram.line("}");
+        diagram.stopIntend();
+        diagram.line("end fork");
+        
     }
     private void addCooseStep(ChooseStep<?> ifStep, PlanUmlDiagram diagram) {
-        addSwitch(ifStep, diagram);
-        for (WorkflowStep<?> e : ifStep.getSubSteps().values()) {
-            diagram.appendCase(e.getConnectorLabel());
+        if (ifStep.getConnectorLabel() != null) diagram.appendLine(ifStep.getConnectorLabel());
+        diagram.startSwitch(ifStep.getId());
+        
+        ifStep.getSubSteps().forEach((k, s) -> {
+            diagram.startCase();
+            addWorkflowStepToDiagramByType(diagram, s);
+            diagram.stopCase();
+        });
 
-            addWorkflowStepToDiagramByType(diagram, e);
-        }
-        diagram.appendLine("endswitch");
+        diagram.endSwitch();
     }
 
-    private void addSwitch(ChooseStep<?> step, PlanUmlDiagram diagram) {
-        diagram.append("switch (");
-        if (!step.getName().endsWith(" Step")) {
-            diagram.append(step.getName());
+    private void draw(WorkflowStep<?> s, PlanUmlDiagram diagram) {
+        if (s.getConnectorLabel() != null) {
+            diagram.labeldConnector(s.getConnectorLabel());
         }
-        diagram.appendLine(")");
-    }
-
-    private void addStepName(WorkflowStep<?> step, PlanUmlDiagram diagram) {
-        diagram.appendState(step.getName());
+        if (s.getDescription() == null) {
+            diagram.appendState(s.getId());
+        } else {
+            diagram.appendState(s.getId(), s.getDescription());
+        }
     }
 }

@@ -8,8 +8,8 @@ public class WaitStep<T extends Serializable> extends AbstractStep<T> {
 
     private final Function<T, Duration> fn;
 
-    WaitStep(String name, Function<T, Duration> fn) {
-        super(name, null);
+    WaitStep(String id, String description, Function<T, Duration> fn) {
+        super(id, description, null);
         this.fn = fn;
     }
 
