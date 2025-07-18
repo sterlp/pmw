@@ -8,7 +8,7 @@ import java.io.Serializable;
 import org.sterl.pmw.WorkflowUmlService;
 import org.sterl.pmw.model.Workflow;
 
-public class SerializationUtil {
+public class PlantUmlWritter {
 
     public static void writeAsPlantUmlSvg(String filename, Workflow<? extends Serializable> workflow) throws IOException {
         final File d = new File(filename);
