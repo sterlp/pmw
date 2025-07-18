@@ -28,13 +28,22 @@ public class ChooseFactory<C extends StepHolder<T>, T extends Serializable>
         return this;
     }
     
+    public SequentialStepFactory<ChooseFactory<C, T>, T> ifSelected(String id) {
+        return new SequentialStepFactory<>(this).id(id);
+    }
+    
     public <SubT extends Serializable>
-    TriggerWorkflowStepFactory<ChooseFactory<C, T>, T, SubT> ifTrigger(String id,
-        Workflow<SubT> subWorkflow, Function<T, SubT> fn) {
+        TriggerWorkflowStepFactory<ChooseFactory<C, T>, T, SubT> ifTrigger(String id,
+            Workflow<SubT> subWorkflow, Function<T, SubT> fn) {
       
         return new TriggerWorkflowStepFactory<>(this, subWorkflow)
                      .function(fn)
                      .id(id);
+    }
+    
+    public <SubT extends Serializable> TriggerWorkflowStepFactory<ChooseFactory<C, T>, T, SubT> ifTrigger(
+            String id, Workflow<SubT> subWorkflow) {
+        return new TriggerWorkflowStepFactory<>(this, subWorkflow).id(id);
     }
 
     public SequentialStepFactory<ChooseFactory<C, T>, T> ifSelected() {

@@ -37,35 +37,40 @@ public class NewItemArrivedWorkflow {
 
     @PostConstruct
     void createWorkflow() {
+        restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
+                .next("updatePrice", c -> discountComponent.setPrize(c.data().getItemId(), c.data().getOriginalPrice()))
+                .next("sendMail", s -> {})
+                .build();
+
         checkWarehouse = Workflow.builder("check-warehouse", () -> NewItemArrivedWorkflowState.builder().build())
-                .next("check warehouse for new stock", c -> createStock.checkWarehouseForNewStock(c.data().getItemId()))
+                .next().description("check warehouse for new stock")
+                    .function(c -> createStock.checkWarehouseForNewStock(c.data().getItemId()))
+                    .build()
                 .next("update item stock", c -> {
                     final var s = c.data();
                     final long stockCount = warehouseService.countStock(s.getItemId());
                     updateStock.updateInStockCount(s.getItemId(), stockCount);
                     s.setWarehouseStockCount(stockCount);
                 })
-                .sleep("Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)
+                .sleep("wait", "Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)
                 .choose("check stock", s -> {
                         if (s.getWarehouseStockCount() > 40) return "discount-price";
-                        else return "check-warehouse-again";
+                        else return "buy-new-items";
                     })
-                    .ifSelected("discount-price", "> 40", c -> {
-                        final var s = c.data();
-                        var originalPrice = discountComponent.applyDiscount(s.getItemId(), s.getWarehouseStockCount());
-                        s.setOriginalPrice(originalPrice);
-
-                        workflowService.execute(restorePriceSubWorkflow, s, Duration.ofMinutes(2));
-                    })
-                    .ifSelected("check-warehouse-again", "< 40", c -> this.execute(c.data().getItemId()))
+                    .ifTrigger("discount-price", restorePriceSubWorkflow)
+                        .description("WarehouseStockCount > 40")
+                        .delay(Duration.ofMinutes(2))
+                        .function(s -> {
+                            var originalPrice = discountComponent.applyDiscount(s.getItemId(), 
+                                    s.getWarehouseStockCount());
+                            s.setOriginalPrice(originalPrice);
+                            return s;
+                        }).build()
+                    .ifSelected("buy-new-items", c -> this.execute(c.data().getItemId()))
                     .build()
                 .build();
 
         workflowService.register(checkWarehouse);
-
-        restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
-                .next("set price from workflow state", c -> discountComponent.setPrize(c.data().getItemId(), c.data().getOriginalPrice()))
-                .build();
 
         workflowService.register(restorePriceSubWorkflow);
     }

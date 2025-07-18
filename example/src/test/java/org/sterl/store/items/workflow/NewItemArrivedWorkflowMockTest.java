@@ -10,7 +10,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.sterl.pmw.WorkflowService;
 import org.sterl.pmw.WorkflowUmlService;
-import org.sterl.pmw.component.SerializationUtil;
+import org.sterl.pmw.component.PlantUmlWritter;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.spring.persistent_tasks.api.TaskId;
 import org.sterl.store.items.component.DiscountComponent;
@@ -42,6 +42,6 @@ class NewItemArrivedWorkflowMockTest {
         repo.register(subject.getCheckWarehouse());
         repo.register(subject.getRestorePriceSubWorkflow());
 
-        SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse().getName(), umlService);
+        PlantUmlWritter.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse().getName(), umlService);
     }
 }

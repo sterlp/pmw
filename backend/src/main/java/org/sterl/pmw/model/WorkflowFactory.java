@@ -50,13 +50,19 @@ public class WorkflowFactory<T extends Serializable> implements StepHolder<T> {
     }
     
     public WorkflowFactory<T> sleep(Function<T, Duration> fn) {
-        return next(new WaitStep<>(nextStepId(), "Sleep", fn));
+        return next(new WaitStep<>(nextStepId(), "Wait using function", fn));
     }
     public WorkflowFactory<T> sleep(String id, Function<T, Duration> fn) {
-        return next(new WaitStep<>(id, "Sleep", fn));
+        return next(new WaitStep<>(id, null, fn));
+    }
+    public WorkflowFactory<T> sleep(String id, String description, Function<T, Duration> fn) {
+        return next(new WaitStep<>(id, description, fn));
+    }
+    public WorkflowFactory<T> sleep(String id, Duration duration) {
+        return next(new WaitStep<>(id, "Wait for " + duration, (s) -> duration));
     }
     public WorkflowFactory<T> sleep(Duration duration) {
-        return next(new WaitStep<>(nextStepId(), "Sleep for " + duration, (s) -> duration));
+        return next(new WaitStep<>(nextStepId(), "Wait for " + duration, (s) -> duration));
     }
     public WorkflowFactory<T> stepRetryStrategy(RetryStrategy retryStrategy) {
         this.retryStrategy = retryStrategy;

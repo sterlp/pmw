@@ -2,6 +2,7 @@ package org.sterl.pmw.model;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.sterl.pmw.command.TriggerWorkflowCommand;
@@ -22,9 +23,12 @@ public class TriggerWorkflowStep<T extends Serializable,
     TriggerWorkflowStep(String id, String description, String connectorLabel, Workflow<SubWorkflowState> subWorkflow,
         Function<T, SubWorkflowState> fn, Duration delay) {
         super(id, description, connectorLabel);
+
         this.fn = fn;
         this.subWorkflow = subWorkflow;
         this.delay = delay;
+        
+        Objects.requireNonNull(subWorkflow, "Workflow to trigger required");
     }
 
     @Override
