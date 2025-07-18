@@ -74,7 +74,7 @@ public class PlanUmlDiagram {
         if (description == null) {
             appendState(id);
         } else {
-            line(START + "--**" + id + "**--");
+            line(START + "-- **" + id + "** --");
             line(description + END);
         }
     }
