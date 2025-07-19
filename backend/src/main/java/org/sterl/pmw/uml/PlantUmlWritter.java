@@ -1,4 +1,4 @@
-package org.sterl.pmw.component;
+package org.sterl.pmw.uml;
 
 import java.io.File;
 import java.io.FileOutputStream;

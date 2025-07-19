@@ -4,14 +4,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.sterl.pmw.component.PlanUmlDiagram;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.ChooseStep;
 import org.sterl.pmw.model.TriggerWorkflowStep;
 import org.sterl.pmw.model.WaitStep;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowStep;
+import org.sterl.pmw.uml.DrawWorkflowStepToUml;
+import org.sterl.pmw.uml.PlantUmlDiagram;
 
 import lombok.RequiredArgsConstructor;
 import net.sourceforge.plantuml.FileFormat;
@@ -42,12 +44,12 @@ public class WorkflowUmlService {
     }
 
     public String printWorkflow(Workflow<?> workflow) {
-        var diagram = new PlanUmlDiagram(workflow.getName());
+        var diagram = new PlantUmlDiagram(workflow.getName());
         addWorkflow(workflow, diagram);
         return diagram.build().toString();
     }
 
-    void addWorkflow(final Workflow<?> workflow, final PlanUmlDiagram diagram) {
+    void addWorkflow(final Workflow<?> workflow, final PlantUmlDiagram diagram) {
         diagram.start();
 
         for (WorkflowStep<?> step : workflow.getSteps()) {
@@ -56,37 +58,43 @@ public class WorkflowUmlService {
 
         diagram.stop();
     }
-    private void addWorkflowStepToDiagramByType(final PlanUmlDiagram diagram,
+    private void addWorkflowStepToDiagramByType(final PlantUmlDiagram diagram,
             WorkflowStep<?> step) {
         if (step instanceof ChooseStep<?> ifStep) {
             addCooseStep(ifStep, diagram);
         } else if (step instanceof WaitStep<?>) {
             diagram.appendWaitState(step.getId(), step.getDescription());
         } else if (step instanceof TriggerWorkflowStep<?, ?> subW) {
-            addSubWorkflow(subW, subW.getSubWorkflow(), subW.getDelay(), diagram);
+            forkWorkflow(subW, subW.getSubWorkflow(), subW.getDelay(), diagram);
         } else if (hasSubworkflow(step.getId()).isPresent()) {
-            addSubWorkflow(step, hasSubworkflow(step.getId()).get(), null, diagram);
+            forkWorkflow(step, hasSubworkflow(step.getId()).get(), null, diagram);
         } else {
             draw(step, diagram);
         }
     }
 
     private Optional<Workflow<?>> hasSubworkflow(String name) {
-        Optional<Workflow<?>> result = workflowRepository.findWorkflow(name);
-
-        if (result.isEmpty() && name.toLowerCase().startsWith("trigger->")) {
+        if (name.toLowerCase().startsWith("trigger->")) {
             String workflowName = name.substring(9, name.length());
-            result = workflowRepository.findWorkflow(workflowName);
+            return workflowRepository.findWorkflow(workflowName);
         }
-        return result;
+        return Optional.empty();
     }
 
-    private void addSubWorkflow(WorkflowStep<?> s, Workflow<?> w, Duration delay, final PlanUmlDiagram diagram) {
+    private void forkWorkflow(WorkflowStep<?> s, Workflow<?> w, Duration delay, final PlantUmlDiagram diagram) {
         draw(s, diagram);
         diagram.line("fork");
         diagram.line("fork again");
         diagram.intend();
+
+        appendWorkflow(w, delay, diagram);
+
+        diagram.stopIntend();
+        diagram.line("end fork");
         
+    }
+    
+    private void appendWorkflow(Workflow<?> w, Duration delay, final PlantUmlDiagram diagram) {
         if (delay != null && delay.getSeconds() > 0) {
             diagram.appendWaitState(delay.toString(), null);
         }
@@ -98,31 +106,34 @@ public class WorkflowUmlService {
         diagram.stopIntend();
         
         diagram.line("}");
-        diagram.stopIntend();
-        diagram.line("end fork");
-        
     }
-    private void addCooseStep(ChooseStep<?> ifStep, PlanUmlDiagram diagram) {
-        if (ifStep.getConnectorLabel() != null) diagram.appendLine(ifStep.getConnectorLabel());
+
+    private void addCooseStep(ChooseStep<?> ifStep, PlantUmlDiagram diagram) {
+        diagram.appendLine(ifStep.getConnectorLabel());
+
         diagram.startSwitch(ifStep.getId());
         
+        final var switchCases = new AtomicInteger(0);
         ifStep.getSubSteps().forEach((k, s) -> {
-            diagram.startCase();
-            addWorkflowStepToDiagramByType(diagram, s);
+            diagram.startCase(s.getDescription());
+            
+            diagram.labeledConnector(s.getConnectorLabel());
+
+            if (s instanceof TriggerWorkflowStep tf) {
+                appendWorkflow(tf.getSubWorkflow(), tf.getDelay(), diagram);
+                // not really a step, it ends in the workflow
+            } else {
+                diagram.appendState(s.getId());
+                switchCases.incrementAndGet();
+            }
             diagram.stopCase();
         });
 
-        diagram.endSwitch();
+        if (switchCases.intValue() > 1) diagram.endSwitch();
+        else diagram.stopIntend();
     }
 
-    private void draw(WorkflowStep<?> s, PlanUmlDiagram diagram) {
-        if (s.getConnectorLabel() != null) {
-            diagram.labeldConnector(s.getConnectorLabel());
-        }
-        if (s.getDescription() == null) {
-            diagram.appendState(s.getId());
-        } else {
-            diagram.appendState(s.getId(), s.getDescription());
-        }
+    private void draw(WorkflowStep<?> s, PlantUmlDiagram diagram) {
+        new DrawWorkflowStepToUml(diagram).draw(s);
     }
 }

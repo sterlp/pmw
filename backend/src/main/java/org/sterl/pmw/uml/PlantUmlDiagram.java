@@ -1,11 +1,11 @@
-package org.sterl.pmw.component;
+package org.sterl.pmw.uml;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
-public class PlanUmlDiagram {
+public class PlantUmlDiagram {
     private static final String NEW_LINE = "\n";
     private static final String START = ":";
     private static final String END = ";";
@@ -15,11 +15,11 @@ public class PlanUmlDiagram {
     private final String theme;
     private int intend = 0;
 
-    public PlanUmlDiagram(String name) {
+    public PlantUmlDiagram(String name) {
         this(name, "!theme carbon-gray");
     }
 
-    public PlanUmlDiagram(String name, String theme) {
+    public PlantUmlDiagram(String name, String theme) {
         super();
         this.name = name;
         this.theme = theme;
@@ -33,39 +33,39 @@ public class PlanUmlDiagram {
         this.intend -= 2;
     }
 
-    public PlanUmlDiagram appendLine(String line) {
+    public PlantUmlDiagram appendLine(String line) {
         if (line != null) {
             diagram.add(StringUtils.repeat(' ', intend) + line);
         }
         return this;
     }
 
-    public PlanUmlDiagram line(String value) {
+    public PlantUmlDiagram line(String value) {
         return appendLine(value);
     }
 
-    public PlanUmlDiagram start() {
+    public PlantUmlDiagram start() {
         appendLine("start");
         intend();
         return this;
     }
-    public PlanUmlDiagram stop() {
+    public PlantUmlDiagram stop() {
         stopIntend();
         appendLine("stop");
         return this;
     }
 
-    public PlanUmlDiagram appendWaitState(String id, String description) {
+    public PlantUmlDiagram appendWaitState(String id, String description) {
         this.appendState("<&clock> " + id, description);
         return this;
     }
     
-    public PlanUmlDiagram labeldConnector(String label) {
-        line("-> " + label + END);
+    public PlantUmlDiagram labeledConnector(String label) {
+        if (label != null) line("-> " + label + END);
         return this;
     }
 
-    public PlanUmlDiagram appendState(String stateName) {
+    public PlantUmlDiagram appendState(String stateName) {
         line(START + "**" + stateName + "**" + END);
         return this;
     }
@@ -79,14 +79,14 @@ public class PlanUmlDiagram {
         }
     }
     
-    public PlanUmlDiagram startSwitch(String label) {
+    public PlantUmlDiagram startSwitch(String label) {
         if (label == null) line("switch ()");
         else line("switch ( " + label + " )");
         intend();
         return this;
     }
     
-    public PlanUmlDiagram endSwitch() {
+    public PlantUmlDiagram endSwitch() {
         stopIntend();
         line("endswitch");
         return this;
@@ -99,9 +99,12 @@ public class PlanUmlDiagram {
     public void stopCase() {
         stopIntend();
     }
-    public void appendCase(String label) {
-        if (label == null) line("case ()");
-        else line("case ( " + label + " )");
+    public void startCase(String label) {
+        if (label == null) startCase();
+        else {
+            line("case ( " + label + " )");
+            intend();
+        }
     }
     
     public StringBuilder build() {

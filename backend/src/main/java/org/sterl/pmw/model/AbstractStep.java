@@ -8,7 +8,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
-@ToString(of = "id")
 @Getter
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public abstract class AbstractStep<T extends Serializable> implements WorkflowStep<T> {
@@ -16,4 +15,9 @@ public abstract class AbstractStep<T extends Serializable> implements WorkflowSt
     protected final String id;
     protected final String description;
     protected final String connectorLabel;
+    
+    @Override
+    public String toString() {
+        return super.getClass().getSimpleName() + "[id=" + id +"]";
+    }
 }

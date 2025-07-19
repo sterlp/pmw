@@ -9,9 +9,9 @@ import java.time.Duration;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sterl.pmw.component.PlanUmlDiagram;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
+import org.sterl.pmw.uml.PlantUmlDiagram;
 
 class WorkflowUmlServiceTest {
 
@@ -86,7 +86,7 @@ class WorkflowUmlServiceTest {
                 @startuml "test-workflow"
                 start
                   -> asdad;
-                  :--**foo bar**--
+                  :-- **foo bar** --
                   HA ha;
                 stop
                 @enduml
@@ -133,6 +133,7 @@ class WorkflowUmlServiceTest {
                         .function(s -> {})
                         .build()
                     .build()
+                .next(s -> {})
                 .build();
 
         assertWorkflow(w,
@@ -142,11 +143,57 @@ class WorkflowUmlServiceTest {
                   switch ( select )
                     case ()
                       :**left**;
-                    case ()
+                    case ( ja ja )
                       -> nope;
-                      :--**something**--
-                      ja ja;
+                      :**something**;
                   endswitch
+                  :**10**;
+                stop
+                @enduml
+                """);
+    }
+    
+    @Test
+    void testChooseSubWorkflow() {
+        Workflow<String> sendMail = Workflow.builder("send-mail", () -> new String())
+                .next("build-mail", s -> {})
+                .next("send-mail", s -> {})
+                .sleep(Duration.ofMinutes(1))
+                .next("check-response", s -> {})
+                .build();
+                
+        Workflow<SimpleWorkflowState> doStuff = Workflow.builder("test-workflow", SimpleWorkflowState::new)
+                .choose("select", s -> "left")
+                    .ifTrigger("hcheCkMail", sendMail)
+                        .description("Has email")
+                        .function(s -> "paul@paul.de")
+                        .build()
+                    .ifSelected("noMail", s -> {})
+                    .build()
+                .next("create-user-task", s -> {})
+                .build();
+        
+        repository.register(sendMail);
+        repository.register(doStuff);
+
+        assertWorkflow(doStuff,
+                """
+                @startuml "test-workflow"
+                start
+                  switch ( select )
+                    case ( Has email )
+                      partition "send-mail" {
+                        start
+                          :**build-mail**;
+                          :**send-mail**;
+                          :-- **<&clock> 10** --
+                          Wait for PT1M;
+                          :**check-response**;
+                        stop
+                      }
+                    case ()
+                      :**noMail**;
+                  :**create-user-task**;
                 stop
                 @enduml
                 """);
@@ -165,8 +212,8 @@ class WorkflowUmlServiceTest {
                 @startuml "test-workflow"
                 start
                   :**10**;
-                  :--**<&clock> 20**--
-                  Sleep for PT2H;
+                  :-- **<&clock> 20** --
+                  Wait for PT2H;
                   :**30**;
                 stop
                 @enduml
@@ -193,7 +240,7 @@ class WorkflowUmlServiceTest {
                 @startuml "parent"
                 start
                   :**10**;
-                  :--**cool workflow**--
+                  :-- **cool workflow** --
                   Start any child;
                   fork
                   fork again
@@ -250,7 +297,7 @@ class WorkflowUmlServiceTest {
     }
 
     public void assertWorkflow(Workflow<?> w, String expected) {
-        final PlanUmlDiagram result = new PlanUmlDiagram(w.getName(), null);
+        final PlantUmlDiagram result = new PlantUmlDiagram(w.getName(), null);
         subject.addWorkflow(w, result);
         final String diagram = result.build().toString();
 
