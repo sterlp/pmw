@@ -44,7 +44,7 @@ public class NewItemArrivedWorkflow {
     private final DiscountComponent discountComponent;
     private final WarehouseStockComponent createStock;
     private final UpdateInStockCountComponent updateStock;
-    private final WorkflowService<JobDetail> workflowService;
+    private final WorkflowService<TaskId<? extends Serializable>> workflowService;
 
     @Getter
     private Workflow<NewItemArrivedWorkflowState> checkWarehouse;
@@ -54,42 +54,50 @@ public class NewItemArrivedWorkflow {
 
     @PostConstruct
     void createWorkflow() {
+        restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
+                .next("updatePrice", c -> discountComponent.setPrize(c.data().getItemId(), c.data().getOriginalPrice()))
+                .next("sendMail", s -> {})
+                .build();
+
         checkWarehouse = Workflow.builder("check-warehouse", () -> NewItemArrivedWorkflowState.builder().build())
-                .next("check warehouse for new stock", s -> createStock.checkWarehouseForNewStock(s.getItemId()))
-                .next("update item stock", (s, c) -> {
+                .next().description("check warehouse for new stock")
+                    .function(c -> createStock.checkWarehouseForNewStock(c.data().getItemId()))
+                    .build()
+                .next("update item stock", c -> {
+                    final var s = c.data();
                     final long stockCount = warehouseService.countStock(s.getItemId());
                     updateStock.updateInStockCount(s.getItemId(), stockCount);
-
                     s.setWarehouseStockCount(stockCount);
                 })
-                .sleep("Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)
+                .sleep("wait", "Wait if stock is > 40", (s) -> s.getWarehouseStockCount() > 40 ? Duration.ofMinutes(2) : Duration.ZERO)
                 .choose("check stock", s -> {
                         if (s.getWarehouseStockCount() > 40) return "discount-price";
-                        else return "check-warehouse-again";
+                        else return "buy-new-items";
                     })
-                    .ifSelected("discount-price", "> 40", s -> {
-                        var originalPrice = discountComponent.applyDiscount(s.getItemId(), s.getWarehouseStockCount());
-                        s.setOriginalPrice(originalPrice);
-
-                        workflowService.execute(restorePriceSubWorkflow, s, Duration.ofMinutes(2));
-                    })
-                    .ifSelected("trigger->restore-item-price", "< 40", s -> this.execute(s.getItemId()))
+                    .ifTrigger("discount-price", restorePriceSubWorkflow)
+                        .description("WarehouseStockCount > 40")
+                        .delay(Duration.ofMinutes(2))
+                        .function(s -> {
+                            var originalPrice = discountComponent.applyDiscount(s.getItemId(),
+                                    s.getWarehouseStockCount());
+                            s.setOriginalPrice(originalPrice);
+                            return s;
+                        }).build()
+                    .ifSelected("buy-new-items", c -> this.execute(c.data().getItemId()))
                     .build()
                 .build();
 
         workflowService.register(checkWarehouse);
 
-        restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
-                .next("set price from workflow state", s -> discountComponent.setPrize(s.getItemId(), s.getOriginalPrice()))
-                .build();
-
         workflowService.register(restorePriceSubWorkflow);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public String execute(long itemId) {
-        return workflowService.execute(checkWarehouse, NewItemArrivedWorkflowState.builder()
-                .itemId(itemId).build());
+    public WorkflowId execute(long itemId) {
+        return workflowService.execute(
+                checkWarehouse,
+                NewItemArrivedWorkflowState.builder().itemId(itemId).build()
+            );
     }
 }
 ```
