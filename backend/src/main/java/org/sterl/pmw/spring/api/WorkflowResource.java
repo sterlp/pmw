@@ -2,10 +2,8 @@ package org.sterl.pmw.spring.api;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
+import java.util.Collection;
 
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sterl.pmw.WorkflowService;
 import org.sterl.pmw.WorkflowUmlService;
 import org.sterl.pmw.api.WorkflowDiagram;
+import org.sterl.pmw.api.WorkflowInfo;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,10 +26,8 @@ public class WorkflowResource {
     private final WorkflowUmlService umlService;
     
     @GetMapping
-    List<String> list() {
-        var result = new ArrayList<>(workflowService.listWorkflows());
-        Collections.sort(result);
-        return result;
+    Collection<WorkflowInfo> list() {
+        return workflowService.listWorkflows();
     }
     
     @Cacheable

@@ -6,3 +6,9 @@ export interface WorkflowDiagram {
     plantUml: string;
     svgBase64: string;
 }
+
+export interface WorkflowInfo {
+    id: string;
+    name: string;
+    steps: number;
+}

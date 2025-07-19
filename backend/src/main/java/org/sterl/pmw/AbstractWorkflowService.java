@@ -4,8 +4,9 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.util.Collection;
 
+import org.sterl.pmw.api.WorkflowInfo;
 import org.sterl.pmw.component.WorkflowRepository;
-import org.sterl.pmw.model.WorkflowId;
+import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.Workflow;
 
 import lombok.NonNull;
@@ -18,29 +19,29 @@ public abstract class AbstractWorkflowService<RegistryType> implements WorkflowS
     protected final WorkflowRepository workflowRepository;
 
     @Override
-    public WorkflowId execute(String workflowName) {
-        return execute(workflowRepository.getWorkflow(workflowName));
+    public RunningWorkflowId execute(String workflowId) {
+        return execute(workflowRepository.getWorkflow(workflowId));
     }
 
     @Override
-    public WorkflowId execute(String workflowName, Serializable state) {
-        return execute(workflowName, state, Duration.ZERO);
+    public RunningWorkflowId execute(String workflowId, Serializable state) {
+        return execute(workflowId, state, Duration.ZERO);
     }
 
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public WorkflowId execute(String workflowName, Serializable state, Duration delay) {
-        final Workflow w = workflowRepository.getWorkflow(workflowName);
+    public RunningWorkflowId execute(String workflowId, Serializable state, Duration delay) {
+        final Workflow w = workflowRepository.getWorkflow(workflowId);
         return execute(w, state, delay);
     }
 
     @Override
-    public <T extends Serializable>  WorkflowId execute(Workflow<T> w) {
+    public <T extends Serializable> RunningWorkflowId execute(Workflow<T> w) {
         return execute(w, w.newContext());
     }
 
     @Override
-    public <T extends Serializable>  WorkflowId execute(Workflow<T> w, T c) {
+    public <T extends Serializable> RunningWorkflowId execute(Workflow<T> w, T c) {
         return execute(w, c, Duration.ZERO);
     }
 
@@ -53,9 +54,14 @@ public abstract class AbstractWorkflowService<RegistryType> implements WorkflowS
     public int workflowCount() {
         return this.workflowRepository.workflowCount();
     }
-    
+
     @Override
-    public Collection<String> listWorkflows() {
-        return workflowRepository.getWorkflowNames();
+    public Collection<WorkflowInfo> listWorkflows() {
+        return workflowRepository.getWorkflows().entrySet()
+            .stream()
+            .map(e -> new WorkflowInfo(e.getKey(), 
+                        e.getValue().getName(),
+                        e.getValue().getStepCount()))
+            .toList();
     }
 }

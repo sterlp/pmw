@@ -7,10 +7,10 @@ import java.util.List;
 
 import org.sterl.pmw.WorkflowService;
 import org.sterl.pmw.command.TriggerWorkflowCommand;
+import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.WaitStep;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.WorkflowContext;
-import org.sterl.pmw.model.WorkflowId;
 import org.sterl.pmw.model.WorkflowStep;
 import org.sterl.spring.persistent_tasks.PersistentTaskService;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
@@ -18,6 +18,8 @@ import org.sterl.spring.persistent_tasks.api.TaskId.TriggerBuilder;
 import org.sterl.spring.persistent_tasks.api.task.RunningTrigger;
 import org.sterl.spring.persistent_tasks.api.task.RunningTriggerContextHolder;
 import org.sterl.spring.persistent_tasks.api.task.TransactionalTask;
+
+import com.github.f4b6a3.uuid.UuidCreator;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
     private final WorkflowService<?> workflowService;
     private final PersistentTaskService taskService;
+    private final String workflowId;
     private final Workflow<T> workflow;
     private final WorkflowStep<T> step;
 
@@ -47,22 +50,22 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
 
         if (!context.canceled) {
-            var nextTrigger = TriggerBuilder.newTrigger(WorkflowHelper.stepName(workflow, nextStep), context.data())
+            var nextTrigger = TriggerBuilder.newTrigger(WorkflowHelper.stepName(workflowId, nextStep), context.data())
                     .runAfter(context.getNextDelay())
-                    .tag(workflow.getName())
+                    .tag(workflowId)
                     .correlationId(RunningTriggerContextHolder.getCorrelationId())
-                    .id(null)
+                    .id(context.getNextTaskId())
                     .build();
             taskService.runOrQueue(nextTrigger);
         } else {
             log.info("Cancel Workflow={} {} requested in step={}.", workflow.getName(), context.state.getKey(), step.getId());
-            workflowService.cancel(new WorkflowId(RunningTriggerContextHolder.getCorrelationId()));
+            workflowService.cancel(new RunningWorkflowId(RunningTriggerContextHolder.getCorrelationId()));
         }
     }
     
     void triggerCommands(List<TriggerWorkflowCommand<? extends Serializable>> commands) {
         for (TriggerWorkflowCommand<? extends Serializable> t : commands) {
-            log.debug("Workflow={} triggers sub-workflow={} in={}", workflow.getName(), t.workflow().getName(), t.delay());
+            log.debug("Workflow={} name={} triggers sub-workflow={} in={}", workflowId, workflow.getName(), t.workflow().getName(), t.delay());
             workflowService.execute(t.workflow().getName(), t.state(), t.delay());
         }
     }
@@ -88,6 +91,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
         private final RunningTrigger<T> state;
         private Duration nextDelay = Duration.ZERO;
         private boolean canceled = false;
+        private String nextTaskId = UuidCreator.getTimeOrderedEpochFast().toString();
         private List<TriggerWorkflowCommand<? extends Serializable>> commands = new ArrayList<>();
 
         //@Override
@@ -112,6 +116,11 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
         @Override
         public <R extends Serializable> void addCommand(TriggerWorkflowCommand<R> command) {
             commands.add(command);
+        }
+
+        @Override
+        public String nextTaskId() {
+            return null;
         }
     }
 }

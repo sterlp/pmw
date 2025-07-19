@@ -32,7 +32,7 @@ class WorkflowUmlServiceTest {
                 .next(s -> {})
                 .build();
 
-        repository.register(w);
+        register(w);
 
         File d = new File("./test-workflow.svg");
         if (d.exists()) d.delete();
@@ -173,8 +173,8 @@ class WorkflowUmlServiceTest {
                 .next("create-user-task", s -> {})
                 .build();
         
-        repository.register(sendMail);
-        repository.register(doStuff);
+        register(sendMail);
+        register(doStuff);
 
         assertWorkflow(doStuff,
                 """
@@ -272,8 +272,8 @@ class WorkflowUmlServiceTest {
                 .next(s -> {})
                 .build();
 
-        repository.register(parent);
-        repository.register(child);
+        register(parent);
+        register(child);
 
         // THEN
         assertWorkflow(parent, """
@@ -316,5 +316,9 @@ class WorkflowUmlServiceTest {
             
             assertThat(actualLine).as("Line " + (i + 1)).isEqualTo(expectedLine);
         }
+    }
+    
+    void register(Workflow<?> w) {
+        repository.register(w.getName(), w);
     }
 }
