@@ -1,41 +1,75 @@
 package org.sterl.pmw.model;
 
 import java.io.Serializable;
-import java.util.LinkedHashMap;
-import java.util.Map.Entry;
-
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
- * In contrast to an if the choose allows more then two selections.
+ * Allows the selection of an task.
  */
-@RequiredArgsConstructor
-public class ChooseFactory<T extends Serializable> 
-    extends AbstractWorkflowFactory<ChooseFactory<T>, T> {
+public class ChooseFactory<C extends StepHolder<T>, T extends Serializable> 
+    extends AbstractStepFactory<ChooseFactory<C, T>,C, T>
+    implements StepHolder<T> {
 
-    private final WorkflowFactory<T> workflowFactory;
-    private final WorkflowChooseFunction<T> chooseFn;
-    private String name;
+    private WorkflowChooseFunction<T> chooseFn;
+    private StepContainer<T> steps = new StepContainer<>();
 
-    public ChooseFactory<T> name(String name) {
-        this.name = name;
+    public ChooseFactory(C context) {
+        super(context);
+    }
+    
+    public ChooseFactory<C, T> chooseFn(WorkflowChooseFunction<T> value) {
+        chooseFn = value;
         return this;
     }
-    public ChooseFactory<T> ifSelected(String stepName, WorkflowFunction<T> fn) {
-        return addStep(new SequentialStep<>(stepName, fn));
-    }
-    public ChooseFactory<T> ifSelected(String stepName, String connectorLabel, WorkflowFunction<T> fn) {
-        return addStep(new SequentialStep<>(stepName, connectorLabel, fn));
-    }
-    public WorkflowFactory<T> build() {
-        if (name == null) name = workflowFactory.defaultStepName();
-        var steps = new LinkedHashMap<String, WorkflowStep<T>>();
-        
-        for (Entry<String, WorkflowStep<T>> e : workflowSteps.entrySet()) {
-            steps.put(e.getKey(), e.getValue());
-        }
 
-        workflowFactory.addStep(new ChooseStep<T>(name, chooseFn, steps));
-        return workflowFactory;
+    public ChooseFactory<C, T> ifSelected(String stepId, WorkflowFunction<T> fn) {
+        next(new SequentialStep<>(stepId, fn));
+        return this;
+    }
+    
+    public SequentialStepFactory<ChooseFactory<C, T>, T> ifSelected(String id) {
+        return new SequentialStepFactory<>(this).id(id);
+    }
+    
+    public <SubT extends Serializable>
+        TriggerWorkflowStepFactory<ChooseFactory<C, T>, T, SubT> ifTrigger(String id,
+            Workflow<SubT> subWorkflow, Function<T, SubT> fn) {
+      
+        return new TriggerWorkflowStepFactory<>(this, subWorkflow)
+                     .function(fn)
+                     .id(id);
+    }
+    
+    public <SubT extends Serializable> TriggerWorkflowStepFactory<ChooseFactory<C, T>, T, SubT> ifTrigger(
+            String id, Workflow<SubT> subWorkflow) {
+        return new TriggerWorkflowStepFactory<>(this, subWorkflow).id(id);
+    }
+
+    public SequentialStepFactory<ChooseFactory<C, T>, T> ifSelected() {
+        return new SequentialStepFactory<>(this);
+    }
+
+    public C build() {
+        if (id == null) id = nextStepId();
+        if (description == null) description = "Choose from " + steps.getSteps().size();
+        context.next(new ChooseStep<>(id, description, connectorLabel, chooseFn, steps.getSteps()));
+        return context;
+    }
+
+    @Override
+    public ChooseFactory<C, T> next(WorkflowStep<T> s) {
+        steps.next(s);
+        return this;
+    }
+
+    @Override
+    public Map<String, WorkflowStep<T>> steps() {
+        return steps.getSteps();
+    }
+
+    @Override
+    public String nextStepId() {
+        return context.nextStepId();
     }
 }

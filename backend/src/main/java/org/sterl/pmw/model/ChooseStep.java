@@ -12,19 +12,19 @@ public class ChooseStep<T extends Serializable> extends AbstractStep<T> {
     private final WorkflowChooseFunction<T> chooseFn;
     private final Map<String, WorkflowStep<T>> subSteps;
 
-    ChooseStep(String name, WorkflowChooseFunction<T> chooseFn, Map<String, WorkflowStep<T>> subSteps) {
-        super(name, null);
+    ChooseStep(String id, String description, String connectorLabel, WorkflowChooseFunction<T> chooseFn, Map<String, WorkflowStep<T>> subSteps) {
+        super(id, description, connectorLabel);
         this.chooseFn = chooseFn;
         this.subSteps = subSteps;
     }
 
     @Override
     public void apply(WorkflowContext<T> context) {
-        final String stepName = chooseFn.apply(context.data());
-        WorkflowStep<T> selectedStep = subSteps.get(stepName);
+        final String stepId = chooseFn.apply(context.data());
+        WorkflowStep<T> selectedStep = subSteps.get(stepId);
 
         if (selectedStep == null) {
-            throw new IllegalStateException("No step with name " + stepName + " exists. Select one of " + subSteps.keySet());
+            throw new IllegalStateException("No step with ID " + stepId + " exists. Select one of " + subSteps.keySet());
         }
 
         selectedStep.apply(context);

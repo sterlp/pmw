@@ -35,7 +35,7 @@ public class Workflow<T extends Serializable> {
         this.name = name;
         this.contextBuilder = contextBuilder;
     }
-    
+
     public T newContext() {
         return contextBuilder.get();
     }

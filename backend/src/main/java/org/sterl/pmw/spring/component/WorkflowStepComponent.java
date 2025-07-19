@@ -55,7 +55,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
                     .build();
             taskService.runOrQueue(nextTrigger);
         } else {
-            log.info("Canel Workflow={} {} requested in step={}.", workflow.getName(), context.state.getKey(), step.getName());
+            log.info("Cancel Workflow={} {} requested in step={}.", workflow.getName(), context.state.getKey(), step.getId());
             workflowService.cancel(new WorkflowId(RunningTriggerContextHolder.getCorrelationId()));
         }
     }

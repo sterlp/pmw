@@ -14,7 +14,7 @@ public abstract class WorkflowException extends RuntimeException {
 
     static final String buildDefaultErrorMessage(Workflow<?> workflow, WorkflowStep<?> failedStep, Exception cause) {
         return "Workflow=" + workflow.getName()
-            + " failed in step=" + failedStep.getName()
+            + " failed in step=" + failedStep.getId()
             + " message=" + cause.getMessage();
 
     }
