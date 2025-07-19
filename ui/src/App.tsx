@@ -6,6 +6,7 @@ const WorkflowPage = lazy(() => import("./workflow/workflow-page"));
 import { useServerObject } from "spt-ui-lib";
 const BASE = "/pmw-ui";
 import * as Icon from "react-bootstrap-icons";
+import type { WorkflowInfo } from "./server-pwm-api";
 
 const HomePage = () => (
     <main>
@@ -15,7 +16,7 @@ const HomePage = () => (
 );
 
 function App() {
-    const workflows = useServerObject<string[]>("/pmw-api/workflows");
+    const workflows = useServerObject<WorkflowInfo[]>("/pmw-api/workflows");
     const [url, _] = useUrl();
     useEffect(workflows.doGet, []);
     return (
@@ -52,12 +53,13 @@ function App() {
                                 <ListGroup.Item
                                     action
                                     active={
-                                        url.path.indexOf(`/${workflow}`) !== -1
+                                        url.path.indexOf(`/${workflow.id}`) !==
+                                        -1
                                     }
-                                    key={workflow}
-                                    href={`${BASE}/workflows/${workflow}`}
+                                    key={workflow.id}
+                                    href={`${BASE}/workflows/${workflow.id}`}
                                 >
-                                    {workflow}
+                                    {workflow.name}
                                 </ListGroup.Item>
                             ))}
                         </ListGroup>

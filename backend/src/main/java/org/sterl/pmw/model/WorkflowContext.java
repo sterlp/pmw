@@ -24,6 +24,11 @@ public interface WorkflowContext<T extends Serializable> {
     void delayNextStepBy(Duration duration);
     
     /**
+     * In case of a own resume this gives the reference to the next task id.
+     */
+    String nextTaskId();
+    
+    /**
      * This method shouldn't be directly called, use the <b>trigger</b> factory method of the workflow builder.
      */
     <R extends Serializable> void addCommand(TriggerWorkflowCommand<R> command);

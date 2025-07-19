@@ -55,7 +55,7 @@ public class Workflow<T extends Serializable> {
 
     @Override
     public String toString() {
-        return "Workflow [name=" + name + ", workflowSteps=" + workflowSteps.size() + "]";
+        return "Workflow[name=" + name + ", workflowSteps=" + workflowSteps.size() + "]";
     }
 
     public WorkflowStep<T> getNextStep(WorkflowStep<T> current) {

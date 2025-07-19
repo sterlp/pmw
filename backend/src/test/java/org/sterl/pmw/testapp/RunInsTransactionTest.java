@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.sterl.pmw.model.WorkflowId;
+import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.spring.PersistentWorkflowService;
 import org.sterl.pmw.testapp.item.boundary.ItemService;
@@ -53,7 +53,7 @@ class RunInsTransactionTest extends AbstractSpringTest {
                     itemService.updateStock(c.data().getItemId(), c.data().getStock());
                 })
                 .build();
-        workflowService.register(w);
+        register(w);
 
         // WHEN
         workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(5).build());
@@ -79,12 +79,12 @@ class RunInsTransactionTest extends AbstractSpringTest {
                 })
                 .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
-        workflowService.register(w);
+        register(w);
 
         // WHEN
-        final WorkflowId w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
-        final WorkflowId w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(77).build());
-        final WorkflowId w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(55).build());
+        final RunningWorkflowId w1 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName1").stock(99).build());
+        final RunningWorkflowId w2 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName2").stock(77).build());
+        final RunningWorkflowId w3 = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName3").stock(55).build());
         waitForAllWorkflows();
 
         // THEN
@@ -106,7 +106,7 @@ class RunInsTransactionTest extends AbstractSpringTest {
     void testRollbackOutsideRetry() {
         // GIVEN
         final var name = UUID.randomUUID().toString();
-        Workflow<TestWorkflowState> w = Workflow.builder("testRollbackOutsideRetry", TestWorkflowState::new)
+        Workflow<TestWorkflowState> w = Workflow.builder(name, TestWorkflowState::new)
                 .next(c -> {
                     Long itemId = itemService.newItem(c.data().getItemName()).getId();
                     c.data().setItemId(itemId);
@@ -119,7 +119,7 @@ class RunInsTransactionTest extends AbstractSpringTest {
                 })
                 .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
-        workflowService.register(w);
+        register(w);
 
         // WHEN
         var wid = workflowService.execute(w, TestWorkflowState.builder().itemName(name).stock(99).build());
@@ -142,7 +142,8 @@ class RunInsTransactionTest extends AbstractSpringTest {
     void testRollbackInsideRetry() throws InterruptedException {
         // GIVEN
         asserts.clear();
-        Workflow<TestWorkflowState> w = Workflow.builder("testRollbackInsideRetry", TestWorkflowState::new)
+        final var name = UUID.randomUUID().toString();
+        Workflow<TestWorkflowState> w = Workflow.builder(name, TestWorkflowState::new)
                 .next(c -> {
                     Long itemId = itemService.newItem(c.data().getItemName()).getId();
                     c.data().setItemId(itemId);
@@ -158,19 +159,22 @@ class RunInsTransactionTest extends AbstractSpringTest {
                 })
                 .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
-        workflowService.register(w);
+        register(w);
 
         // WHEN
         var wid = workflowService.execute(w, TestWorkflowState.builder().itemName("MyName").stock(99).build());
         waitForAllWorkflows();
 
         // THEN
-
         assertThat(schedulerService.getRunning()).isEmpty();
         assertThat(schedulerService.hasRunningTriggers()).isFalse();
 
         assertThat(workflowService.status(wid)).isEqualTo(TriggerStatus.SUCCESS);
         assertThat(itemRepository.findByName("MyName").getInStock()).isEqualTo(99);
         assertThat(asserts.getCount("testRollbackInsideRetry->error")).isEqualTo(2);
+    }
+
+    void register(Workflow<?> w) {
+        workflowService.register(w.getName(), w);
     }
 }

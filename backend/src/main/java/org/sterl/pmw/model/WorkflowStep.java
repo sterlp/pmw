@@ -12,6 +12,8 @@ public interface WorkflowStep<T extends Serializable> {
      * Optional label for the connector leading to this step, just for readability
      */
     String getConnectorLabel();
+    
+    boolean isTransactional();
 
     void apply(WorkflowContext<T> context);
 }

@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.stereotype.Service;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.ChooseStep;
 import org.sterl.pmw.model.TriggerWorkflowStep;
@@ -21,6 +22,7 @@ import net.sourceforge.plantuml.FileFormatOption;
 import net.sourceforge.plantuml.SourceStringReader;
 import net.sourceforge.plantuml.core.DiagramDescription;
 
+@Service
 @RequiredArgsConstructor
 public class WorkflowUmlService {
 
@@ -29,6 +31,7 @@ public class WorkflowUmlService {
     public DiagramDescription printWorkflowAsPlantUmlSvg(String workflowId, OutputStream out) throws IOException {
         return this.printWorkflowAsPlantUmlSvg(workflowRepository.getWorkflow(workflowId), out);
     }
+
     public DiagramDescription printWorkflowAsPlantUmlSvg(Workflow<?> workflow, OutputStream out) throws IOException {
         final String workflowUml = printWorkflow(workflow);
         return convertAsPlantUmlSvg(workflowUml, out);
@@ -58,6 +61,7 @@ public class WorkflowUmlService {
 
         diagram.stop();
     }
+
     private void addWorkflowStepToDiagramByType(final PlantUmlDiagram diagram,
             WorkflowStep<?> step) {
         if (step instanceof ChooseStep<?> ifStep) {
@@ -75,8 +79,8 @@ public class WorkflowUmlService {
 
     private Optional<Workflow<?>> hasSubworkflow(String name) {
         if (name.toLowerCase().startsWith("trigger->")) {
-            String workflowName = name.substring(9, name.length());
-            return workflowRepository.findWorkflow(workflowName);
+            String workflowId = name.substring(9, name.length());
+            return workflowRepository.findWorkflow(workflowId);
         }
         return Optional.empty();
     }
@@ -91,20 +95,20 @@ public class WorkflowUmlService {
 
         diagram.stopIntend();
         diagram.line("end fork");
-        
+
     }
-    
+
     private void appendWorkflow(Workflow<?> w, Duration delay, final PlantUmlDiagram diagram) {
         if (delay != null && delay.getSeconds() > 0) {
             diagram.appendWaitState(delay.toString(), null);
         }
 
         diagram.line("partition \"" + w.getName() + "\" {");
-        
+
         diagram.intend();
         addWorkflow(w, diagram);
         diagram.stopIntend();
-        
+
         diagram.line("}");
     }
 
@@ -112,11 +116,11 @@ public class WorkflowUmlService {
         diagram.appendLine(ifStep.getConnectorLabel());
 
         diagram.startSwitch(ifStep.getId());
-        
+
         final var switchCases = new AtomicInteger(0);
         ifStep.getSubSteps().forEach((k, s) -> {
             diagram.startCase(s.getDescription());
-            
+
             diagram.labeledConnector(s.getConnectorLabel());
 
             if (s instanceof TriggerWorkflowStep tf) {
@@ -129,8 +133,10 @@ public class WorkflowUmlService {
             diagram.stopCase();
         });
 
-        if (switchCases.intValue() > 1) diagram.endSwitch();
-        else diagram.stopIntend();
+        if (switchCases.intValue() > 1)
+            diagram.endSwitch();
+        else
+            diagram.stopIntend();
     }
 
     private void draw(WorkflowStep<?> s, PlantUmlDiagram diagram) {

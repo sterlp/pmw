@@ -12,8 +12,9 @@ public class ChooseStep<T extends Serializable> extends AbstractStep<T> {
     private final WorkflowChooseFunction<T> chooseFn;
     private final Map<String, WorkflowStep<T>> subSteps;
 
-    ChooseStep(String id, String description, String connectorLabel, WorkflowChooseFunction<T> chooseFn, Map<String, WorkflowStep<T>> subSteps) {
-        super(id, description, connectorLabel);
+    ChooseStep(String id, String description, String connectorLabel, boolean transactional, 
+            WorkflowChooseFunction<T> chooseFn, Map<String, WorkflowStep<T>> subSteps) {
+        super(id, description, connectorLabel, transactional);
         this.chooseFn = chooseFn;
         this.subSteps = subSteps;
     }

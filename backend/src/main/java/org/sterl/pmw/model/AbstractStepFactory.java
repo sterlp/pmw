@@ -13,7 +13,8 @@ public abstract class AbstractStepFactory<F extends AbstractStepFactory<F, C, T>
     protected String id;
     protected String description;
     protected String connectorLabel;
-    
+    protected boolean transactional = true;
+
     public F id(String value) {
         id = value;
         return (F)this;
@@ -21,6 +22,11 @@ public abstract class AbstractStepFactory<F extends AbstractStepFactory<F, C, T>
     
     public F description(String value) {
         description = value;
+        return (F)this;
+    }
+    
+    public F transactional(boolean value) {
+        transactional = value;
         return (F)this;
     }
     

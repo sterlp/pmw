@@ -9,7 +9,7 @@ public class WaitStep<T extends Serializable> extends AbstractStep<T> {
     private final Function<T, Duration> fn;
 
     WaitStep(String id, String description, Function<T, Duration> fn) {
-        super(id, description, null);
+        super(id, description, null, false);
         this.fn = fn;
     }
 

@@ -53,7 +53,7 @@ public class ChooseFactory<C extends StepHolder<T>, T extends Serializable>
     public C build() {
         if (id == null) id = nextStepId();
         if (description == null) description = "Choose from " + steps.getSteps().size();
-        context.next(new ChooseStep<>(id, description, connectorLabel, chooseFn, steps.getSteps()));
+        context.next(new ChooseStep<>(id, description, connectorLabel, transactional, chooseFn, steps.getSteps()));
         return context;
     }
 
