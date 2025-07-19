@@ -36,30 +36,26 @@ Select latest version: https://central.sonatype.com/search?q=g%3Aorg.sterl.pmw
 ![check-warehouse](/example/check-warehouse.svg)
 
 ```java
-@Service
-@RequiredArgsConstructor
+@Configuration
 public class NewItemArrivedWorkflow {
 
-    private final WarehouseService warehouseService;
-    private final DiscountComponent discountComponent;
-    private final WarehouseStockComponent createStock;
-    private final UpdateInStockCountComponent updateStock;
-    private final WorkflowService<TaskId<? extends Serializable>> workflowService;
-
-    @Getter
-    private Workflow<NewItemArrivedWorkflowState> checkWarehouse;
-    @Getter
-    private Workflow<NewItemArrivedWorkflowState> restorePriceSubWorkflow;
-
-
-    @PostConstruct
-    void createWorkflow() {
-        restorePriceSubWorkflow = Workflow.builder("restore-item-price", () -> NewItemArrivedWorkflowState.builder().build())
+    @Bean
+    Workflow<NewItemArrivedState> restorePriceWorkflow(DiscountComponent discountComponent) {
+        return Workflow.builder("Restore Item Price", () -> NewItemArrivedState.builder().build())
                 .next("updatePrice", c -> discountComponent.setPrize(c.data().getItemId(), c.data().getOriginalPrice()))
                 .next("sendMail", s -> {})
                 .build();
+    }
 
-        checkWarehouse = Workflow.builder("check-warehouse", () -> NewItemArrivedWorkflowState.builder().build())
+    @Bean
+    Workflow<NewItemArrivedState> checkWarehouseWorkflow(
+            WarehouseService warehouseService,
+            UpdateInStockCountComponent updateStock,
+            WarehouseStockComponent createStock,
+            DiscountComponent discountComponent,
+            Workflow<NewItemArrivedState> restorePriceWorkflow) {
+
+        return Workflow.builder("Check Warehouse", () -> NewItemArrivedState.builder().build())
                 .next().description("check warehouse for new stock")
                     .function(c -> createStock.checkWarehouseForNewStock(c.data().getItemId()))
                     .build()
@@ -74,30 +70,18 @@ public class NewItemArrivedWorkflow {
                         if (s.getWarehouseStockCount() > 40) return "discount-price";
                         else return "buy-new-items";
                     })
-                    .ifTrigger("discount-price", restorePriceSubWorkflow)
+                    .ifTrigger("discount-price", restorePriceWorkflow)
                         .description("WarehouseStockCount > 40")
                         .delay(Duration.ofMinutes(2))
                         .function(s -> {
-                            var originalPrice = discountComponent.applyDiscount(s.getItemId(),
+                            var originalPrice = discountComponent.applyDiscount(s.getItemId(), 
                                     s.getWarehouseStockCount());
                             s.setOriginalPrice(originalPrice);
                             return s;
                         }).build()
-                    .ifSelected("buy-new-items", c -> this.execute(c.data().getItemId()))
+                    .ifSelected("buy-new-items", c -> {})
                     .build()
                 .build();
-
-        workflowService.register(checkWarehouse);
-
-        workflowService.register(restorePriceSubWorkflow);
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    public WorkflowId execute(long itemId) {
-        return workflowService.execute(
-                checkWarehouse,
-                NewItemArrivedWorkflowState.builder().itemId(itemId).build()
-            );
     }
 }
 ```
