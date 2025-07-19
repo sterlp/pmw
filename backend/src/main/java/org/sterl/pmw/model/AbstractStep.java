@@ -14,6 +14,7 @@ public abstract class AbstractStep<T extends Serializable> implements WorkflowSt
     protected final String id;
     protected final String description;
     protected final String connectorLabel;
+    protected final boolean transactional;
 
     @Override
     public String toString() {

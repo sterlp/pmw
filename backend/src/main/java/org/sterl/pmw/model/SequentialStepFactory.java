@@ -18,7 +18,7 @@ public class SequentialStepFactory<
     
     public C build() {
         if (id == null) id = context.nextStepId();
-        context.next(new SequentialStep<>(id, description, connectorLabel, function));
+        context.next(new SequentialStep<>(id, description, connectorLabel, function, transactional));
         return context;
     }
 }

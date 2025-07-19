@@ -10,11 +10,11 @@ public class SequentialStep<T extends Serializable> extends AbstractStep<T> {
     private final WorkflowFunction<T> fn;
 
     SequentialStep(String id, WorkflowFunction<T> fn) {
-        this(id, null, null, fn);
+        this(id, null, null, fn, true);
     }
 
-    SequentialStep(String id, String description, String connectorLabel, WorkflowFunction<T> fn) {
-        super(id, description, connectorLabel);
+    SequentialStep(String id, String description, String connectorLabel, WorkflowFunction<T> fn, boolean transactional) {
+        super(id, description, connectorLabel, transactional);
         Objects.requireNonNull(fn, "WorkflowFunction cannot be null.");
         this.fn = fn;
     }

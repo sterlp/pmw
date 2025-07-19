@@ -22,7 +22,7 @@ public class TriggerWorkflowStep<T extends Serializable,
 
     TriggerWorkflowStep(String id, String description, String connectorLabel, Workflow<SubWorkflowState> subWorkflow,
         Function<T, SubWorkflowState> fn, Duration delay) {
-        super(id, description, connectorLabel);
+        super(id, description, connectorLabel, true);
 
         this.fn = fn;
         this.subWorkflow = subWorkflow;

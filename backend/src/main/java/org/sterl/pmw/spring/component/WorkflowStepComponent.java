@@ -84,6 +84,11 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
     public RetryStrategy retryStrategy() {
         return workflow.getRetryStrategy();
     }
+    
+    @Override
+    public boolean isTransactional() {
+        return step.isTransactional();
+    }
 
     @RequiredArgsConstructor
     @Getter
