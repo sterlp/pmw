@@ -106,7 +106,7 @@ class RunInsTransactionTest extends AbstractSpringTest {
     void testRollbackOutsideRetry() {
         // GIVEN
         final var name = UUID.randomUUID().toString();
-        Workflow<TestWorkflowState> w = Workflow.builder("testRollbackOutsideRetry", TestWorkflowState::new)
+        Workflow<TestWorkflowState> w = Workflow.builder(name, TestWorkflowState::new)
                 .next(c -> {
                     Long itemId = itemService.newItem(c.data().getItemName()).getId();
                     c.data().setItemId(itemId);
@@ -142,7 +142,8 @@ class RunInsTransactionTest extends AbstractSpringTest {
     void testRollbackInsideRetry() throws InterruptedException {
         // GIVEN
         asserts.clear();
-        Workflow<TestWorkflowState> w = Workflow.builder("testRollbackInsideRetry", TestWorkflowState::new)
+        final var name = UUID.randomUUID().toString();
+        Workflow<TestWorkflowState> w = Workflow.builder(name, TestWorkflowState::new)
                 .next(c -> {
                     Long itemId = itemService.newItem(c.data().getItemName()).getId();
                     c.data().setItemId(itemId);
@@ -165,7 +166,6 @@ class RunInsTransactionTest extends AbstractSpringTest {
         waitForAllWorkflows();
 
         // THEN
-
         assertThat(schedulerService.getRunning()).isEmpty();
         assertThat(schedulerService.hasRunningTriggers()).isFalse();
 

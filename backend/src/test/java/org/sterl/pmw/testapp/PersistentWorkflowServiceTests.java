@@ -11,10 +11,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.sterl.pmw.SimpleWorkflowState;
-import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.model.RunningWorkflowId;
+import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.spring.PersistentWorkflowService;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
@@ -24,8 +23,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@SpringBootTest
-public class SpringCoreTests extends AbstractSpringTest {
+public class PersistentWorkflowServiceTests extends AbstractSpringTest {
 
     @Autowired
     private PersistentWorkflowService subject;
@@ -94,7 +92,7 @@ public class SpringCoreTests extends AbstractSpringTest {
     @Test
     public void testWorkflowStatus() throws InterruptedException {
         // GIVEN
-        Workflow<TestWorkflowCtx> w = Workflow.builder("any-workflow", TestWorkflowCtx::new)
+        Workflow<TestWorkflowCtx> w = Workflow.builder("testWorkflowStatus", TestWorkflowCtx::new)
                 .next(c -> {
                     try {
                         Thread.sleep(c.data().getAnyValue());
@@ -154,7 +152,7 @@ public class SpringCoreTests extends AbstractSpringTest {
     public void testWorkflowStateIsAvailableInNextStep() {
         // GIVEN
         final AtomicInteger state = new AtomicInteger(0);
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", TestWorkflowCtx::new)
+        Workflow<TestWorkflowCtx> w = Workflow.builder("testWorkflowStateIsAvailableInNextStep", TestWorkflowCtx::new)
             .next((s) -> s.data().increment())
             .next((s) -> state.set(s.data().getAnyValue()))
             .build();
@@ -177,7 +175,7 @@ public class SpringCoreTests extends AbstractSpringTest {
     public void testNoUserStateUpdateOnException() {
         final AtomicLong state = new AtomicLong(0);
 
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow", TestWorkflowCtx::new)
+        Workflow<TestWorkflowCtx> w = Workflow.builder("testNoUserStateUpdateOnException", TestWorkflowCtx::new)
                 .next(c -> {
                     state.set(c.data().getAnyValue());
                     c.data().setAnyValue(99);
@@ -198,7 +196,7 @@ public class SpringCoreTests extends AbstractSpringTest {
     @Test
     public void testWorkflow() {
         // GIVEN
-        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", SimpleWorkflowState::new)
+        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow-long", SimpleWorkflowState::new)
             .next((s) -> {
                 asserts.info("do-first");
             })
@@ -231,7 +229,7 @@ public class SpringCoreTests extends AbstractSpringTest {
     @Test
     public void testChoose() {
         // GIVEN
-        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", SimpleWorkflowState::new)
+        Workflow<SimpleWorkflowState> w = Workflow.builder("testChoose", SimpleWorkflowState::new)
             .choose(s -> {
                     asserts.info("choose 1");
                     return "right";
@@ -277,7 +275,7 @@ public class SpringCoreTests extends AbstractSpringTest {
     @Test
     public void testRetry() {
         // GIVEN
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
+        Workflow<TestWorkflowCtx> w = Workflow.builder("testRetry",
                 TestWorkflowCtx::new)
                 .next("failing step", c -> {
                     asserts.info("failing " + c.executionCount());
@@ -301,7 +299,7 @@ public class SpringCoreTests extends AbstractSpringTest {
     public void testFailForever() {
         // GIVEN
         final AtomicInteger failCount = new AtomicInteger(0);
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
+        Workflow<TestWorkflowCtx> w = Workflow.builder("testFailForever",
                 TestWorkflowCtx::new)
                 .next("failing step", c -> {
                     asserts.info("failing " + failCount.incrementAndGet());
@@ -327,7 +325,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         // GIVEN
         final AtomicLong timeFirstStep = new AtomicLong(0);
         final AtomicLong timeSecondStep = new AtomicLong(0);
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
+        Workflow<TestWorkflowCtx> w = Workflow.builder("testWaitForNextStep",
                 TestWorkflowCtx::new)
                 .next(c -> {
                     timeFirstStep.set(System.currentTimeMillis());
@@ -364,7 +362,7 @@ public class SpringCoreTests extends AbstractSpringTest {
         // GIVEN
         final AtomicLong timeFirstStep = new AtomicLong(0);
         final AtomicLong timeSecondStep = new AtomicLong(0);
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
+        Workflow<TestWorkflowCtx> w = Workflow.builder("testWaitForNextStepCorrectWay",
                 TestWorkflowCtx::new)
                 .next(s -> {
                     asserts.info("wait");
@@ -389,7 +387,7 @@ public class SpringCoreTests extends AbstractSpringTest {
     @Test
     public void testCancelWorkflow() {
         // GIVEN
-        Workflow<TestWorkflowCtx> w = Workflow.builder("test-workflow",
+        Workflow<TestWorkflowCtx> w = Workflow.builder("testCancelWorkflow",
                 TestWorkflowCtx::new)
                 .next(s -> asserts.info("step 1"))
                 .next(c -> {
@@ -436,12 +434,12 @@ public class SpringCoreTests extends AbstractSpringTest {
     @Test
     void testTriggerWorkflow() {
      // GIVEN
-        Workflow<Integer> child = Workflow.builder("child", () ->  Integer.SIZE)
+        Workflow<Integer> child = Workflow.builder("testTriggerWorkflow-child", () ->  Integer.SIZE)
                 .next(s -> asserts.info("child 1"))
                 .next(s -> asserts.info("child 2"))
                 .build();
 
-        Workflow<SimpleWorkflowState> parent = Workflow.builder("parent", () ->  new SimpleWorkflowState())
+        Workflow<SimpleWorkflowState> parent = Workflow.builder("testTriggerWorkflow-parent", () ->  new SimpleWorkflowState())
                 .next(s -> asserts.info("partent 1"))
                 .trigger(child).function(s -> 1).id("myCoolId").build()
                 .next(s -> asserts.info("partent 2"))

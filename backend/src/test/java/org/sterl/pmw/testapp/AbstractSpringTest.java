@@ -49,14 +49,11 @@ public abstract class AbstractSpringTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        triggerService.deleteAll();
         try {
             persistentTaskTestService.awaitRunningTriggers();
         } catch (Exception e) {
             System.err.println("awaitRunningTriggers has an error, do we care? No! " + e.getMessage());
         }
-        taskRepository.clear();
-        workflowService.clearAllWorkflows();
         itemRepository.deleteAllInBatch();
         asserts.clear();
         Awaitility.setDefaultTimeout(Duration.ofSeconds(5));
