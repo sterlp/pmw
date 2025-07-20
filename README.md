@@ -88,37 +88,46 @@ public class NewItemArrivedWorkflow {
 
 ### Export Workflow as UML
 
+[Example Code](example/src/test/java/org/sterl/store/items/workflow/CheckWarehouseWorkflowPrintTest.java)
+
+
 ```java
-@ExtendWith(MockitoExtension.class)
-class NewItemArrivedWorkflowMockTest {
+class CheckWarehouseWorkflowPrintTest {
 
-    @Mock WarehouseService warehouseService;
-    @Mock DiscountComponent discountComponent;
-    @Mock WarehouseStockComponent createStock;
-    @Mock UpdateInStockCountComponent updateStock;
-    @Mock WorkflowService<JobDetail> workflowService;
+    private NewItemArrivedWorkflow subject = new NewItemArrivedWorkflow();
 
-    @InjectMocks NewItemArrivedWorkflow subject;
+    WorkflowRepository repo = new WorkflowRepository();
+    WorkflowUmlService umlService = new WorkflowUmlService(repo);
+    
+    Workflow<NewItemArrivedState> restorePriceWorkflow;
+    Workflow<NewItemArrivedState> checkWarehouseWorkflow;
 
     @BeforeEach
     void setUp() throws Exception {
-        subject.createWorkflow();
+        repo.clear();
+        restorePriceWorkflow = subject.restorePriceWorkflow(mock(DiscountComponent.class));
+        checkWarehouseWorkflow = subject.checkWarehouseWorkflow(
+                mock(WarehouseService.class), 
+                mock(UpdateInStockCountComponent.class),
+                mock(WarehouseStockComponent.class),
+                mock(DiscountComponent.class),
+                restorePriceWorkflow);
+        
+        repo.register("restorePriceWorkflow", restorePriceWorkflow);
+        repo.register("checkWarehouseWorkflow", checkWarehouseWorkflow);
     }
 
     @Test
-    void testPrintSimple() throws Exception {
-        SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse());
+    void testWriteSvg() throws Exception {
+
+        PlantUmlWritter.writeAsPlantUmlSvg("./check-warehouse.svg", checkWarehouseWorkflow, umlService);
     }
-
+    
     @Test
-    void testPrintWithSubworkflowSupportByName() throws Exception {
-        WorkflowRepository repo = new WorkflowRepository();
-        WorkflowUmlService umlService = new WorkflowUmlService(repo);
-
-        repo.register(subject.getCheckWarehouse());
-        repo.register(subject.getRestorePriceSubWorkflow());
-
-        SerializationUtil.writeAsPlantUmlSvg("./check-warehouse.svg", subject.getCheckWarehouse().getName(), umlService);
+    void testWriteUml() throws Exception {
+        System.err.println(
+                umlService.printWorkflow(checkWarehouseWorkflow)
+        );
     }
 }
 ```

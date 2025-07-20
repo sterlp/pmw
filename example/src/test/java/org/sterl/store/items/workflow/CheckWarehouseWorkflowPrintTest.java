@@ -4,8 +4,6 @@ import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.sterl.pmw.WorkflowUmlService;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
@@ -15,8 +13,7 @@ import org.sterl.store.items.component.UpdateInStockCountComponent;
 import org.sterl.store.items.component.WarehouseStockComponent;
 import org.sterl.store.warehouse.WarehouseService;
 
-@ExtendWith(MockitoExtension.class)
-class NewItemArrivedWorkflowMockTest {
+class CheckWarehouseWorkflowPrintTest {
 
     private NewItemArrivedWorkflow subject = new NewItemArrivedWorkflow();
 
@@ -42,18 +39,15 @@ class NewItemArrivedWorkflowMockTest {
     }
 
     @Test
-    void test() throws Exception {
+    void testWriteSvg() throws Exception {
 
         PlantUmlWritter.writeAsPlantUmlSvg("./check-warehouse.svg", checkWarehouseWorkflow, umlService);
     }
     
     @Test
-    void testString() throws Exception {
+    void testWriteUml() throws Exception {
         System.err.println(
                 umlService.printWorkflow(checkWarehouseWorkflow)
         );
-        //subject.addWorkflow(w, result);
-        //final String diagram = result.build()
     }
-    
 }

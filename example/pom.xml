@@ -18,7 +18,7 @@
     <properties>
         <java.version>21</java.version>
         <spt.version></spt.version>
-        <pmw.version>2.1.1-SNAPSHOT</pmw.version>
+        <pmw.version>2.2.0</pmw.version>
         <spt.version>2.1.0</spt.version>
     </properties>
 
