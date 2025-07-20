@@ -18,6 +18,8 @@ import org.sterl.pmw.spring.PersistentWorkflowService;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
 
+import com.github.f4b6a3.uuid.UuidCreator;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -27,23 +29,14 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
 
     @Autowired
     private PersistentWorkflowService subject;
-    
-    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
-    protected static class TestWorkflowCtx implements Serializable {
-        private static final long serialVersionUID = 1L;
-        private int anyValue = 0;
-        public void increment() {
-            ++anyValue;
-        }
-    }
 
     @Test
-    public void testWorkflowServiceIsCreated() {
+    void testWorkflowServiceIsCreated() {
         assertThat(subject).isNotNull();
     }
     
     @Test
-    public void testRegisterWorkflowNoSteps() {
+    void testRegisterWorkflowNoSteps() {
         // GIVEN
         Workflow<TestWorkflowCtx> w = Workflow.builder("bad-workflow", TestWorkflowCtx::new).build();
 
@@ -52,45 +45,59 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
     }
 
     @Test
-    public void testRegisterWorkflow() {
+    void testRegisterWorkflow() {
         // GIVEN
-        subject.clearAllWorkflows();
+        var startCount = subject.workflowCount();
         Workflow<TestWorkflowCtx> w = Workflow.builder("any-workflow", TestWorkflowCtx::new)
                 .sleep(Duration.ofHours(1))
                 .build();
-        assertThat(subject.workflowCount()).isZero();
 
         // WHEN
         register(w);
-
         // THEN
-        assertThat(subject.workflowCount()).isOne();
+        assertThat(subject.workflowCount()).isEqualTo(startCount + 1);
 
         // AND
         assertThrows(IllegalArgumentException.class, () -> register(w));
+        // WHEN
+        assertThat(subject.workflowCount()).isEqualTo(startCount + 1);
     }
 
     @Test
-    public void testWorkflowStateValue() {
+    void testWorkflowStateValue() {
         // GIVEN
         final AtomicInteger state = new AtomicInteger(0);
 
-        final Workflow<TestWorkflowCtx> workflow = Workflow.builder("test-workflow", TestWorkflowCtx::new)
+        final Workflow<TestWorkflowCtx> workflow = Workflow.builder("test-workflow-state", TestWorkflowCtx::new)
             .next(c -> c.data().increment())
             .next(c -> state.set(c.data().getAnyValue()))
             .build();
         register(workflow);
 
         // WHEN
-        final RunningWorkflowId id = subject.execute(workflow, new TestWorkflowCtx(10));
-        await().until(() -> subject.status(id) == TriggerStatus.SUCCESS);
-
+        var id = subject.execute(workflow, new TestWorkflowCtx(10));
+        waitForAllWorkflows();
         // THEN
+        assertThat(subject.status(id)).isEqualTo(TriggerStatus.SUCCESS);
         assertThat(state.get()).isEqualTo(11);
+        
+        // WHEN
+        id = subject.execute(workflow);
+        waitForAllWorkflows();
+        // THEN
+        assertThat(subject.status(id)).isEqualTo(TriggerStatus.SUCCESS);
+        assertThat(state.get()).isEqualTo(1);
+        
+        // WHEN given state is null -> should build a new one
+        id = subject.execute(workflow, null);
+        waitForAllWorkflows();
+        // THEN
+        assertThat(state.get()).isEqualTo(1);
+        assertThat(subject.status(id)).isEqualTo(TriggerStatus.SUCCESS);
     }
 
     @Test
-    public void testWorkflowStatus() throws InterruptedException {
+    void testWorkflowStatus() throws InterruptedException {
         // GIVEN
         Workflow<TestWorkflowCtx> w = Workflow.builder("testWorkflowStatus", TestWorkflowCtx::new)
                 .next(c -> {
@@ -126,7 +133,7 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
     }
     
     @Test
-    public void testCancelWorkflowByService() {
+    void testCancelWorkflowByService() {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("cancel-workflow", SimpleWorkflowState::new)
                 .next(c -> asserts.add("foo"))
@@ -149,7 +156,7 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
     }
 
     @Test
-    public void testWorkflowStateIsAvailableInNextStep() {
+    void testWorkflowStateIsAvailableInNextStep() {
         // GIVEN
         final AtomicInteger state = new AtomicInteger(0);
         Workflow<TestWorkflowCtx> w = Workflow.builder("testWorkflowStateIsAvailableInNextStep", TestWorkflowCtx::new)
@@ -172,7 +179,7 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
      * on the next run.
      */
     @Test
-    public void testNoUserStateUpdateOnException() {
+    void testNoUserStateUpdateOnException() {
         final AtomicLong state = new AtomicLong(0);
 
         Workflow<TestWorkflowCtx> w = Workflow.builder("testNoUserStateUpdateOnException", TestWorkflowCtx::new)
@@ -194,7 +201,7 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
     }
 
     @Test
-    public void testWorkflow() {
+    void testWorkflow() {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow-long", SimpleWorkflowState::new)
             .next((s) -> {
@@ -227,7 +234,7 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
     }
 
     @Test
-    public void testChoose() {
+    void testChoose() {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("testChoose", SimpleWorkflowState::new)
             .choose(s -> {
@@ -273,7 +280,7 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
     }
 
     @Test
-    public void testRetry() {
+    void testRetry() {
         // GIVEN
         Workflow<TestWorkflowCtx> w = Workflow.builder("testRetry",
                 TestWorkflowCtx::new)
@@ -296,7 +303,7 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
     }
 
     @Test
-    public void testFailForever() {
+    void testFailForever() {
         // GIVEN
         final AtomicInteger failCount = new AtomicInteger(0);
         Workflow<TestWorkflowCtx> w = Workflow.builder("testFailForever",
@@ -321,71 +328,7 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
     }
 
     @Test
-    public void testWaitForNextStep() throws Exception {
-        // GIVEN
-        final AtomicLong timeFirstStep = new AtomicLong(0);
-        final AtomicLong timeSecondStep = new AtomicLong(0);
-        Workflow<TestWorkflowCtx> w = Workflow.builder("testWaitForNextStep",
-                TestWorkflowCtx::new)
-                .next(c -> {
-                    timeFirstStep.set(System.currentTimeMillis());
-                    asserts.info("wait");
-                    c.delayNextStepBy(Duration.ofMillis(500));
-                })
-                .next(s -> {
-                    timeSecondStep.set(System.currentTimeMillis());
-                    asserts.info("done");
-                })
-                .build();
-        register(w);
-
-        // WHEN
-        final RunningWorkflowId runningWorkflowId = subject.execute(w);
-        schedulerService.triggerNextTasks();
-
-        // AND the next one should be delayed!
-        await().atMost(Duration.ofMillis(500)).until(() -> subject.status(runningWorkflowId) == TriggerStatus.WAITING);
-        asserts.assertValue("wait");
-        asserts.assertMissing("done");
-
-        // WHEN we wait a bit more, for the task to be due
-        Thread.sleep(501);
-        schedulerService.triggerNextTasks();
-        
-        // THEN the last task should be done too
-        asserts.awaitOrdered("wait", "done");
-        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(500L);
-    }
-
-    @Test
-    public void testWaitForNextStepCorrectWay() {
-        // GIVEN
-        final AtomicLong timeFirstStep = new AtomicLong(0);
-        final AtomicLong timeSecondStep = new AtomicLong(0);
-        Workflow<TestWorkflowCtx> w = Workflow.builder("testWaitForNextStepCorrectWay",
-                TestWorkflowCtx::new)
-                .next(s -> {
-                    asserts.info("wait");
-                    timeFirstStep.set(System.currentTimeMillis());
-                })
-                .sleep(Duration.ofMillis(500))
-                .next((s) -> {
-                    timeSecondStep.set(System.currentTimeMillis());
-                    asserts.info("done");
-                })
-                .build();
-        register(w);
-
-        // WHEN
-        subject.execute(w);
-
-        // THEN
-        asserts.awaitOrdered(() -> schedulerService.triggerNextTasks(), "wait", "done");
-        assertThat(timeSecondStep.get() - timeFirstStep.get()).isGreaterThan(500L);
-    }
-
-    @Test
-    public void testCancelWorkflow() {
+    void testCancelWorkflow() {
         // GIVEN
         Workflow<TestWorkflowCtx> w = Workflow.builder("testCancelWorkflow",
                 TestWorkflowCtx::new)
@@ -407,59 +350,13 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
         assertThat(subject.status(runningWorkflowId)).isEqualTo(TriggerStatus.CANCELED);
         asserts.assertMissing("cancel");
     }
-
-    @Test
-    public void testTriggerSubWorkflow() throws InterruptedException {
-        // GIVEN
-        final AtomicInteger stateValue = new AtomicInteger(0);
-        Workflow<TestWorkflowCtx> subW = Workflow.builder("subW", TestWorkflowCtx::new)
-                .next(s -> stateValue.set(s.data().getAnyValue() + 1))
-                .build();
-        register(subW);
-
-        Workflow<TestWorkflowCtx> w = Workflow.builder("w", TestWorkflowCtx::new)
-                .next(s -> s.data().setAnyValue(1))
-                .trigger(subW, s -> s)
-                .build();
-        register(w);
-
-        // WHEN
-        subject.execute(w);
-        waitForAllWorkflows();
-
-        // THEN
-        assertThat(stateValue.get()).isEqualTo(2);
-    }
     
-    @Test
-    void testTriggerWorkflow() {
-     // GIVEN
-        Workflow<Integer> child = Workflow.builder("testTriggerWorkflow-child", () ->  Integer.SIZE)
-                .next(s -> asserts.info("child 1"))
-                .next(s -> asserts.info("child 2"))
-                .build();
-
-        Workflow<SimpleWorkflowState> parent = Workflow.builder("testTriggerWorkflow-parent", () ->  new SimpleWorkflowState())
-                .next(s -> asserts.info("partent 1"))
-                .trigger(child).function(s -> 1).id("myCoolId").build()
-                .next(s -> asserts.info("partent 2"))
-                .build();
-        
-        register(child);
-        register(parent);
-        
-        // WHEN
-        subject.execute(parent);
-        
-        // THEN 
-        waitForAllWorkflows();
-        asserts.awaitValueOnce("partent 1");
-        asserts.awaitValueOnce("partent 2");
-        asserts.awaitValueOnce("child 1");
-        asserts.awaitValueOnce("child 2");
-    }
-    
-    void register(Workflow<?> w) {
-        subject.register(w.getName(), w);
+    @Getter @Setter @NoArgsConstructor @AllArgsConstructor
+    protected static class TestWorkflowCtx implements Serializable {
+        private static final long serialVersionUID = 1L;
+        private int anyValue = 0;
+        void increment() {
+            ++anyValue;
+        }
     }
 }

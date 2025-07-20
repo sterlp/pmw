@@ -55,14 +55,15 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
     public <T extends Serializable> RunningWorkflowId execute(Workflow<T> workflow, T state, Duration delay) {
         final var task = (TaskId<T>)this.firstTaskRef.get(workflow);
         final var id = RunningWorkflowId.newWorkflowId(workflow);
-        final var trigger = task.newTrigger(state)
+        final var trigger = task
+            .newTrigger(state == null ? workflow.newContext() : state)
             .runAfter(delay)
-            .tag(workflow.getName())
+            .tag(getWorkflowId(workflow).get())
             .correlationId(id.value())
             .build();
         
         log.debug("Starting workflow={} with id={} and first step={}", 
-                workflow.getName(), id.value(), trigger.key());
+                workflow, id.value(), trigger.key());
 
         persistentTaskService.runOrQueue(trigger);
 
@@ -97,7 +98,7 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
             if (firstWorkflowTask == null) firstWorkflowTask = stepId;
         }
         if (firstWorkflowTask == null) {
-            throw new IllegalArgumentException("Workflow[id=" + workflowId + "]" + workflow.getName() + " has not steps!");
+            throw new IllegalArgumentException("Workflow[id=" + workflowId + "] " + workflow + " has not steps!");
         }
         this.firstTaskRef.put(workflow, firstWorkflowTask);
         return firstWorkflowTask;

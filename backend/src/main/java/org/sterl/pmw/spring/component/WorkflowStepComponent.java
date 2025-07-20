@@ -58,15 +58,15 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
                     .build();
             taskService.runOrQueue(nextTrigger);
         } else {
-            log.info("Cancel Workflow={} {} requested in step={}.", workflow.getName(), context.state.getKey(), step.getId());
+            log.info("Cancel Workflow={} {} requested in step={}.", workflow, context.state.getKey(), step.getId());
             workflowService.cancel(new RunningWorkflowId(RunningTriggerContextHolder.getCorrelationId()));
         }
     }
     
     void triggerCommands(List<TriggerWorkflowCommand<? extends Serializable>> commands) {
-        for (TriggerWorkflowCommand<? extends Serializable> t : commands) {
-            log.debug("Workflow={} name={} triggers sub-workflow={} in={}", workflowId, workflow.getName(), t.workflow().getName(), t.delay());
-            workflowService.execute(t.workflow().getName(), t.state(), t.delay());
+        for (TriggerWorkflowCommand t : commands) {
+            log.debug("Workflow={} triggers sub-workflow={} in={}", workflow, t.workflow(), t.delay());
+            workflowService.execute(t.workflow(), t.state(), t.delay());
         }
     }
     
