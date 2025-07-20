@@ -36,7 +36,7 @@ class WorkflowUmlServiceTest {
 
         File d = new File("./test-workflow.svg");
         if (d.exists()) d.delete();
-        d.deleteOnExit();
+        //d.deleteOnExit();
 
         try (FileOutputStream out = new FileOutputStream(d)) {
             subject.printWorkflowAsPlantUmlSvg("test-workflow", out);
@@ -60,9 +60,9 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "test-workflow"
                 start
-                  :**10**;
-                  :**20**;
-                  :**30**;
+                  :==10;
+                  :==20;
+                  :==30;
                 stop
                 @enduml
                 """);
@@ -86,7 +86,7 @@ class WorkflowUmlServiceTest {
                 @startuml "test-workflow"
                 start
                   -> asdad;
-                  :-- **foo bar** --
+                  :==foo bar
                   HA ha;
                 stop
                 @enduml
@@ -108,14 +108,14 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "test-workflow"
                 start
-                  :**10**;
+                  :==10;
                   switch ( 20 )
                     case ()
-                      :**left**;
+                      :==left;
                     case ()
-                      :**do stuff on right**;
+                      :==do stuff on right;
                   endswitch
-                  :**30**;
+                  :==30;
                 stop
                 @enduml
                 """);
@@ -142,12 +142,12 @@ class WorkflowUmlServiceTest {
                 start
                   switch ( select )
                     case ()
-                      :**left**;
+                      :==left;
                     case ( ja ja )
                       -> nope;
-                      :**something**;
+                      :==something;
                   endswitch
-                  :**10**;
+                  :==10;
                 stop
                 @enduml
                 """);
@@ -184,16 +184,16 @@ class WorkflowUmlServiceTest {
                     case ( Has email )
                       partition "send-mail" {
                         start
-                          :**build-mail**;
-                          :**send-mail**;
-                          :-- **<&clock> 10** --
+                          :==build-mail;
+                          :==send-mail;
+                          :==<&clock> 10
                           Wait for PT1M;
-                          :**check-response**;
+                          :==check-response;
                         stop
                       }
                     case ()
-                      :**noMail**;
-                  :**create-user-task**;
+                      :==noMail;
+                  :==create-user-task;
                 stop
                 @enduml
                 """);
@@ -211,10 +211,10 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "test-workflow"
                 start
-                  :**10**;
-                  :-- **<&clock> 20** --
+                  :==10;
+                  :==<&clock> 20
                   Wait for PT2H;
-                  :**30**;
+                  :==30;
                 stop
                 @enduml
                 """);
@@ -239,20 +239,20 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "parent"
                 start
-                  :**10**;
-                  :-- **cool workflow** --
+                  :==10;
+                  :==cool workflow
                   Start any child;
                   fork
                   fork again
-                    :**<&clock> PT2M**;
+                    :==<&clock> PT2M;
                     partition "any child" {
                       start
-                        :**10**;
-                        :**20**;
+                        :==10;
+                        :==20;
                       stop
                     }
                   end fork
-                  :**20**;
+                  :==20;
                 stop
                 @enduml
                 """);
@@ -279,18 +279,18 @@ class WorkflowUmlServiceTest {
         assertWorkflow(parent, """
                 @startuml "parent"
                 start
-                  :**10**;
-                  :**trigger->any child**;
+                  :==10;
+                  :==trigger->any child;
                   fork
                   fork again
                     partition "any child" {
                       start
-                        :**10**;
-                        :**20**;
+                        :==10;
+                        :==20;
                       stop
                     }
                   end fork
-                  :**20**;
+                  :==20;
                 stop
                 @enduml
                 """);

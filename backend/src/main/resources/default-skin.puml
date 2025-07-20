@@ -1,0 +1,18 @@
+!theme carbon-gray
+skinparam Padding 2
+skinparam BoxPadding 2
+
+skinparam shadowing             true
+skinparam ShadowingColor        #CCCCCC
+
+skinparam ActivityBorderColor   #495057
+skinparam partitionBorderColor  #495057
+skinparam ArrowColor            #495057
+
+skinparam backgroundColor        #FFFFFF
+skinparam diagramBackgroundColor #FFFFFF
+
+
+skinparam headerTextAlignment center
+skinparam footerTextAlignment center
+skinparam DefaultTextAlignment center

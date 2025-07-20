@@ -16,7 +16,7 @@ public class PlantUmlDiagram {
     private int intend = 0;
 
     public PlantUmlDiagram(String name) {
-        this(name, "!theme carbon-gray");
+        this(name, "!include default-skin.puml");
     }
 
     public PlantUmlDiagram(String name, String theme) {
@@ -66,7 +66,7 @@ public class PlantUmlDiagram {
     }
 
     public PlantUmlDiagram appendState(String stateName) {
-        line(START + "**" + stateName + "**" + END);
+        line(START + "==" + stateName + END);
         return this;
     }
     
@@ -74,7 +74,7 @@ public class PlantUmlDiagram {
         if (description == null) {
             appendState(id);
         } else {
-            line(START + "-- **" + id + "** --");
+            line(START + "==" + id);
             line(description + END);
         }
     }
