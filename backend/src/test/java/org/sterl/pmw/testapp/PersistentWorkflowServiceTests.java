@@ -18,8 +18,6 @@ import org.sterl.pmw.spring.PersistentWorkflowService;
 import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 import org.sterl.spring.persistent_tasks.api.TriggerStatus;
 
-import com.github.f4b6a3.uuid.UuidCreator;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -14,6 +14,10 @@ public class PlantUmlDiagram {
     private final String name;
     private final String theme;
     private int intend = 0;
+    
+    public static final String ICON_TRX = "<<T>>";
+    public static final String ICON_WAIT = "<$bi-hourglass,scale=1.2>";
+    public static final String ICON_RESUME = "<$bi-envelope,scale=1.2>";
 
     public PlantUmlDiagram(String name) {
         this(name, "!include default-skin.puml");
@@ -55,8 +59,13 @@ public class PlantUmlDiagram {
         return this;
     }
 
-    public PlantUmlDiagram appendWaitState(String id, String description) {
-        this.appendState("<&clock> " + id, description);
+    public PlantUmlDiagram appendWait(String id, String description) {
+        this.appendState(ICON_WAIT + " " + id, description);
+        return this;
+    }
+    
+    public PlantUmlDiagram appendResume(String id, String description) {
+        this.appendState(ICON_RESUME + " " + id, description);
         return this;
     }
     

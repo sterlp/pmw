@@ -30,6 +30,9 @@ public class WorkflowFactory<T extends Serializable> implements StepHolder<T> {
     public SequentialStepFactory<WorkflowFactory<T>, T> next() {
         return new SequentialStepFactory<>(this);
     }
+    public SequentialStepFactory<WorkflowFactory<T>, T> next(String id) {
+        return new SequentialStepFactory<>(this).id(id);
+    }
     public WorkflowFactory<T> next(WorkflowFunction<T> fn) {
         return next(nextStepId(), fn);
     }
@@ -50,19 +53,19 @@ public class WorkflowFactory<T extends Serializable> implements StepHolder<T> {
     }
     
     public WorkflowFactory<T> sleep(Function<T, Duration> fn) {
-        return next(new WaitStep<>(nextStepId(), "Wait using function", fn));
+        return next(new WaitStep<>(nextStepId(), "Wait using function", fn, false));
     }
     public WorkflowFactory<T> sleep(String id, Function<T, Duration> fn) {
-        return next(new WaitStep<>(id, null, fn));
+        return next(new WaitStep<>(id, null, fn, false));
     }
     public WorkflowFactory<T> sleep(String id, String description, Function<T, Duration> fn) {
-        return next(new WaitStep<>(id, description, fn));
+        return next(new WaitStep<>(id, description, fn, false));
     }
     public WorkflowFactory<T> sleep(String id, Duration duration) {
-        return next(new WaitStep<>(id, "Wait for " + duration, (s) -> duration));
+        return next(new WaitStep<>(id, "Wait for " + duration, (s) -> duration, false));
     }
     public WorkflowFactory<T> sleep(Duration duration) {
-        return next(new WaitStep<>(nextStepId(), "Wait for " + duration, (s) -> duration));
+        return next(new WaitStep<>(nextStepId(), "Wait for " + duration, (s) -> duration, false));
     }
     public WorkflowFactory<T> stepRetryStrategy(RetryStrategy retryStrategy) {
         this.retryStrategy = retryStrategy;
@@ -108,5 +111,22 @@ public class WorkflowFactory<T extends Serializable> implements StepHolder<T> {
     @Override
     public Map<String, WorkflowStep<T>> steps() {
         return this.steps.getSteps();
+    }
+
+    /**
+     * This step will wait for a signal/resume using the {@link WorkflowContext#nextTaskId()}
+     * and allows to update the workflow state for the next step.
+     */
+    public WorkflowFactory<T> await(Duration timeout) {
+        return await(nextStepId(), timeout);
+    }
+    /**
+     * This step will wait for a signal/resume using the {@link WorkflowContext#nextTaskId()}
+     * and allows to update the workflow state for the next step.
+     */
+    public WorkflowFactory<T> await(String id, Duration timeout) {
+        return next(new WaitStep<>(id, 
+                "Suspend at most " + timeout, 
+                s -> timeout, true));
     }
 }

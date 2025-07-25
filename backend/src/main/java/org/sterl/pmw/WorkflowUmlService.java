@@ -66,8 +66,8 @@ public class WorkflowUmlService {
             WorkflowStep<?> step) {
         if (step instanceof ChooseStep<?> ifStep) {
             addCooseStep(ifStep, diagram);
-        } else if (step instanceof WaitStep<?>) {
-            diagram.appendWaitState(step.getId(), step.getDescription());
+        } else if (step instanceof WaitStep<?> ws) {
+            addWait(ws, diagram);
         } else if (step instanceof TriggerWorkflowStep<?, ?> subW) {
             forkWorkflow(subW, subW.getSubWorkflow(), subW.getDelay(), diagram);
         } else if (hasSubworkflow(step.getId()).isPresent()) {
@@ -83,6 +83,21 @@ public class WorkflowUmlService {
             return workflowRepository.findWorkflow(workflowId);
         }
         return Optional.empty();
+    }
+    
+    private void addWait(WaitStep<?> wait, PlantUmlDiagram diagram) {
+        var isSuspend = wait.isSuspendNext();
+        if (isSuspend) {
+            diagram.stopIntend();
+            diagram.appendLine("stop");
+            diagram.appendLine("");
+            diagram.appendResume(wait.getId(), wait.getDescription());
+            diagram.intend();
+        } else {
+            diagram.appendWait(wait.getId(), wait.getDescription());
+        }
+
+        
     }
 
     private void forkWorkflow(WorkflowStep<?> s, Workflow<?> w, Duration delay, final PlantUmlDiagram diagram) {
@@ -100,7 +115,7 @@ public class WorkflowUmlService {
 
     private void appendWorkflow(Workflow<?> w, Duration delay, final PlantUmlDiagram diagram) {
         if (delay != null && delay.getSeconds() > 0) {
-            diagram.appendWaitState(delay.toString(), null);
+            diagram.appendWait(delay.toString(), null);
         }
 
         diagram.line("partition \"" + w.getName() + "\" {");
@@ -121,13 +136,12 @@ public class WorkflowUmlService {
         ifStep.getSubSteps().forEach((k, s) -> {
             diagram.startCase(s.getDescription());
 
-            diagram.labeledConnector(s.getConnectorLabel());
-
             if (s instanceof TriggerWorkflowStep tf) {
+                diagram.labeledConnector(s.getConnectorLabel());
                 appendWorkflow(tf.getSubWorkflow(), tf.getDelay(), diagram);
                 // not really a step, it ends in the workflow
             } else {
-                diagram.appendState(s.getId());
+                draw(s, diagram);
                 switchCases.incrementAndGet();
             }
             diagram.stopCase();

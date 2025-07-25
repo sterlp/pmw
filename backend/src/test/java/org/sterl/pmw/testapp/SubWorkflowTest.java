@@ -5,10 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.sterl.pmw.WorkflowService;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.spring.persistent_tasks.api.TaskId;
@@ -36,7 +34,7 @@ class SubWorkflowTest extends AbstractSpringTest {
     void testTriggerSubWorkflowInChoose() throws InterruptedException {
         // GIVEN
         Workflow<AtomicInteger> w = Workflow.builder("testTriggerSubWorkflowInChoose", () -> new AtomicInteger(0))
-                .next(s -> asserts.info("Parent " + s.data().incrementAndGet()))
+                .next(s -> asserts.info("parent " + s.data().incrementAndGet()))
                 .choose(c -> c.intValue() == 1 ? "left" : "right")
                     .ifSelected("left", s -> asserts.info("left " + s.data().incrementAndGet()))
                     .ifTrigger("right", intChildWorkflow).build()
@@ -49,6 +47,7 @@ class SubWorkflowTest extends AbstractSpringTest {
         waitForAllWorkflows();
 
         // THEN
+        asserts.awaitOrdered("parent 100", "child 101", "child 102");
     }
     
     @Test

@@ -11,9 +11,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public abstract class AbstractStep<T extends Serializable> implements WorkflowStep<T> {
     @NonNull
-    protected final String id;
-    protected final String description;
-    protected final String connectorLabel;
+    protected final String  id;
+    protected final String  description;
+    protected final String  connectorLabel;
     protected final boolean transactional;
 
     @Override

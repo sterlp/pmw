@@ -60,9 +60,9 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "test-workflow"
                 start
-                  :==10;
-                  :==20;
-                  :==30;
+                  :==<<T>> 10;
+                  :==<<T>> 20;
+                  :==<<T>> 30;
                 stop
                 @enduml
                 """);
@@ -86,7 +86,7 @@ class WorkflowUmlServiceTest {
                 @startuml "test-workflow"
                 start
                   -> asdad;
-                  :==foo bar
+                  :==<<T>> foo bar
                   HA ha;
                 stop
                 @enduml
@@ -108,14 +108,14 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "test-workflow"
                 start
-                  :==10;
+                  :==<<T>> 10;
                   switch ( 20 )
                     case ()
-                      :==left;
+                      :==<<T>> left;
                     case ()
-                      :==do stuff on right;
+                      :==<<T>> do stuff on right;
                   endswitch
-                  :==30;
+                  :==<<T>> 30;
                 stop
                 @enduml
                 """);
@@ -142,12 +142,13 @@ class WorkflowUmlServiceTest {
                 start
                   switch ( select )
                     case ()
-                      :==left;
+                      :==<<T>> left;
                     case ( ja ja )
                       -> nope;
-                      :==something;
+                      :==<<T>> something
+                      ja ja;
                   endswitch
-                  :==10;
+                  :==<<T>> 10;
                 stop
                 @enduml
                 """);
@@ -156,19 +157,22 @@ class WorkflowUmlServiceTest {
     @Test
     void testChooseSubWorkflow() {
         Workflow<String> sendMail = Workflow.builder("send-mail", () -> new String())
-                .next("build-mail", s -> {})
-                .next("send-mail", s -> {})
+                .next("build-mail").transactional(false).function(c -> {}).build()
+                .next("send-mail").transactional(false).function(c -> {}).build()
                 .sleep(Duration.ofMinutes(1))
-                .next("check-response", s -> {})
+                .next("check-response").transactional(false).function(c -> {}).build()
                 .build();
                 
         Workflow<SimpleWorkflowState> doStuff = Workflow.builder("test-workflow", SimpleWorkflowState::new)
                 .choose("select", s -> "left")
-                    .ifTrigger("hcheCkMail", sendMail)
+                    .ifTrigger("checkMail", sendMail)
                         .description("Has email")
                         .function(s -> "paul@paul.de")
                         .build()
-                    .ifSelected("noMail", s -> {})
+                    .ifSelected("noMail")
+                        .function(s -> {})
+                        .transactional(false)
+                        .build()
                     .build()
                 .next("create-user-task", s -> {})
                 .build();
@@ -186,14 +190,14 @@ class WorkflowUmlServiceTest {
                         start
                           :==build-mail;
                           :==send-mail;
-                          :==<&clock> 10
+                          :==<$bi-hourglass,scale=1.2> 10
                           Wait for PT1M;
                           :==check-response;
                         stop
                       }
                     case ()
                       :==noMail;
-                  :==create-user-task;
+                  :==<<T>> create-user-task;
                 stop
                 @enduml
                 """);
@@ -211,10 +215,10 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "test-workflow"
                 start
-                  :==10;
-                  :==<&clock> 20
+                  :==<<T>> 10;
+                  :==<$bi-hourglass,scale=1.2> 20
                   Wait for PT2H;
-                  :==30;
+                  :==<<T>> 30;
                 stop
                 @enduml
                 """);
@@ -239,20 +243,20 @@ class WorkflowUmlServiceTest {
                 """
                 @startuml "parent"
                 start
-                  :==10;
-                  :==cool workflow
+                  :==<<T>> 10;
+                  :==<<T>> cool workflow
                   Start any child;
                   fork
                   fork again
-                    :==<&clock> PT2M;
+                    :==<$bi-hourglass,scale=1.2> PT2M;
                     partition "any child" {
                       start
-                        :==10;
-                        :==20;
+                        :==<<T>> 10;
+                        :==<<T>> 20;
                       stop
                     }
                   end fork
-                  :==20;
+                  :==<<T>> 20;
                 stop
                 @enduml
                 """);
@@ -279,18 +283,44 @@ class WorkflowUmlServiceTest {
         assertWorkflow(parent, """
                 @startuml "parent"
                 start
-                  :==10;
-                  :==trigger->any child;
+                  :==<<T>> 10;
+                  :==<<T>> trigger->any child;
                   fork
                   fork again
                     partition "any child" {
                       start
-                        :==10;
-                        :==20;
+                        :==<<T>> 10;
+                        :==<<T>> 20;
                       stop
                     }
                   end fork
-                  :==20;
+                  :==<<T>> 20;
+                stop
+                @enduml
+                """);
+    }
+    
+    @Test
+    void testAwait() {
+        // GIVEN
+        Workflow<SimpleWorkflowState> parent = Workflow.builder("parent", () ->  new SimpleWorkflowState())
+                .next(s -> {})
+                .await(Duration.ZERO)
+                .next(s -> {})
+                .build();
+
+        register(parent);
+
+        // THEN
+        assertWorkflow(parent, """
+                @startuml "parent"
+                start
+                  :==<<T>> 10;
+                stop
+                
+                :==<$bi-envelope,scale=1.2> 20
+                Suspend at most PT0S;
+                  :==<<T>> 30;
                 stop
                 @enduml
                 """);

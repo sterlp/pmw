@@ -159,6 +159,10 @@ public class StoreApplication {
 
 ![PMW Admin Dashboard](/pmw-admin-dashboard-ui.png)
 
+## Links
+- https://github.com/plantuml/plantuml-stdlib
+- https://icons.getbootstrap.com/
+
 ### IDE
 
 -   eclipse plugin https://marketplace.eclipse.org/content/plantuml-plugin

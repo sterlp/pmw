@@ -11,10 +11,7 @@ public class DrawWorkflowStepToUml {
     
     public void draw(WorkflowStep<?> s) {
         diagram.labeledConnector(s.getConnectorLabel());
-        if (s.getDescription() == null) {
-            diagram.appendState(s.getId());
-        } else {
-            diagram.appendState(s.getId(), s.getDescription());
-        }
+        var icon = s.isTransactional() ? PlantUmlDiagram.ICON_TRX + " " : "";
+        diagram.appendState(icon + s.getId(), s.getDescription());
     }
 }

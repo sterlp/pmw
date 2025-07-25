@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.sterl.pmw.api.WorkflowInfo;
 import org.sterl.pmw.model.RunningWorkflowId;
@@ -48,4 +49,15 @@ public interface WorkflowService<RegistryType> {
      * Count of known workflows
      */
     int workflowCount();
+
+    /**
+     * Resumes the waiting step of the given workflow
+     */
+    <T extends Serializable> boolean resume(Workflow<T> workflow, String runnngStepId, Function<T, T> stateModifier);
+    
+    /**
+     * Resumes the waiting step of the an unknown workflow - ensure error handling in case
+     * of a wrong ID and so class cast exceptions
+     */
+    <T extends Serializable> boolean resume(String runnngStepId, Function<T, T> stateModifier);
 }

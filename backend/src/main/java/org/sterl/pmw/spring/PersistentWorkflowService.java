@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Pageable;
@@ -113,5 +114,21 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
     @Override
     public Optional<String> getWorkflowId(Workflow<?> workflow) {
         return workflowRepository.getWorkflowId(workflow);
+    }
+
+    @Override
+    public <T extends Serializable> boolean resume(Workflow<T> workflow, String runnngStepId,
+            Function<T, T> stateModifier) {
+        var search = new TriggerSearch();
+        search.setKeyId(runnngStepId);
+        search.setTag(workflowRepository.getWorkflowId(workflow).get());
+        return triggerService.resumeOne(search, stateModifier).isPresent();
+    }
+
+    @Override
+    public <T extends Serializable> boolean resume(String runnngStepId, Function<T, T> stateModifier) {
+        var search = new TriggerSearch();
+        search.setKeyId(runnngStepId);
+        return triggerService.resumeOne(search, stateModifier).isPresent();
     }
 }

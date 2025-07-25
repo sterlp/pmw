@@ -24,6 +24,11 @@ public interface WorkflowContext<T extends Serializable> {
     void delayNextStepBy(Duration duration);
     
     /**
+     * Set the next step to suspended, means it requires a resume call
+     */
+    void setSuspendNext(boolean value);
+    
+    /**
      * In case of a own resume this gives the reference to the next task id.
      */
     String nextTaskId();

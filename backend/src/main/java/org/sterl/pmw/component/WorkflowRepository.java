@@ -53,9 +53,6 @@ public class WorkflowRepository {
     }
     
     public Optional<String> getWorkflowId(Workflow<?> workflow) {
-        this.workflows.entrySet().stream()
-            .forEach(e -> System.err.println(e.getValue() + " - " + workflow + " => " + (e.getValue() == workflow)));
-
         return this.workflows.entrySet().stream().filter(e -> e.getValue() == workflow)
                    .map(e -> e.getKey())
                    .findFirst();

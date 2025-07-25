@@ -1,4 +1,5 @@
 !theme carbon-gray
+!include <bootstrap/bootstrap>
 skinparam Padding 2
 skinparam BoxPadding 2
 
