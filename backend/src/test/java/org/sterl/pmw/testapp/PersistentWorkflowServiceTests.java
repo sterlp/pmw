@@ -349,6 +349,40 @@ public class PersistentWorkflowServiceTests extends AbstractSpringTest {
         asserts.assertMissing("cancel");
     }
     
+    @Test
+    void testErrorHandlerInWorkflow() {
+        // GIVEN
+        Workflow<AtomicInteger> workflow = Workflow.builder("testErrorHandlerInWorkflow", () ->  new AtomicInteger())
+                .next(s -> {
+                    asserts.info("first " + s.data().incrementAndGet());
+                    if (s.data().get() > 99) {
+                        throw new RuntimeException("No to much! " + s.data().get());
+                    }
+                })
+                .onLastStepError()
+                    .next()
+                        .function(s -> asserts.info("on error " + s.data().incrementAndGet()))
+                        .build()
+                    .build()
+                .next(s -> asserts.info("last"))
+                .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
+                .build();
+
+        register(workflow);
+
+        // WHEN
+        subject.execute(workflow, new AtomicInteger(99));
+        waitForAllWorkflows();
+        
+        // THEN
+        asserts.awaitValue("first 100");
+        asserts.awaitValue("on error 101");
+        assertThat(asserts.getCount("first 100")).isEqualTo(4);
+        // AND
+        asserts.assertMissing("last");
+        
+    }
+    
     @Getter @Setter @NoArgsConstructor @AllArgsConstructor
     protected static class TestWorkflowCtx implements Serializable {
         private static final long serialVersionUID = 1L;

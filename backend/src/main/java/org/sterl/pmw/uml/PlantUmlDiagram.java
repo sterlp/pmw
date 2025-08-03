@@ -126,4 +126,20 @@ public class PlantUmlDiagram {
         result.append("@enduml");
         return result;
     }
+
+    public void startIf(String check, String then) {
+        appendLine("if ( " + StringUtils.stripToEmpty(check) + " ) then (" + StringUtils.stripToEmpty(then) + ")");
+        intend();
+    }
+    
+    public void stopIf() {
+        stopIntend();
+        appendLine("endif");
+    }
+    
+    public void appendElse(String label) {
+        stopIntend();
+        appendLine("else ( " + StringUtils.trimToEmpty(label) + ")");
+        intend();
+    }
 }

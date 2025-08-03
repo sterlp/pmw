@@ -17,11 +17,13 @@ public class PlantUmlWritter {
             new WorkflowUmlService(null).printWorkflowAsPlantUmlSvg(workflow, out);
         }
     }
-    public static void writeAsPlantUmlSvg(String filename, Workflow<? extends Serializable> workflow, WorkflowUmlService service) throws IOException {
+    public static void writeAsPlantUmlSvg(String filename, Workflow<? extends Serializable> workflow, WorkflowUmlService service) {
         final File d = cleanExistingFile(filename);
 
         try (FileOutputStream out = new FileOutputStream(d)) {
             service.printWorkflowAsPlantUmlSvg(workflow, out);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
     public static void writeAsPlantUmlSvg(String filename, String name, WorkflowUmlService service) throws IOException {

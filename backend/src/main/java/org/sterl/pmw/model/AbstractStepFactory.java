@@ -1,19 +1,28 @@
 package org.sterl.pmw.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 import lombok.Getter;
 import lombok.ToString;
 
 @ToString(of = "id")
 @Getter
-public abstract class AbstractStepFactory<F extends AbstractStepFactory<F, C, T>, C extends StepHolder<T>, T extends Serializable> {
+public abstract class AbstractStepFactory<F extends AbstractStepFactory<F, C, T>, C extends StepHolder<C, T>, T extends Serializable> {
     protected final C context;
     
     protected String id;
     protected String description;
     protected String connectorLabel;
     protected boolean transactional = true;
+    
+    public abstract WorkflowStep<T> buildStep();
+    
+    public C build() {
+        if (id == null) id = context.nextStepId();
+        context.next(buildStep());
+        return context;
+    }
 
     public F id(String value) {
         id = value;
@@ -36,6 +45,7 @@ public abstract class AbstractStepFactory<F extends AbstractStepFactory<F, C, T>
     }
 
     protected AbstractStepFactory(C context) {
+        Objects.requireNonNull(context, "Context cannot be null");
         this.context = context;
     }
 }

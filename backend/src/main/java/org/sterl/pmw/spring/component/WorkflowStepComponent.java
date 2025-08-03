@@ -6,8 +6,10 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.lang.Nullable;
 import org.sterl.pmw.WorkflowService;
 import org.sterl.pmw.command.TriggerWorkflowCommand;
+import org.sterl.pmw.model.ErrorStep;
 import org.sterl.pmw.model.RunningWorkflowId;
 import org.sterl.pmw.model.WaitStep;
 import org.sterl.pmw.model.Workflow;
@@ -38,7 +40,8 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
     private final WorkflowStep<T> step;
 
     @Override
-    public void accept(T state) {
+    public void accept(@Nullable T state) {
+        @SuppressWarnings("unchecked")
         var context = new SimpleWorkflowContext<T>(
             (RunningTrigger<T>)RunningTriggerContextHolder.getContext()
         );
@@ -46,7 +49,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
         
         var nextStep = selectNextStep(context, step);
 
-        triggerCommands(context.commands);
+        forkWorkflows(context.commands);
 
         if (nextStep == null) return; // done
 
@@ -58,13 +61,19 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
             workflowService.cancel(new RunningWorkflowId(RunningTriggerContextHolder.getCorrelationId()));
         }
     }
+    
+    @Override
+    public void afterTriggerFailed(@Nullable T state, Exception e) {
+        var nextStep = workflow.getNextStep(step);
+        if (nextStep instanceof ErrorStep<T> errorHandler) {
+            var errorStep = toTriggerBuilder(state, errorHandler);
+            taskService.runOrQueue(errorStep.build());
+        }
+    }
 
     public void runOrQueueNextStep(SimpleWorkflowContext<T> context, WorkflowStep<T> nextStep) {
-        var nextTrigger = TriggerBuilder.newTrigger(WorkflowHelper.stepName(workflowId, nextStep), context.data())
-                .runAfter(context.getNextDelay())
-                .tag(workflowId)
-                .correlationId(RunningTriggerContextHolder.getCorrelationId())
-                .id(context.getNextTaskId());
+        var nextTrigger = toTriggerBuilder(context.data(), nextStep);
+        nextTrigger.id(context.nextTaskId());
         
         if (context.isSuspendNext()) {
             nextTrigger.waitForSignal(
@@ -75,8 +84,16 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
 
         taskService.runOrQueue(nextTrigger.build());
     }
+
+    public TriggerBuilder<T> toTriggerBuilder(T data, WorkflowStep<T> nextStep) {
+        return TriggerBuilder
+                .newTrigger(WorkflowHelper.stepName(workflowId, nextStep), data)
+                .tag(workflowId)
+                .correlationId(RunningTriggerContextHolder.getCorrelationId());
+    }
     
-    void triggerCommands(List<TriggerWorkflowCommand<? extends Serializable>> commands) {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    void forkWorkflows(List<TriggerWorkflowCommand<? extends Serializable>> commands) {
         for (TriggerWorkflowCommand t : commands) {
             log.debug("Workflow={} triggers sub-workflow={} in={}", workflow, t.workflow(), t.delay());
             workflowService.execute(t.workflow(), t.state(), t.delay());
@@ -84,6 +101,9 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
     }
     
     WorkflowStep<T> selectNextStep(SimpleWorkflowContext<T> c, WorkflowStep<T> currentStep) {
+        // an error step is currently always the last step
+        if (currentStep instanceof ErrorStep<?>) return null;
+
         var nextStep = workflow.getNextStep(currentStep);
 
         if (nextStep instanceof WaitStep<T> waitFor) {
@@ -115,9 +135,10 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
         private String nextTaskId = UuidCreator.getTimeOrderedEpochFast().toString();
         private List<TriggerWorkflowCommand<? extends Serializable>> commands = new ArrayList<>();
 
-        //@Override
+        @Override
         public void delayNextStepBy(Duration duration) {
-            nextDelay = duration;
+            if (duration == null) nextDelay = Duration.ZERO;
+            else nextDelay = duration;
         }
 
         @Override

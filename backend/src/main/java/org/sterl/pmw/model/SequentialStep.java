@@ -7,7 +7,7 @@ import lombok.Getter;
 
 @Getter
 public class SequentialStep<T extends Serializable> extends AbstractStep<T> {
-    private final WorkflowFunction<T> fn;
+    protected final WorkflowFunction<T> fn;
 
     SequentialStep(String id, WorkflowFunction<T> fn) {
         this(id, null, null, fn, true);
