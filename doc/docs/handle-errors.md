@@ -1,3 +1,7 @@
+<figure markdown="span">
+    ![Error Flow](./assets/error-workflow.svg)
+</figure>
+
 In contrast to all other steps, the `onLastStepError` is called with the modified state as it was left by the last step. This allows custom code to pass any relevant state to the exception handler.
 
 The error handler always terminates the workflow and is the final step to be executed.

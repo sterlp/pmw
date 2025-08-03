@@ -1,3 +1,7 @@
+<figure markdown="span">
+  ![Simple Workflow](./assets/sub-workflow.svg)
+</figure>
+
 ### Child workflow
 
 ```java
@@ -26,5 +30,3 @@ void parent(Workflow<Integer> childWorkflow) {
     .build();
 }
 ```
-
-![Simple Workflow](./assets/sub-workflow.svg)

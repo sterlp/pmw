@@ -1,3 +1,7 @@
+<figure markdown="span">
+    ![Simple Workflow](./assets/simple-workflow.svg)
+</figure>
+
 ## Step IDs
 
 By default, each step is enumerated with a numerical step ID incrementing by 10. This allows custom steps to be inserted later using a specific ID.
@@ -41,5 +45,3 @@ simpleWorkflow() {
     .build();
 }
 ```
-
-![Simple Workflow](./assets/simple-workflow.svg)
