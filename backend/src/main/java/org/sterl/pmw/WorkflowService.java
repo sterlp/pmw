@@ -25,6 +25,8 @@ public interface WorkflowService<RegistryType> {
     <T extends Serializable> RunningWorkflowId execute(Workflow<T> workflow, T state);
 
     <T extends Serializable> RunningWorkflowId execute(Workflow<T> workflow, T state, Duration delay);
+    
+    <T extends Serializable> void execute(RunningWorkflowId id, Workflow<T> workflow, T state, Duration delay);
 
     TriggerStatus status(RunningWorkflowId runningWorkflowId);
 

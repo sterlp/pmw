@@ -3,6 +3,7 @@ package org.sterl.pmw.spring;
 import java.io.Serializable;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -54,21 +55,32 @@ public class PersistentWorkflowService extends AbstractWorkflowService<TaskId<? 
 
     @Override
     public <T extends Serializable> RunningWorkflowId execute(Workflow<T> workflow, T state, Duration delay) {
-        final var task = (TaskId<T>)this.firstTaskRef.get(workflow);
         final var id = RunningWorkflowId.newWorkflowId(workflow);
+        
+        execute(id, workflow, state, delay);
+
+        return id;
+    }
+    
+    @Override
+    public <T extends Serializable> void execute(RunningWorkflowId id, Workflow<T> workflow, T state, Duration delay) {
+        Objects.requireNonNull(id, "RunningWorkflowId cannot be null");
+        Objects.requireNonNull(workflow, "Workflow cannot be null");
+        Objects.requireNonNull(delay, "Delay cannot be null");
+
+        final var task = (TaskId<T>)this.firstTaskRef.get(workflow);
+
         final var trigger = task
             .newTrigger(state == null ? workflow.newContext() : state)
             .runAfter(delay)
             .tag(getWorkflowId(workflow).get())
             .correlationId(id.value())
             .build();
-        
+
         log.debug("Starting workflow={} with id={} and first step={}", 
-                workflow, id.value(), trigger.key());
+                workflow, id, trigger.key());
 
         persistentTaskService.runOrQueue(trigger);
-
-        return id;
     }
 
     @Override

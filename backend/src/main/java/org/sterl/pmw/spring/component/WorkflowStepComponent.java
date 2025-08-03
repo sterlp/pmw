@@ -71,7 +71,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
         }
     }
 
-    public void runOrQueueNextStep(SimpleWorkflowContext<T> context, WorkflowStep<T> nextStep) {
+    private void runOrQueueNextStep(SimpleWorkflowContext<T> context, WorkflowStep<T> nextStep) {
         var nextTrigger = toTriggerBuilder(context.data(), nextStep);
         nextTrigger.id(context.nextTaskId());
         
@@ -85,7 +85,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
         taskService.runOrQueue(nextTrigger.build());
     }
 
-    public TriggerBuilder<T> toTriggerBuilder(T data, WorkflowStep<T> nextStep) {
+    private TriggerBuilder<T> toTriggerBuilder(T data, WorkflowStep<T> nextStep) {
         return TriggerBuilder
                 .newTrigger(WorkflowHelper.stepName(workflowId, nextStep), data)
                 .tag(workflowId)
@@ -93,14 +93,17 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
     }
     
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    void forkWorkflows(List<TriggerWorkflowCommand<? extends Serializable>> commands) {
+    private void forkWorkflows(List<TriggerWorkflowCommand<? extends Serializable>> commands) {
+        if (commands.isEmpty()) return;
+        
+        var id = new RunningWorkflowId(RunningTriggerContextHolder.getCorrelationId());
         for (TriggerWorkflowCommand t : commands) {
-            log.debug("Workflow={} triggers sub-workflow={} in={}", workflow, t.workflow(), t.delay());
-            workflowService.execute(t.workflow(), t.state(), t.delay());
+            log.debug("{} Workflow={} triggers sub-workflow={} in={}", workflow, id, t.workflow(), t.delay());
+            workflowService.execute(id, t.workflow(), t.state(), t.delay());
         }
     }
     
-    WorkflowStep<T> selectNextStep(SimpleWorkflowContext<T> c, WorkflowStep<T> currentStep) {
+    private WorkflowStep<T> selectNextStep(SimpleWorkflowContext<T> c, WorkflowStep<T> currentStep) {
         // an error step is currently always the last step
         if (currentStep instanceof ErrorStep<?>) return null;
 
@@ -146,6 +149,7 @@ public class WorkflowStepComponent<T extends Serializable> implements Transactio
             canceled = true;
         }
 
+        @Override
         public int executionCount() {
             return state.getExecutionCount();
         }
