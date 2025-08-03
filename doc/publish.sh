@@ -3,7 +3,7 @@ pip install --upgrade -r requirements.txt
 mkdocs build
 # Configuration
 HOST="w0125542.kasserver.com"
-USER="f017969a"
+USER="f0179a87"
 # export LFTP_PASSWORD
 PASSWORD=$(security find-generic-password -a "$USER" -s "$HOST" -w)
 LOCAL_DIR="site"

@@ -1,6 +1,7 @@
 package org.sterl.pmw;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
 import org.sterl.pmw.uml.PlantUmlWritter;
+import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 
 class WorkflowUmlServiceTest {
 
@@ -33,7 +35,7 @@ class WorkflowUmlServiceTest {
                 .next()
                     .id("stable")
                     .description("An custom id makes steps refactoring stable")
-                    .connectorLabel("labled arrow")
+                    .connectorLabel("labeled arrow")
                     .function(e -> {})
                     .build()
                 .next()
@@ -41,6 +43,7 @@ class WorkflowUmlServiceTest {
                     .function(e -> {})
                     .transactional(false)
                     .build()
+                .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
 
         register(w);
@@ -250,7 +253,7 @@ class WorkflowUmlServiceTest {
     @Test
     void testSubWorkflow() {
         // GIVEN
-        Workflow<SimpleWorkflowState> child = Workflow.builder("any child", () ->  new SimpleWorkflowState())
+        Workflow<Integer> child = Workflow.builder("any child", () -> Integer.valueOf(0))
                 .next(s -> {})
                 .next(s -> {})
                 .build();
@@ -258,6 +261,8 @@ class WorkflowUmlServiceTest {
         Workflow<SimpleWorkflowState> parent = Workflow.builder("parent", () ->  new SimpleWorkflowState())
                 .next(s -> {})
                 .forkWorkflow(child)
+                    // starting a new workflow may requirer a state mapping
+                    .function(s -> Integer.valueOf(2))
                     .delay(Duration.ofMinutes(2))
                     .build()
                 .next(s -> {})
