@@ -1,5 +1,7 @@
 # Poor Mans Workflow for Spring
 
+![Dashboard](./assets/dashboard.png)
+
 ## Design-Goals
 
 Build a very basic workflow `engine` which does only really basic stuff and is understood in a second.
