@@ -1,6 +1,5 @@
 package org.sterl.pmw.uml;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +22,7 @@ public class DrawWorkflowToUml {
     private final Workflow<?> workflow;
     private final WorkflowRepository workflowRepository;
     private final List<Consumer<PlantUmlDiagram>> finalDrawer = new ArrayList<>();
-    
+
     public String draw() {
         var diagram = new PlantUmlDiagram(workflow.getName());
         addDiagramTo(diagram);
@@ -55,9 +54,9 @@ public class DrawWorkflowToUml {
         } else if (step instanceof ErrorStep<?> er) {
             error(er, diagram);
         } else if (step instanceof TriggerWorkflowStep<?, ?> subW) {
-            forkWorkflow(subW, subW.getSubWorkflow(), subW.getDelay(), diagram);
+            forkWorkflow(subW, subW.getSubWorkflow(), diagram);
         } else if (hasSubworkflow(step.getId()).isPresent()) {
-            forkWorkflow(step, hasSubworkflow(step.getId()).get(), null, diagram);
+            forkWorkflow(step, hasSubworkflow(step.getId()).get(), diagram);
         } else {
             draw(step, diagram);
         }
@@ -67,7 +66,7 @@ public class DrawWorkflowToUml {
         diagram.startIf("error?", "yes");
         addWorkflowStepToDiagramByType(diagram, er.getStep());
         diagram.appendElse("no");
-        
+
         finalDrawer.add(d -> d.stopIf());
     }
 
@@ -78,7 +77,7 @@ public class DrawWorkflowToUml {
         }
         return Optional.empty();
     }
-    
+
     private void addWait(WaitStep<?> wait, PlantUmlDiagram diagram) {
         var isSuspend = wait.isSuspendNext();
         if (isSuspend) {
@@ -92,13 +91,13 @@ public class DrawWorkflowToUml {
         }
     }
 
-    private void forkWorkflow(WorkflowStep<?> s, Workflow<?> w, Duration delay, final PlantUmlDiagram diagram) {
+    private void forkWorkflow(WorkflowStep<?> s, Workflow<?> w, final PlantUmlDiagram diagram) {
         diagram.line("fork");
         diagram.intend();
 
         draw(s, diagram);
-        appendSubWorkflow(w, delay, diagram);
-        
+        appendSubWorkflow(w, diagram);
+
         diagram.stopIntend();
         diagram.line("fork again");
 
@@ -109,10 +108,10 @@ public class DrawWorkflowToUml {
 
     }
 
-    private void appendSubWorkflow(Workflow<?> w, Duration delay, final PlantUmlDiagram diagram) {
+    private void appendSubWorkflow(Workflow<?> w, final PlantUmlDiagram diagram) {
         diagram.line("partition \"" + w.getName() + "\" {");
         diagram.intend();
-        
+
         new DrawWorkflowToUml(w, workflowRepository).addDiagramTo(diagram);
 
         diagram.stopIntend();
@@ -130,7 +129,7 @@ public class DrawWorkflowToUml {
 
             if (s instanceof TriggerWorkflowStep tf) {
                 diagram.labeledConnector(s.getConnectorLabel());
-                appendSubWorkflow(tf.getSubWorkflow(), tf.getDelay(), diagram);
+                appendSubWorkflow(tf.getSubWorkflow(), diagram);
                 // not really a step, it ends in the workflow
             } else {
                 draw(s, diagram);
