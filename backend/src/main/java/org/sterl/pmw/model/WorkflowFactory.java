@@ -12,7 +12,7 @@ import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 /**
  * @param <T> the workflow step type
  */
-public class WorkflowFactory<T extends Serializable> implements StepHolder<T> {
+public class WorkflowFactory<T extends Serializable> implements StepHolder<WorkflowFactory<T>, T> {
     
     private final AtomicInteger stepIds = new AtomicInteger(0);
     private final StepContainer<T> steps = new StepContainer<>();
@@ -27,29 +27,13 @@ public class WorkflowFactory<T extends Serializable> implements StepHolder<T> {
         this.contextBuilder = contextBuilder;
     }
 
-    public SequentialStepFactory<WorkflowFactory<T>, T> next() {
-        return new SequentialStepFactory<>(this);
-    }
-    public SequentialStepFactory<WorkflowFactory<T>, T> next(String id) {
-        return new SequentialStepFactory<>(this).id(id);
-    }
-    public WorkflowFactory<T> next(WorkflowFunction<T> fn) {
-        return next(nextStepId(), fn);
-    }
-    public WorkflowFactory<T> next(String name, WorkflowFunction<T> fn) {
-        return next(new SequentialStep<T>(name, fn));
+    public ErrorStepFactory<WorkflowFactory<T>, T> onLastStepError() {
+        return new ErrorStepFactory<>(this);
     }
 
     public <TS extends Serializable> WorkflowFactory<T> trigger(
             Workflow<TS> toTrigger, Function<T, TS> fn) {
         return next(new TriggerWorkflowStep<>(nextStepId(), "Start " + toTrigger.getName(), null, toTrigger, fn, Duration.ZERO));
-    }
-    
-    public <TS extends Serializable> TriggerWorkflowStepFactory<WorkflowFactory<T>, T, TS> trigger(
-            Workflow<TS> toTrigger) {
-        var result = new TriggerWorkflowStepFactory<>(this, toTrigger);
-        result.description("Start " + toTrigger.getName());
-        return result;
     }
     
     public WorkflowFactory<T> sleep(Function<T, Duration> fn) {

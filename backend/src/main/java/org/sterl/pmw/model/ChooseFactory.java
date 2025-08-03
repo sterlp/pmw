@@ -7,9 +7,9 @@ import java.util.function.Function;
 /**
  * Allows the selection of an task.
  */
-public class ChooseFactory<C extends StepHolder<T>, T extends Serializable> 
+public class ChooseFactory<C extends StepHolder<C, T>, T extends Serializable> 
     extends AbstractStepFactory<ChooseFactory<C, T>,C, T>
-    implements StepHolder<T> {
+    implements StepHolder<ChooseFactory<C, T>, T> {
 
     private WorkflowChooseFunction<T> chooseFn;
     private StepContainer<T> steps = new StepContainer<>();
@@ -50,13 +50,6 @@ public class ChooseFactory<C extends StepHolder<T>, T extends Serializable>
         return new SequentialStepFactory<>(this);
     }
 
-    public C build() {
-        if (id == null) id = nextStepId();
-        if (description == null) description = "Choose from " + steps.getSteps().size();
-        context.next(new ChooseStep<>(id, description, connectorLabel, transactional, chooseFn, steps.getSteps()));
-        return context;
-    }
-
     @Override
     public ChooseFactory<C, T> next(WorkflowStep<T> s) {
         steps.next(s);
@@ -71,5 +64,11 @@ public class ChooseFactory<C extends StepHolder<T>, T extends Serializable>
     @Override
     public String nextStepId() {
         return context.nextStepId();
+    }
+
+    @Override
+    public WorkflowStep<T> buildStep() {
+        if (description == null) description = "Choose from " + steps.getSteps().size();
+        return new ChooseStep<>(id, description, connectorLabel, transactional, chooseFn, steps.getSteps());
     }
 }

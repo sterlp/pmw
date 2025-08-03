@@ -17,7 +17,7 @@ public class NewItemArrivedWorkflow {
     Workflow<NewItemArrivedState> restorePriceWorkflow(DiscountComponent discountComponent) {
         return Workflow.builder("Restore Item Price", () -> NewItemArrivedState.builder().build())
                 .next("updatePrice", c -> discountComponent.setPrize(c.data().getItemId(), c.data().getOriginalPrice()))
-                .next("sendMail", s -> {})
+                .next("sendMail").transactional(false).function(s -> {}).build()
                 .build();
     }
 

@@ -1,6 +1,7 @@
 package org.sterl.pmw.testapp;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,8 @@ class SubWorkflowTest extends AbstractSpringTest {
         // GIVEN
         Workflow<AtomicInteger> parent = Workflow.builder("testTriggerWorkflow-parent", () ->  new AtomicInteger())
                 .next(s -> asserts.info("partent " + s.data().incrementAndGet()))
-                .trigger(intChildWorkflow).id("myCoolId").build()
+                .forkWorkflow(intChildWorkflow)
+                    .build()
                 .next(s -> asserts.info("partent " + s.data().incrementAndGet()))
                 .build();
         
@@ -68,7 +70,33 @@ class SubWorkflowTest extends AbstractSpringTest {
         waitForAllWorkflows();
         asserts.awaitValueOnce("partent 1");
         asserts.awaitValueOnce("partent 2");
+        // AND sub workflow should run
         asserts.awaitValueOnce("child 2");
         asserts.awaitValueOnce("child 3");
+    }
+    
+    @Test
+    void testTriggerWorkflowDelay() {
+        // GIVEN
+        Workflow<AtomicInteger> parent = Workflow.builder("testTriggerWorkflowDelay-parent", () ->  new AtomicInteger())
+                .next(s -> asserts.info("partent " + s.data().incrementAndGet()))
+                .forkWorkflow(intChildWorkflow)
+                    .delay(Duration.ofDays(999))
+                    .build()
+                .next(s -> asserts.info("partent " + s.data().incrementAndGet()))
+                .build();
+        
+        register(parent);
+        
+        // WHEN
+        subject.execute(parent);
+        
+        // THEN 
+        waitForAllWorkflows();
+        asserts.awaitValueOnce("partent 1");
+        asserts.awaitValueOnce("partent 2");
+        // AND sub workflow should not run
+        asserts.assertMissing("child 2");
+        asserts.assertMissing("child 3");
     }
 }

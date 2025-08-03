@@ -5,7 +5,7 @@ import java.time.Duration;
 import java.util.function.Function;
 
 public class TriggerWorkflowStepFactory<
-    C extends StepHolder<T>, 
+    C extends StepHolder<C, T>, 
     T extends Serializable, 
     R extends Serializable> extends AbstractStepFactory<TriggerWorkflowStepFactory<C, T, R>, C, T> {
 
@@ -27,15 +27,18 @@ public class TriggerWorkflowStepFactory<
         delay = value;
         return this;
     }
-    
-    public C build() {
-        if (id == null) id = context.nextStepId();
-        context.next(new TriggerWorkflowStep<>(id,
-                                                 description,
-                                                 connectorLabel,
-                                                 subWorkflow,
-                                                 fn,
-                                                 delay));
-        return context;
+
+    @Override
+    public WorkflowStep<T> buildStep() {
+        if (description == null) {
+            description = "Run **" + subWorkflow.getName();
+            description += "** after " + this.delay;
+        }
+        return new TriggerWorkflowStep<>(id,
+                description,
+                connectorLabel,
+                subWorkflow,
+                fn,
+                delay);
     }
 }

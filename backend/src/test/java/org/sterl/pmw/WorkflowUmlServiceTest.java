@@ -1,6 +1,7 @@
 package org.sterl.pmw;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,12 +12,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sterl.pmw.component.WorkflowRepository;
 import org.sterl.pmw.model.Workflow;
-import org.sterl.pmw.uml.PlantUmlDiagram;
+import org.sterl.pmw.uml.PlantUmlWritter;
+import org.sterl.spring.persistent_tasks.api.RetryStrategy;
 
 class WorkflowUmlServiceTest {
 
+    private final static String SVG_PATH = "../doc/docs/assets/";
     private WorkflowRepository repository = new WorkflowRepository();
     private WorkflowUmlService subject = new WorkflowUmlService(repository);
+    private WorkflowUmlService umlService = new WorkflowUmlService(repository);
 
     @BeforeEach
     void setUp() throws Exception {
@@ -28,8 +32,18 @@ class WorkflowUmlServiceTest {
         // GIVEN
         Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", SimpleWorkflowState::new)
                 .next(s -> {})
-                .next(s -> {})
-                .next(s -> {})
+                .next()
+                    .id("stable")
+                    .description("An custom id makes steps refactoring stable")
+                    .connectorLabel("labeled arrow")
+                    .function(e -> {})
+                    .build()
+                .next()
+                    .description("By default each step is transactional, it can be turned off")
+                    .function(e -> {})
+                    .transactional(false)
+                    .build()
+                .stepRetryStrategy(RetryStrategy.THREE_RETRIES_IMMEDIATELY)
                 .build();
 
         register(w);
@@ -44,6 +58,8 @@ class WorkflowUmlServiceTest {
 
         assertThat(d).exists();
         assertThat(Files.size(d.toPath())).isGreaterThan(5L);
+        
+        PlantUmlWritter.writeAsPlantUmlSvg(SVG_PATH + "simple-workflow.svg", w, umlService);
     }
 
     @Test
@@ -59,6 +75,7 @@ class WorkflowUmlServiceTest {
         assertWorkflow(w,
                 """
                 @startuml "test-workflow"
+                !include default-skin.puml
                 start
                   :==<<T>> 10;
                   :==<<T>> 20;
@@ -84,6 +101,7 @@ class WorkflowUmlServiceTest {
         assertWorkflow(w,
                 """
                 @startuml "test-workflow"
+                !include default-skin.puml
                 start
                   -> asdad;
                   :==<<T>> foo bar
@@ -107,6 +125,7 @@ class WorkflowUmlServiceTest {
         assertWorkflow(w,
                 """
                 @startuml "test-workflow"
+                !include default-skin.puml
                 start
                   :==<<T>> 10;
                   switch ( 20 )
@@ -139,6 +158,7 @@ class WorkflowUmlServiceTest {
         assertWorkflow(w,
                 """
                 @startuml "test-workflow"
+                !include default-skin.puml
                 start
                   switch ( select )
                     case ()
@@ -183,6 +203,7 @@ class WorkflowUmlServiceTest {
         assertWorkflow(doStuff,
                 """
                 @startuml "test-workflow"
+                !include default-skin.puml
                 start
                   switch ( select )
                     case ( Has email )
@@ -205,15 +226,18 @@ class WorkflowUmlServiceTest {
 
     @Test
     void testSleep() {
-        Workflow<SimpleWorkflowState> w = Workflow.builder("test-workflow", () ->  new SimpleWorkflowState())
+        // GIVEN
+        Workflow<SimpleWorkflowState> w = Workflow.builder("sleep workflow", () ->  new SimpleWorkflowState())
                 .next(s -> {})
                 .sleep(Duration.ofHours(2))
                 .next(s -> {})
                 .build();
 
+        // WHEN & THEN
         assertWorkflow(w,
                 """
-                @startuml "test-workflow"
+                @startuml "sleep workflow"
+                !include default-skin.puml
                 start
                   :==<<T>> 10;
                   :==<$bi-hourglass,scale=1.2> 20
@@ -222,19 +246,26 @@ class WorkflowUmlServiceTest {
                 stop
                 @enduml
                 """);
+        
+        PlantUmlWritter.writeAsPlantUmlSvg(SVG_PATH + "sleep-workflow.svg", w, umlService);
     }
 
     @Test
     void testSubWorkflow() {
         // GIVEN
-        Workflow<SimpleWorkflowState> child = Workflow.builder("any child", () ->  new SimpleWorkflowState())
+        Workflow<Integer> child = Workflow.builder("any child", () -> Integer.valueOf(0))
                 .next(s -> {})
                 .next(s -> {})
                 .build();
 
         Workflow<SimpleWorkflowState> parent = Workflow.builder("parent", () ->  new SimpleWorkflowState())
                 .next(s -> {})
-                .trigger(child).function(s -> s).id("cool workflow").delay(Duration.ofMinutes(2)).build()
+                .forkWorkflow(child)
+                    // starting a new workflow may requirer a state mapping
+                    .function(s -> Integer.valueOf(2))
+                    .delay(Duration.ofMinutes(2))
+                    .build()
+                .next(s -> {})
                 .next(s -> {})
                 .build();
 
@@ -242,24 +273,27 @@ class WorkflowUmlServiceTest {
         assertWorkflow(parent,
                 """
                 @startuml "parent"
+                !include default-skin.puml
                 start
                   :==<<T>> 10;
-                  :==<<T>> cool workflow
-                  Start any child;
                   fork
-                  fork again
-                    :==<$bi-hourglass,scale=1.2> PT2M;
+                    :==<<T>> 20
+                    Run **any child** after PT2M;
                     partition "any child" {
                       start
                         :==<<T>> 10;
                         :==<<T>> 20;
                       stop
                     }
-                  end fork
-                  :==<<T>> 20;
+                  fork again
+                  :==<<T>> 30;
+                  :==<<T>> 40;
+                end fork
                 stop
                 @enduml
                 """);
+        
+        PlantUmlWritter.writeAsPlantUmlSvg(SVG_PATH + "sub-workflow.svg", parent, umlService);
     }
 
     @Test
@@ -282,19 +316,20 @@ class WorkflowUmlServiceTest {
         // THEN
         assertWorkflow(parent, """
                 @startuml "parent"
+                !include default-skin.puml
                 start
                   :==<<T>> 10;
-                  :==<<T>> trigger->any child;
                   fork
-                  fork again
+                    :==<<T>> trigger->any child;
                     partition "any child" {
                       start
                         :==<<T>> 10;
                         :==<<T>> 20;
                       stop
                     }
-                  end fork
+                  fork again
                   :==<<T>> 20;
+                end fork
                 stop
                 @enduml
                 """);
@@ -303,7 +338,7 @@ class WorkflowUmlServiceTest {
     @Test
     void testAwait() {
         // GIVEN
-        Workflow<SimpleWorkflowState> parent = Workflow.builder("parent", () ->  new SimpleWorkflowState())
+        Workflow<SimpleWorkflowState> parent = Workflow.builder("await workflow", () ->  new SimpleWorkflowState())
                 .next(s -> {})
                 .await(Duration.ZERO)
                 .next(s -> {})
@@ -313,7 +348,8 @@ class WorkflowUmlServiceTest {
 
         // THEN
         assertWorkflow(parent, """
-                @startuml "parent"
+                @startuml "await workflow"
+                !include default-skin.puml
                 start
                   :==<<T>> 10;
                 stop
@@ -324,12 +360,61 @@ class WorkflowUmlServiceTest {
                 stop
                 @enduml
                 """);
+        
+        PlantUmlWritter.writeAsPlantUmlSvg(SVG_PATH + "await-workflow.svg", parent, umlService);
+    }
+    
+    @Test
+    void testWithErrorHandler() {
+        // GIVEN
+        Workflow<SimpleWorkflowState> parent = Workflow.builder("error flow", () ->  new SimpleWorkflowState())
+                .next()
+                    .description("This step may fail")
+                        .function(s -> {})
+                        .build()
+                .onLastStepError()
+                    .next()
+                        .description("Will only run if the last step **failed**")
+                        .function(s -> {})
+                        .build()
+                    .build()
+                .next()
+                    .description("Will only run if **no** error occured")
+                    .function(s -> {})
+                    .build()
+                .next()
+                    .description("Some other step")
+                    .function(s -> {})
+                    .build()
+                .build();
+
+        register(parent);
+
+        // THEN
+        assertWorkflow(parent, """
+                @startuml "error flow"
+                !include default-skin.puml
+                start
+                  :==<<T>> 10
+                  This step may fail;
+                  if ( error? ) then (yes)
+                    :==<<T>> 20
+                    Will only run if the last step **failed**;
+                  else ( no)
+                    :==<<T>> 30
+                    Will only run if **no** error occured;
+                    :==<<T>> 40
+                    Some other step;
+                  endif
+                stop
+                @enduml
+                """);
+        
+        PlantUmlWritter.writeAsPlantUmlSvg(SVG_PATH + "error-workflow.svg", parent, umlService);
     }
 
-    public void assertWorkflow(Workflow<?> w, String expected) {
-        final PlantUmlDiagram result = new PlantUmlDiagram(w.getName(), null);
-        subject.addWorkflow(w, result);
-        final String diagram = result.build().toString();
+    private void assertWorkflow(Workflow<?> w, String expected) {
+        final String diagram = subject.printWorkflow(w);
 
         String[] actualLines = diagram.split("\\R"); // Splits on any line break
         String[] expectedLines = expected.split("\\R");
@@ -337,8 +422,8 @@ class WorkflowUmlServiceTest {
         int maxLines = Math.max(actualLines.length, expectedLines.length);
 
         for (int i = 0; i < maxLines; i++) {
-            String actualLine = i < actualLines.length ? actualLines[i] : "missing line  + i + 1";
-            String expectedLine = i < expectedLines.length ? expectedLines[i] : "missing line  + i + 1";
+            String actualLine = i < actualLines.length ? actualLines[i] : "missing line  " + (i + 1);
+            String expectedLine = i < expectedLines.length ? expectedLines[i] : "missing line  " + (i + 1);
             if (!actualLine.equals(expectedLine)) {
                 System.err.printf("Mismatch at line %d:%nExpected: %s%nActual:   %s%n%n", i + 1, expectedLine, actualLine);
                 System.err.println(diagram);
@@ -348,7 +433,7 @@ class WorkflowUmlServiceTest {
         }
     }
     
-    void register(Workflow<?> w) {
+    private void register(Workflow<?> w) {
         repository.register(w.getName(), w);
     }
 }

@@ -1,6 +1,6 @@
 [![Java CI with Maven](https://github.com/sterlp/pmw/actions/workflows/maven.yml/badge.svg)](https://github.com/sterlp/pmw/actions/workflows/maven.yml)
 
-# Poor Mans Workflow based on Quartz Scheduler
+# Poor Mans Workflow for Spring
 
 ## Design-Goals
 
