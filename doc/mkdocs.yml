@@ -5,6 +5,7 @@ theme:
     features:
       - content.code.copy
       - content.code.annotate
+      - search.highlight
 plugins:
   - search
   - tags
