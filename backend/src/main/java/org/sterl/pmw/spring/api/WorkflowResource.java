@@ -24,12 +24,12 @@ public class WorkflowResource {
 
     private final WorkflowService<?> workflowService;
     private final WorkflowUmlService umlService;
-    
+
     @GetMapping
     Collection<WorkflowInfo> list() {
         return workflowService.listWorkflows();
     }
-    
+
     @Cacheable
     @GetMapping("{id}")
     WorkflowDiagram getWorkflow(@PathVariable("id") String id) throws IOException {

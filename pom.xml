@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.7</version>
+        <version>3.4.10</version>
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
 
@@ -45,13 +45,13 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-        <plantuml.version>1.2025.4</plantuml.version>
+        <plantuml.version>1.2025.7</plantuml.version>
         <lombok.version>1.18.38</lombok.version>
         <h2.version>2.3.232</h2.version>
         <jackson.version>2.18.2</jackson.version>
 
         <pmd.version>7.2.0</pmd.version>
-        <spring.persistent.tasks.version>2.2.0</spring.persistent.tasks.version>
+        <spring.persistent.tasks.version>2.2.4</spring.persistent.tasks.version>
     </properties>
 
     <modules>
