@@ -20,7 +20,7 @@ Build a very basic workflow `engine` which does only really basic stuff and is u
 -   [x] Transactional and non transactional steps
 -   [x] Trigger workflows in an own step
 -   [x] Link to workflows in repository using `trigger->`
--   [ ] Error steps
+-   [x] Error steps
 
 ### Maven
 
